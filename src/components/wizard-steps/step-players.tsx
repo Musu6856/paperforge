@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Plus, X } from "lucide-react";
-import type { GameTheoryModel, Player } from "@/lib/types";
+import type { GameTheoryModel } from "@/lib/types";
 
 interface Props {
   model: GameTheoryModel | null;
@@ -91,6 +90,11 @@ export function StepPlayers({ model, onUpdate, onAiRefine, aiResponse, isLoading
         </Button>
       </div>
 
+      {/* Validation hint */}
+      {players.length > 0 && players.length < 2 && (
+        <p className="text-xs text-destructive">需要至少 2 个参与者（当前 {players.length} 个）</p>
+      )}
+
       <Separator />
 
       {/* AI refine */}
@@ -102,6 +106,7 @@ export function StepPlayers({ model, onUpdate, onAiRefine, aiResponse, isLoading
           <Input
             placeholder="描述你的参与者设定想法..."
             className="text-sm"
+            disabled={isLoading}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.target as HTMLInputElement).value) {
                 onAiRefine((e.target as HTMLInputElement).value);
@@ -125,8 +130,11 @@ export function StepPlayers({ model, onUpdate, onAiRefine, aiResponse, isLoading
           </Button>
         </div>
         {aiResponse && (
-          <div className="bg-muted p-3 rounded-lg text-sm text-muted-foreground whitespace-pre-wrap">
-            {aiResponse}
+          <div className="bg-muted p-3 rounded-lg text-sm animate-fade-in">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] font-medium text-primary uppercase tracking-wider">AI 分析结果</span>
+            </div>
+            <div className="text-muted-foreground whitespace-pre-wrap">{aiResponse}</div>
           </div>
         )}
       </div>

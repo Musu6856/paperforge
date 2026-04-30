@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PaperForge
 
-## Getting Started
+PaperForge is an AI-assisted writing tool for game theory papers. Instead of trying to generate a paper in one click, it guides the researcher through a structured modeling workflow first: players, strategies, payoffs, game type, platform context, and assumptions.
 
-First, run the development server:
+Live demo: https://paperforge-sable.vercel.app/
+
+## Why It Exists
+
+Academic writing with AI breaks down when the model has no structure to follow. PaperForge keeps the AI constrained by asking the user to define the economic model before generating prose. The result is better suited for a Model Setup section than a generic essay-style answer.
+
+## Core Workflow
+
+1. Enter a research idea.
+2. Let AI extract game-theoretic elements and missing assumptions.
+3. Complete the modeling wizard.
+4. Generate a Model Setup section with LaTeX-style math.
+5. Generate related literature recommendations.
+6. Export the result as a `.tex` file.
+
+## Features
+
+- Structured game theory modeling wizard
+- AI refinement for each modeling step
+- Model Setup generation
+- Literature recommendation for platform/game theory topics
+- Markdown + KaTeX rendering
+- Local project history via `localStorage`
+- LaTeX export
+- Deployed on Vercel
+
+## Tech Stack
+
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- shadcn/ui-style components
+- Xiaomi MiMo API through an OpenAI-compatible chat completions endpoint
+- KaTeX / react-markdown for academic output
+
+## Environment Variables
+
+Create `.env.local` in the project root:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+MIMO_API_KEY=your_xiaomi_mimo_api_key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The API route also accepts these aliases for deployment convenience:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+XIAOMI_API_KEY=your_xiaomi_mimo_api_key
+ANTHROPIC_API_KEY=your_xiaomi_mimo_api_key
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Optional overrides:
 
-## Learn More
+```bash
+MIMO_BASE_URL=https://api.xiaomimimo.com/v1
+MIMO_MODEL=mimo-v2.5-pro
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Local Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Then open http://localhost:3000.
 
-## Deploy on Vercel
+## Quality Checks
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run lint
+npm run build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Status
+
+This is an MVP/demo project. The current version is useful for showing the product idea and end-to-end AI workflow. The next improvements would be persistent cloud storage, real citation metadata from a scholarly API, better export formatting, and multi-turn model revision.

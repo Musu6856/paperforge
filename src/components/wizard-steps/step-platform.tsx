@@ -144,6 +144,7 @@ export function StepPlatform({ model, onUpdate, onAiRefine, aiResponse, isLoadin
           <Input
             placeholder="描述你的平台设计思路..."
             className="text-sm"
+            disabled={isLoading}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.target as HTMLInputElement).value) {
                 onAiRefine((e.target as HTMLInputElement).value);
@@ -151,13 +152,24 @@ export function StepPlatform({ model, onUpdate, onAiRefine, aiResponse, isLoadin
               }
             }}
           />
-          <Button variant="secondary" size="sm" disabled={isLoading}>
+          <Button variant="secondary" size="sm" disabled={isLoading}
+            onClick={() => {
+              const el = document.querySelector<HTMLInputElement>('[placeholder="描述你的平台设计思路..."]');
+              if (el?.value) {
+                onAiRefine(el.value);
+                el.value = "";
+              }
+            }}
+          >
             {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "AI 分析"}
           </Button>
         </div>
         {aiResponse && (
-          <div className="bg-muted p-3 rounded-lg text-sm text-muted-foreground whitespace-pre-wrap">
-            {aiResponse}
+          <div className="bg-muted p-3 rounded-lg text-sm animate-fade-in">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] font-medium text-primary uppercase tracking-wider">AI 分析结果</span>
+            </div>
+            <div className="text-muted-foreground whitespace-pre-wrap">{aiResponse}</div>
           </div>
         )}
       </div>

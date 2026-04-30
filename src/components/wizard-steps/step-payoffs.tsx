@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import type { GameTheoryModel, PayoffStructure } from "@/lib/types";
@@ -54,6 +52,11 @@ export function StepPayoffs({ model, onUpdate, onAiRefine, aiResponse, isLoading
         </div>
       </div>
 
+      {/* Validation hint */}
+      {!payoffs.description.trim() && (
+        <p className="text-xs text-muted-foreground">请填写收益结构描述</p>
+      )}
+
       <Separator />
 
       <div className="space-y-2">
@@ -62,8 +65,9 @@ export function StepPayoffs({ model, onUpdate, onAiRefine, aiResponse, isLoading
           <Textarea
             placeholder="描述你的收益结构想法..."
             className="min-h-[60px] text-sm"
+            disabled={isLoading}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && e.metaKey && (e.target as HTMLTextAreaElement).value) {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && (e.target as HTMLTextAreaElement).value) {
                 onAiRefine((e.target as HTMLTextAreaElement).value);
                 (e.target as HTMLTextAreaElement).value = "";
               }
@@ -86,8 +90,11 @@ export function StepPayoffs({ model, onUpdate, onAiRefine, aiResponse, isLoading
           </Button>
         </div>
         {aiResponse && (
-          <div className="bg-muted p-3 rounded-lg text-sm text-muted-foreground whitespace-pre-wrap">
-            {aiResponse}
+          <div className="bg-muted p-3 rounded-lg text-sm animate-fade-in">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] font-medium text-primary uppercase tracking-wider">AI 分析结果</span>
+            </div>
+            <div className="text-muted-foreground whitespace-pre-wrap">{aiResponse}</div>
           </div>
         )}
       </div>

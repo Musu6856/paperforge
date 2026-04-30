@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ArrowLeft, BookOpen } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { ModelWizard } from "@/components/model-wizard";
 import { OutputPanel } from "@/components/output-panel";
 import { LiteraturePanel } from "@/components/literature-panel";
 import { chatStream, fetchLiterature } from "@/lib/api";
 import { modelSetupPrompt } from "@/lib/prompts";
+import { toast } from "sonner";
 import type { ResearchProject } from "@/lib/types";
 
 export default function ProjectPage() {
@@ -20,7 +22,6 @@ export default function ProjectPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingLit, setIsLoadingLit] = useState(false);
   const [literatureContent, setLiteratureContent] = useState("");
-  const [wizardComplete, setWizardComplete] = useState(false);
 
   const project = state.currentProject;
 
@@ -74,11 +75,15 @@ export default function ProjectPage() {
         },
       });
 
+      toast.success("Model Setup 章节已生成");
+
       setIsLoadingLit(true);
       const litContent = await fetchLiterature(project.model);
       setLiteratureContent(litContent);
+      toast.success("文献推荐已加载");
     } catch (e) {
       console.error("Generation error", e);
+      toast.error("生成失败", { description: "AI 服务暂时不可用" });
     } finally {
       setIsGenerating(false);
       setIsLoadingLit(false);
@@ -87,8 +92,26 @@ export default function ProjectPage() {
 
   if (!project) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="flex-1 flex flex-col animate-pulse">
+        <header className="border-b bg-background/80">
+          <div className="max-w-6xl mx-auto px-6 py-3">
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-4 bg-muted rounded" />
+              <div className="h-5 bg-muted rounded w-48" />
+            </div>
+          </div>
+        </header>
+        <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <div className="lg:col-span-2 space-y-5">
+              <div className="h-28 bg-muted rounded-lg" />
+              <div className="h-96 bg-muted rounded-lg" />
+            </div>
+            <div className="lg:col-span-3">
+              <div className="h-72 bg-muted rounded-lg" />
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -125,16 +148,18 @@ export default function ProjectPage() {
               </p>
             </div>
 
-            <ModelWizard onComplete={() => setWizardComplete(true)} />
+            <ModelWizard onComplete={() => undefined} />
           </div>
 
           {/* Right: Output */}
           <div className="lg:col-span-3 space-y-6">
-            <OutputPanel
-              sections={project.sections}
-              isGenerating={isGenerating}
-              onGenerate={handleGenerate}
-            />
+            <ErrorBoundary>
+              <OutputPanel
+                sections={project.sections}
+                isGenerating={isGenerating}
+                onGenerate={handleGenerate}
+              />
+            </ErrorBoundary>
 
             {(literatureContent || isLoadingLit) && (
               <LiteraturePanel

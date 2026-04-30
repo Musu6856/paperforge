@@ -18,25 +18,27 @@ interface Props {
 
 export function StepStrategies({ model, onUpdate, onAiRefine, aiResponse, isLoading }: Props) {
   const [player, setPlayer] = useState("");
+  const [customPlayerName, setCustomPlayerName] = useState("");
   const [option, setOption] = useState("");
 
   const strategies = model?.strategies || [];
   const players = model?.players || [];
 
   function addStrategy() {
-    if (!player.trim() || !option.trim()) return;
-    const existing = strategies.find((s) => s.player === player.trim());
+    const effectivePlayer = player === "__custom__" ? customPlayerName.trim() : player.trim();
+    if (!effectivePlayer || !option.trim()) return;
+    const existing = strategies.find((s) => s.player === effectivePlayer);
     if (existing) {
       onUpdate({
         strategies: strategies.map((s) =>
-          s.player === player.trim()
+          s.player === effectivePlayer
             ? { ...s, options: [...s.options, option.trim()] }
             : s
         ),
       });
     } else {
       onUpdate({
-        strategies: [...strategies, { player: player.trim(), options: [option.trim()] }],
+        strategies: [...strategies, { player: effectivePlayer, options: [option.trim()] }],
       });
     }
     setOption("");
@@ -94,9 +96,8 @@ export function StepStrategies({ model, onUpdate, onAiRefine, aiResponse, isLoad
         {player === "__custom__" && (
           <Input
             placeholder="输入参与者名称"
-            value={player === "__custom__" ? "" : player}
-            onChange={(e) => setPlayer(e.target.value)}
-            onFocus={() => setPlayer("")}
+            value={customPlayerName}
+            onChange={(e) => setCustomPlayerName(e.target.value)}
           />
         )}
         <Input
@@ -110,6 +111,11 @@ export function StepStrategies({ model, onUpdate, onAiRefine, aiResponse, isLoad
         </Button>
       </div>
 
+      {/* Validation hint */}
+      {strategies.length === 0 && (
+        <p className="text-xs text-muted-foreground">需至少添加一个策略选项才能继续</p>
+      )}
+
       <Separator />
 
       <div className="space-y-2">
@@ -118,6 +124,7 @@ export function StepStrategies({ model, onUpdate, onAiRefine, aiResponse, isLoad
           <Input
             placeholder="描述你的策略设定..."
             className="text-sm"
+            disabled={isLoading}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.target as HTMLInputElement).value) {
                 onAiRefine((e.target as HTMLInputElement).value);
@@ -125,13 +132,24 @@ export function StepStrategies({ model, onUpdate, onAiRefine, aiResponse, isLoad
               }
             }}
           />
-          <Button variant="secondary" size="sm" disabled={isLoading}>
+          <Button variant="secondary" size="sm" disabled={isLoading}
+            onClick={() => {
+              const el = document.querySelector<HTMLInputElement>('[placeholder="描述你的策略设定..."]');
+              if (el?.value) {
+                onAiRefine(el.value);
+                el.value = "";
+              }
+            }}
+          >
             {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "AI 分析"}
           </Button>
         </div>
         {aiResponse && (
-          <div className="bg-muted p-3 rounded-lg text-sm text-muted-foreground whitespace-pre-wrap">
-            {aiResponse}
+          <div className="bg-muted p-3 rounded-lg text-sm animate-fade-in">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] font-medium text-primary uppercase tracking-wider">AI 分析结果</span>
+            </div>
+            <div className="text-muted-foreground whitespace-pre-wrap">{aiResponse}</div>
           </div>
         )}
       </div>

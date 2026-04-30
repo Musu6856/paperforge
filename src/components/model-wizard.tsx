@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useStore } from "@/lib/store";
 import { chatStream } from "@/lib/api";
 import { modelStepPrompt } from "@/lib/prompts";
+import { toast } from "sonner";
 import type { WizardStep, GameTheoryModel, ResearchProject } from "@/lib/types";
 import { StepPlayers } from "./wizard-steps/step-players";
 import { StepStrategies } from "./wizard-steps/step-strategies";
@@ -23,8 +24,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Loader2,
-  MessageSquare,
 } from "lucide-react";
 
 const STEPS: { key: WizardStep; label: string; icon: React.ReactNode }[] = [
@@ -54,14 +53,6 @@ function getModelContext(project: ResearchProject | null): string {
   return ctx;
 }
 
-function formatReviewValue(val: unknown): string {
-  if (Array.isArray(val)) {
-    if (val.length === 0) return "未定义";
-    return val.map((v) => (typeof v === "object" ? JSON.stringify(v) : String(v))).join("; ");
-  }
-  if (typeof val === "object" && val !== null) return JSON.stringify(val);
-  return String(val || "未定义");
-}
 
 interface ModelWizardProps {
   onComplete: () => void;
@@ -72,6 +63,7 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
   const project = state.currentProject;
   const [aiResponse, setAiResponse] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [slideDir, setSlideDir] = useState<"right" | "left">("right");
 
   if (!project) return null;
 
@@ -100,9 +92,11 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
         [{ role: "user", content: modelStepPrompt(step, context, userInput) }],
         (text) => setAiResponse(text)
       );
+      toast.success("AI 分析完成");
     } catch (e) {
       console.error("AI refine error", e);
       setAiResponse("AI 分析暂时不可用，请稍后重试。");
+      toast.error("AI 分析失败", { description: "请稍后重试" });
     }
     setIsLoading(false);
   }
@@ -133,6 +127,7 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
   function goNext() {
     const nextIdx = currentIdx + 1;
     if (nextIdx < STEP_ORDER.length) {
+      setSlideDir("right");
       dispatch({ type: "SET_WIZARD_STEP", payload: STEP_ORDER[nextIdx] });
       if (nextIdx === STEP_ORDER.length - 1) onComplete();
     }
@@ -140,7 +135,10 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
 
   function goBack() {
     const prevIdx = currentIdx - 1;
-    if (prevIdx >= 0) dispatch({ type: "SET_WIZARD_STEP", payload: STEP_ORDER[prevIdx] });
+    if (prevIdx >= 0) {
+      setSlideDir("left");
+      dispatch({ type: "SET_WIZARD_STEP", payload: STEP_ORDER[prevIdx] });
+    }
   }
 
   return (
@@ -186,6 +184,7 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div key={state.wizardStep} className={slideDir === "right" ? "animate-slide-in-right" : "animate-slide-in-left"}>
           {state.wizardStep === "players" && (
             <StepPlayers
               model={project.model}
@@ -337,6 +336,8 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
             </div>
           )}
 
+          </div>
+
           {/* Navigation */}
           <div className="flex justify-between pt-2">
             <Button variant="outline" size="sm" onClick={goBack} disabled={currentIdx === 0} className="gap-1">
@@ -347,6 +348,9 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
               {currentIdx < STEP_ORDER.length - 1 && <ChevronRight className="h-3 w-3" />}
             </Button>
           </div>
+          {!canProceed() && state.wizardStep !== "review" && state.wizardStep !== "platform" && (
+            <p className="text-xs text-muted-foreground text-right -mt-2">请完成此步骤的设置</p>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -3,10 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import type { GameTheoryModel } from "@/lib/types";
 
 const GAME_TYPES = [
@@ -71,7 +69,7 @@ export function StepGameType({ model, onUpdate, onAiRefine, aiResponse, isLoadin
           <div key={i} className="flex items-center justify-between bg-muted p-2 rounded">
             <span className="text-sm">{a}</span>
             <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => removeAssumption(i)}>
-              ✕
+              <X className="h-3 w-3" />
             </Button>
           </div>
         ))}
@@ -96,6 +94,7 @@ export function StepGameType({ model, onUpdate, onAiRefine, aiResponse, isLoadin
           <Input
             placeholder="描述你的博弈时序..."
             className="text-sm"
+            disabled={isLoading}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.target as HTMLInputElement).value) {
                 onAiRefine((e.target as HTMLInputElement).value);
@@ -103,13 +102,24 @@ export function StepGameType({ model, onUpdate, onAiRefine, aiResponse, isLoadin
               }
             }}
           />
-          <Button variant="secondary" size="sm" disabled={isLoading}>
+          <Button variant="secondary" size="sm" disabled={isLoading}
+            onClick={() => {
+              const el = document.querySelector<HTMLInputElement>('[placeholder="描述你的博弈时序..."]');
+              if (el?.value) {
+                onAiRefine(el.value);
+                el.value = "";
+              }
+            }}
+          >
             {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "AI 分析"}
           </Button>
         </div>
         {aiResponse && (
-          <div className="bg-muted p-3 rounded-lg text-sm text-muted-foreground whitespace-pre-wrap">
-            {aiResponse}
+          <div className="bg-muted p-3 rounded-lg text-sm animate-fade-in">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] font-medium text-primary uppercase tracking-wider">AI 分析结果</span>
+            </div>
+            <div className="text-muted-foreground whitespace-pre-wrap">{aiResponse}</div>
           </div>
         )}
       </div>

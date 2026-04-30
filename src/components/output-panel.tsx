@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, FileText, Sparkles, Download } from "lucide-react";
