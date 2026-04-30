@@ -1,6 +1,10 @@
-import Anthropic from "@anthropic-ai/sdk";
+const DEFAULT_BASE_URL = "https://api.xiaomimimo.com/v1";
+const DEFAULT_MODEL = "mimo-v2.5-pro";
 
-const DEFAULT_MODEL = "claude-sonnet-4-5-20250929";
+type ChatMessage = {
+  role: "user" | "assistant" | "system";
+  content: string;
+};
 
 function jsonError(error: string, status: number, code: string) {
   return new Response(JSON.stringify({ error, code }), {
@@ -9,49 +13,60 @@ function jsonError(error: string, status: number, code: string) {
   });
 }
 
-function getAnthropicClient() {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
-    return null;
-  }
-
-  return new Anthropic({ apiKey });
+function getProviderConfig() {
+  return {
+    apiKey:
+      process.env.XIAOMI_API_KEY ||
+      process.env.MIMO_API_KEY ||
+      process.env.ANTHROPIC_API_KEY,
+    baseUrl: process.env.XIAOMI_BASE_URL || process.env.MIMO_BASE_URL || DEFAULT_BASE_URL,
+    model: process.env.XIAOMI_MODEL || process.env.MIMO_MODEL || DEFAULT_MODEL,
+  };
 }
 
-function anthropicErrorResponse(error: unknown) {
-  if (error instanceof Anthropic.APIError) {
-    console.error("Anthropic API error:", {
-      status: error.status,
-      type: error.name,
-      message: error.message,
-    });
+async function providerErrorResponse(response: Response) {
+  const body = await response.text();
+  console.error("Xiaomi MiMo API error:", {
+    status: response.status,
+    statusText: response.statusText,
+    body,
+  });
 
-    if (error.status === 401) {
-      return jsonError(
-        "Anthropic authentication failed. Check ANTHROPIC_API_KEY in Vercel.",
-        502,
-        "anthropic_auth_failed"
-      );
-    }
-
-    if (error.status === 429) {
-      return jsonError(
-        "Anthropic rate limit reached. Please try again later.",
-        429,
-        "anthropic_rate_limited"
-      );
-    }
-
+  if (response.status === 401 || response.status === 403) {
     return jsonError(
-      "Anthropic request failed. Check ANTHROPIC_MODEL and account access.",
+      "Xiaomi MiMo authentication failed. Check your API key in Vercel.",
       502,
-      "anthropic_request_failed"
+      "mimo_auth_failed"
     );
   }
 
-  console.error("Chat API error:", error);
-  return jsonError("Internal server error", 500, "internal_error");
+  if (response.status === 429) {
+    return jsonError(
+      "Xiaomi MiMo rate limit reached. Please try again later.",
+      429,
+      "mimo_rate_limited"
+    );
+  }
+
+  return jsonError(
+    "Xiaomi MiMo request failed. Check XIAOMI_MODEL and account access.",
+    502,
+    "mimo_request_failed"
+  );
+}
+
+function extractDelta(line: string) {
+  if (!line.startsWith("data: ")) return "";
+
+  const data = line.slice(6).trim();
+  if (!data || data === "[DONE]") return "";
+
+  try {
+    const parsed = JSON.parse(data);
+    return parsed.choices?.[0]?.delta?.content || "";
+  } catch {
+    return "";
+  }
 }
 
 export async function POST(request: Request) {
@@ -59,45 +74,66 @@ export async function POST(request: Request) {
     const { messages } = await request.json();
 
     if (!messages || !Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: "Invalid messages" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonError("Invalid messages", 400, "invalid_messages");
     }
 
-    const anthropic = getAnthropicClient();
+    const provider = getProviderConfig();
 
-    if (!anthropic) {
+    if (!provider.apiKey) {
       return jsonError(
-        "AI service is not configured. Set ANTHROPIC_API_KEY in Vercel.",
+        "AI service is not configured. Set XIAOMI_API_KEY in Vercel.",
         503,
-        "missing_anthropic_api_key"
+        "missing_mimo_api_key"
       );
     }
 
-    const stream = await anthropic.messages.create({
-      model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
-      max_tokens: 4096,
-      messages: messages.map((m: { role: string; content: string }) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
-      system:
-        "你是一个博弈论研究助手，帮助研究者构建和撰写博弈论模型。用中文回复。使用 LaTeX 格式（$...$）表示数学符号。",
-      stream: true,
+    const upstream = await fetch(`${provider.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "api-key": provider.apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: provider.model,
+        max_completion_tokens: 4096,
+        stream: true,
+        messages: [
+          {
+            role: "system",
+            content:
+              "你是一个博弈论研究助手，帮助研究者构建和撰写博弈论模型。用中文回复。使用 LaTeX 格式（$...$）表示数学符号。",
+          },
+          ...messages.map((message: ChatMessage) => ({
+            role: message.role === "assistant" ? "assistant" : "user",
+            content: message.content,
+          })),
+        ],
+      }),
     });
 
+    if (!upstream.ok || !upstream.body) {
+      return providerErrorResponse(upstream);
+    }
+
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const reader = upstream.body.getReader();
+    let buffer = "";
 
     const readable = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of stream) {
-            if (
-              chunk.type === "content_block_delta" &&
-              chunk.delta.type === "text_delta"
-            ) {
-              controller.enqueue(encoder.encode(chunk.delta.text));
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              const delta = extractDelta(line.trim());
+              if (delta) controller.enqueue(encoder.encode(delta));
             }
           }
           controller.close();
@@ -114,6 +150,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    return anthropicErrorResponse(error);
+    console.error("Chat API error:", error);
+    return jsonError("Internal server error", 500, "internal_error");
   }
 }
