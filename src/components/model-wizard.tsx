@@ -125,6 +125,11 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
   }
 
   function goNext() {
+    if (currentIdx === STEP_ORDER.length - 1) {
+      onComplete();
+      return;
+    }
+
     const nextIdx = currentIdx + 1;
     if (nextIdx < STEP_ORDER.length) {
       setSlideDir("right");

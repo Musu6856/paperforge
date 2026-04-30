@@ -43,6 +43,11 @@ Academic writing with AI breaks down when the model has no structure to follow. 
 Create `.env.local` in the project root:
 
 ```bash
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+DATABASE_URL=postgresql://...
 MIMO_API_KEY=your_xiaomi_mimo_api_key
 ```
 
@@ -64,6 +69,7 @@ MIMO_MODEL=mimo-v2.5-pro
 
 ```bash
 npm install
+npm run db:push
 npm run dev
 ```
 

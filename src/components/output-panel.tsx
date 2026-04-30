@@ -1,15 +1,29 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileText, Sparkles, Download } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FileText,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
 import { MarkdownRenderer } from "./markdown-renderer";
 import type { PaperSection } from "@/lib/types";
+
+interface ReaderPage {
+  title: string;
+  content: string;
+}
 
 function exportLatex(sections: PaperSection[]) {
   const content = sections.map((s) => s.content).join("\n\n");
 
-  // Basic markdown → LaTeX conversion
   const latex = `\\documentclass[12pt,a4paper]{article}
 \\usepackage[utf8]{inputenc}
 \\usepackage{amsmath,amssymb}
@@ -32,8 +46,7 @@ ${content
   .replace(/\*\*(.*?)\*\*/g, "\\textbf{$1}")
   .replace(/\*(.*?)\*/g, "\\textit{$1}")
   .replace(/\$\$([\s\S]*?)\$\$/g, "\\[$1\\]")
-  .replace(/\$(.*?)\$/g, "\\($1\\)")
-}
+  .replace(/\$(.*?)\$/g, "\\($1\\)")}
 
 \\end{document}
 `;
@@ -47,30 +60,129 @@ ${content
   URL.revokeObjectURL(url);
 }
 
+function cleanHeading(title: string) {
+  return title.replace(/^#+\s*/, "").replace(/\*\*/g, "").trim();
+}
+
+function splitMarkdownPages(content: string, fallbackTitle: string): ReaderPage[] {
+  const normalized = content.trim();
+  if (!normalized) return [];
+
+  const headingRegex = /^#{2,3}\s+.+$/gm;
+  const matches = Array.from(normalized.matchAll(headingRegex)).filter(
+    (match) => !/^##\s+Model Setup/i.test(match[0].trim())
+  );
+
+  if (matches.length === 0) {
+    return [{ title: fallbackTitle, content: normalized }];
+  }
+
+  const intro = normalized.slice(0, matches[0].index).trim();
+  const pages: ReaderPage[] = intro
+    ? [
+        {
+          title: "Overview",
+          content: intro.replace(/^##\s+Model Setup\s*/i, "").trim(),
+        },
+      ]
+    : [];
+
+  matches.forEach((match, index) => {
+    const start = match.index ?? 0;
+    const end =
+      index + 1 < matches.length
+        ? matches[index + 1].index ?? normalized.length
+        : normalized.length;
+    const chunk = normalized.slice(start, end).trim();
+
+    pages.push({
+      title: cleanHeading(match[0]),
+      content: chunk,
+    });
+  });
+
+  return pages.filter((page) => page.content.length > 0);
+}
+
+function clampPage(page: number, count: number) {
+  if (count <= 0) return 0;
+  return Math.min(Math.max(page, 0), count - 1);
+}
+
 interface OutputPanelProps {
   sections: PaperSection[];
   isGenerating: boolean;
   onGenerate: () => void;
+  literatureContent?: string;
+  isLoadingLiterature?: boolean;
+  onGenerateReferences?: () => void;
 }
 
-export function OutputPanel({ sections, isGenerating, onGenerate }: OutputPanelProps) {
+export function OutputPanel({
+  sections,
+  isGenerating,
+  onGenerate,
+  literatureContent = "",
+  isLoadingLiterature = false,
+  onGenerateReferences,
+}: OutputPanelProps) {
+  const [activeView, setActiveView] = useState<"model" | "references">("model");
+  const [modelPage, setModelPage] = useState(0);
+  const [referencePage, setReferencePage] = useState(0);
+
+  const modelSections = sections.filter(
+    (section) => !/reference|literature|文献/i.test(section.title)
+  );
+  const referenceSections = sections.filter((section) =>
+    /reference|literature|文献/i.test(section.title)
+  );
+  const generatedContent = modelSections
+    .map((section) => section.content)
+    .join("\n\n");
+  const persistedReferences = referenceSections
+    .map((section) => section.content)
+    .join("\n\n");
+  const referenceContent = literatureContent || persistedReferences;
+  const modelPages = useMemo(
+    () => splitMarkdownPages(generatedContent, "Model Setup"),
+    [generatedContent]
+  );
+  const referencePages = useMemo(
+    () => splitMarkdownPages(referenceContent, "References"),
+    [referenceContent]
+  );
+
+  const safeModelPage = clampPage(modelPage, modelPages.length);
+  const safeReferencePage = clampPage(referencePage, referencePages.length);
+  const hasGenerated = modelSections.length > 0;
+
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-medium">生成内容</h2>
+          {hasGenerated && (
+            <Badge variant="secondary" className="text-[10px]">
+              {modelPages.length} 页正文
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          {sections.length > 0 && (
-            <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => exportLatex(sections)}>
+          {hasGenerated && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5"
+              onClick={() => exportLatex(modelSections)}
+            >
               <Download className="h-3.5 w-3.5" />
               导出 LaTeX
             </Button>
           )}
           <Button
             onClick={onGenerate}
-            disabled={isGenerating || sections.length > 0}
+            disabled={isGenerating || hasGenerated}
             size="sm"
             className="h-8 gap-1.5"
           >
@@ -79,7 +191,7 @@ export function OutputPanel({ sections, isGenerating, onGenerate }: OutputPanelP
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 生成中...
               </>
-            ) : sections.length > 0 ? (
+            ) : hasGenerated ? (
               "已生成"
             ) : (
               <>
@@ -91,36 +203,194 @@ export function OutputPanel({ sections, isGenerating, onGenerate }: OutputPanelP
         </div>
       </div>
 
-      <Card className="ring-1 ring-border overflow-hidden">
-        <div className="h-0.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
-        <CardContent className="p-6">
-          {sections.length === 0 && !isGenerating && (
-            <div className="text-center py-12">
-              <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">
-                完成模型定义后，点击上方按钮生成论文章节
-              </p>
-            </div>
-          )}
-          {isGenerating && sections.length === 0 && (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-3">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                <div>
-                  <p className="text-sm font-medium">AI 正在生成内容...</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">这可能需要 30 秒左右</p>
+      {!hasGenerated && (
+        <Card className="ring-1 ring-border overflow-hidden">
+          <div className="h-0.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+          <CardContent className="p-6">
+            {!isGenerating && (
+              <div className="text-center py-12">
+                <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  完成模型定义后，点击上方按钮生成论文章节
+                </p>
+              </div>
+            )}
+            {isGenerating && (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">AI 正在生成内容...</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      这可能需要 30 秒左右
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {hasGenerated && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant={activeView === "model" ? "default" : "outline"}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setActiveView("model")}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Model Setup
+            </Button>
+            <Button
+              variant={activeView === "references" ? "default" : "outline"}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                setActiveView("references");
+                if (!referenceContent && !isLoadingLiterature) {
+                  onGenerateReferences?.();
+                }
+              }}
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              参考文献
+              {isLoadingLiterature && <Loader2 className="h-3 w-3 animate-spin" />}
+            </Button>
+          </div>
+
+          {activeView === "model" && modelPages[safeModelPage] && (
+            <ReaderCard
+              page={modelPages[safeModelPage]}
+              pageIndex={safeModelPage}
+              pageCount={modelPages.length}
+              onPrevious={() =>
+                setModelPage((page) => clampPage(page - 1, modelPages.length))
+              }
+              onNext={() =>
+                setModelPage((page) => clampPage(page + 1, modelPages.length))
+              }
+            />
           )}
-          {sections.map((section, i) => (
-            <div key={section.id} className="prose-academic animate-fade-in" style={{ animationDelay: `${i * 100}ms` }}>
-              {i > 0 && <hr className="my-6 border-border" />}
-              <MarkdownRenderer content={section.content} />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+
+          {activeView === "references" && (
+            <Card className="ring-1 ring-border overflow-hidden">
+              <div className="h-0.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+              <CardContent className="p-6">
+                {isLoadingLiterature && !referencePages[safeReferencePage] ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      正在生成参考文献推荐...
+                    </span>
+                  </div>
+                ) : referencePages[safeReferencePage] ? (
+                  <ReaderBody
+                    page={referencePages[safeReferencePage]}
+                    pageIndex={safeReferencePage}
+                    pageCount={referencePages.length}
+                    onPrevious={() =>
+                      setReferencePage((page) =>
+                        clampPage(page - 1, referencePages.length)
+                      )
+                    }
+                    onNext={() =>
+                      setReferencePage((page) =>
+                        clampPage(page + 1, referencePages.length)
+                      )
+                    }
+                  />
+                ) : (
+                  <div className="text-center py-12 text-sm text-muted-foreground">
+                    参考文献还没有生成。
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReaderCard({
+  page,
+  pageIndex,
+  pageCount,
+  onPrevious,
+  onNext,
+}: {
+  page: ReaderPage;
+  pageIndex: number;
+  pageCount: number;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <Card className="ring-1 ring-border overflow-hidden">
+      <div className="h-0.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+      <CardContent className="p-6">
+        <ReaderBody
+          page={page}
+          pageIndex={pageIndex}
+          pageCount={pageCount}
+          onPrevious={onPrevious}
+          onNext={onNext}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function ReaderBody({
+  page,
+  pageIndex,
+  pageCount,
+  onPrevious,
+  onNext,
+}: {
+  page: ReaderPage;
+  pageIndex: number;
+  pageCount: number;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">
+            第 {pageIndex + 1} / {pageCount} 页
+          </p>
+          <h3 className="truncate text-lg font-semibold">{page.title}</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onPrevious}
+            disabled={pageIndex === 0}
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            上一页
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onNext}
+            disabled={pageIndex >= pageCount - 1}
+          >
+            下一页
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+      <div className="reader-page min-h-[420px]">
+        <MarkdownRenderer content={page.content} />
+      </div>
     </div>
   );
 }

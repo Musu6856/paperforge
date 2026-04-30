@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store";
 import { Toaster } from "@/components/ui/sonner";
@@ -38,10 +39,12 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
-        <StoreProvider>
-          {children}
-          <Toaster />
-        </StoreProvider>
+        <ClerkProvider>
+          <StoreProvider>
+            {children}
+            <Toaster />
+          </StoreProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

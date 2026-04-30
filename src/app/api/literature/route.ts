@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import { literaturePrompt } from "@/lib/prompts";
 
 const DEFAULT_BASE_URL = "https://api.xiaomimimo.com/v1";
@@ -62,6 +63,11 @@ async function providerErrorResponse(response: Response) {
 
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return jsonError("Unauthorized", 401, "unauthorized");
+    }
+
     const { model } = await request.json();
 
     if (!model) {

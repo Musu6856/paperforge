@@ -1,3 +1,5 @@
+import { auth } from "@clerk/nextjs/server";
+
 const DEFAULT_BASE_URL = "https://api.xiaomimimo.com/v1";
 const DEFAULT_MODEL = "mimo-v2.5-pro";
 
@@ -71,6 +73,11 @@ function extractDelta(line: string) {
 
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return jsonError("Unauthorized", 401, "unauthorized");
+    }
+
     const { messages } = await request.json();
 
     if (!messages || !Array.isArray(messages)) {

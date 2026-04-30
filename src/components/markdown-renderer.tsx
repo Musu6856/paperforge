@@ -7,14 +7,23 @@ interface MarkdownRendererProps {
   className?: string;
 }
 
+function stabilizeMath(content: string) {
+  return content
+    .replace(/\\underbrace\{([^{}]+)\}_\{([^{}]+)\}/g, "$1")
+    .replace(/\\overbrace\{([^{}]+)\}\^\{([^{}]+)\}/g, "$1")
+    .replace(/\\underbrace\{([^{}]+)\}_\{\\text\{([^{}]+)\}\}/g, "$1");
+}
+
 export function MarkdownRenderer({
   content,
   className,
 }: MarkdownRendererProps) {
+  const safeContent = stabilizeMath(content);
+
   return (
     <div className={`prose prose-sm max-w-none dark:prose-invert ${className || ""}`}>
       <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-        {content}
+        {safeContent}
       </ReactMarkdown>
     </div>
   );

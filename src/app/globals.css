@@ -166,6 +166,23 @@ body::before {
   margin-bottom: 0.75rem;
 }
 
+.prose-academic .katex-display,
+.reader-page .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0 0.4rem;
+}
+
+.prose-academic .katex,
+.reader-page .katex {
+  max-width: 100%;
+}
+
+.reader-page {
+  overflow-wrap: anywhere;
+}
+
 /* Smooth page transitions */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }

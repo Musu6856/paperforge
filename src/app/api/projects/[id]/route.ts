@@ -1,0 +1,93 @@
+import { auth } from "@clerk/nextjs/server";
+import { and, eq } from "drizzle-orm";
+import { getDb } from "@/db";
+import { projects } from "@/db/schema";
+import { projectFromRow, sanitizeProjectPayload } from "@/lib/project-records";
+
+function jsonError(error: string, status: number, code: string) {
+  return Response.json({ error, code }, { status });
+}
+
+async function requireUserId() {
+  const { userId } = await auth();
+  return userId;
+}
+
+type ProjectRouteContext = {
+  params: Promise<{ id: string }>;
+};
+
+export async function GET(_request: Request, context: ProjectRouteContext) {
+  try {
+    const userId = await requireUserId();
+    if (!userId) return jsonError("Unauthorized", 401, "unauthorized");
+
+    const { id } = await context.params;
+    const [row] = await getDb()
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, id), eq(projects.ownerId, userId)))
+      .limit(1);
+
+    if (!row) return jsonError("Project not found", 404, "project_not_found");
+
+    return Response.json({ project: projectFromRow(row) });
+  } catch (error) {
+    console.error("Project API error:", error);
+    return jsonError("Internal server error", 500, "internal_error");
+  }
+}
+
+export async function PATCH(request: Request, context: ProjectRouteContext) {
+  try {
+    const userId = await requireUserId();
+    if (!userId) return jsonError("Unauthorized", 401, "unauthorized");
+
+    const { id } = await context.params;
+    const body = await request.json();
+    const project = sanitizeProjectPayload(body.project);
+    if (!project || project.id !== id) {
+      return jsonError("Invalid project data", 400, "invalid_project");
+    }
+
+    const [row] = await getDb()
+      .update(projects)
+      .set({
+        rawIdea: project.rawIdea,
+        refinedIdea: project.refinedIdea,
+        model: project.model,
+        sections: project.sections,
+        references: project.references,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(projects.id, id), eq(projects.ownerId, userId)))
+      .returning();
+
+    if (!row) return jsonError("Project not found", 404, "project_not_found");
+
+    return Response.json({ project: projectFromRow(row) });
+  } catch (error) {
+    console.error("Update project error:", error);
+    return jsonError("Internal server error", 500, "internal_error");
+  }
+}
+
+export async function DELETE(_request: Request, context: ProjectRouteContext) {
+  try {
+    const userId = await requireUserId();
+    if (!userId) return jsonError("Unauthorized", 401, "unauthorized");
+
+    const { id } = await context.params;
+    const [row] = await getDb()
+      .delete(projects)
+      .where(and(eq(projects.id, id), eq(projects.ownerId, userId)))
+      .returning({ id: projects.id });
+
+    if (!row) return jsonError("Project not found", 404, "project_not_found");
+
+    return Response.json({ ok: true });
+  } catch (error) {
+    console.error("Delete project error:", error);
+    return jsonError("Internal server error", 500, "internal_error");
+  }
+}

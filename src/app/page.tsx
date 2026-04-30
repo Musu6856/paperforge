@@ -2,23 +2,30 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  SignInButton,
+  SignUpButton,
+  UserButton,
+  useUser,
+} from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/lib/store";
-import { chatStream } from "@/lib/api";
+import { chatStream, createProject } from "@/lib/api";
 import { ideaParserPrompt } from "@/lib/prompts";
 import { Loader2, ArrowRight, BookOpen, Sparkles, Network, Library } from "lucide-react";
 
 export default function HomePage() {
   const router = useRouter();
   const { state, dispatch } = useStore();
+  const { isLoaded, isSignedIn } = useUser();
   const [idea, setIdea] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   async function handleStart() {
-    if (!idea.trim() || isProcessing) return;
+    if (!idea.trim() || isProcessing || !isSignedIn) return;
     setIsProcessing(true);
 
     try {
@@ -30,7 +37,7 @@ export default function HomePage() {
         }
       );
 
-      const project = {
+      const project = await createProject({
         id: crypto.randomUUID(),
         createdAt: Date.now(),
         rawIdea: idea,
@@ -38,7 +45,7 @@ export default function HomePage() {
         model: null,
         sections: [],
         references: [],
-      };
+      });
 
       dispatch({
         type: "NEW_PROJECT",
@@ -63,6 +70,22 @@ export default function HomePage() {
             </div>
             <span className="text-lg font-semibold tracking-tight">PaperForge</span>
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Beta</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            {isSignedIn ? (
+              <UserButton />
+            ) : (
+              <>
+                <SignInButton mode="modal">
+                  <Button variant="ghost" size="sm">
+                    登录
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button size="sm">注册</Button>
+                </SignUpButton>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -95,11 +118,12 @@ export default function HomePage() {
                 value={idea}
                 onChange={(e) => setIdea(e.target.value)}
               />
-              <Button
-                className="w-full h-11 gap-2 text-base"
-                onClick={handleStart}
-                disabled={!idea.trim() || isProcessing}
-              >
+              {isSignedIn ? (
+                <Button
+                  className="w-full h-11 gap-2 text-base"
+                  onClick={handleStart}
+                  disabled={!idea.trim() || isProcessing || !isLoaded}
+                >
                 {isProcessing ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -111,7 +135,18 @@ export default function HomePage() {
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
-              </Button>
+                </Button>
+              ) : (
+                <SignInButton mode="modal">
+                  <Button
+                    className="w-full h-11 gap-2 text-base"
+                    disabled={!isLoaded}
+                  >
+                    登录后开始
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </SignInButton>
+              )}
             </CardContent>
           </Card>
 

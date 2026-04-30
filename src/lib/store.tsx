@@ -1,6 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useReducer, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useRef,
+} from "react";
+import { useUser } from "@clerk/nextjs";
+import { fetchProjects, saveProject } from "./api";
 import type {
   ResearchProject,
   GameTheoryModel,
@@ -26,7 +34,8 @@ type Action =
   | { type: "SET_WIZARD_STEP"; payload: WizardStep }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "NEW_PROJECT"; payload: ResearchProject }
-  | { type: "LOAD_PROJECTS"; payload: ResearchProject[] };
+  | { type: "LOAD_PROJECTS"; payload: ResearchProject[] }
+  | { type: "CLEAR_PROJECTS" };
 
 const initialState: AppState = {
   currentProject: null,
@@ -93,6 +102,8 @@ function reducer(state: AppState, action: Action): AppState {
       };
     case "LOAD_PROJECTS":
       return { ...state, projects: action.payload };
+    case "CLEAR_PROJECTS":
+      return initialState;
     default:
       return state;
   }
@@ -105,30 +116,56 @@ const StoreContext = createContext<{
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const { isLoaded, isSignedIn } = useUser();
+  const lastSavedProject = useRef<string | null>(null);
 
-  // Load projects from localStorage on mount
+  // Load projects from Neon once Clerk knows the current auth state.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("paperforge-projects");
-      if (saved) {
-        dispatch({ type: "LOAD_PROJECTS", payload: JSON.parse(saved) });
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      dispatch({ type: "CLEAR_PROJECTS" });
+      lastSavedProject.current = null;
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadProjects() {
+      try {
+        const projects = await fetchProjects();
+        if (!cancelled) {
+          dispatch({ type: "LOAD_PROJECTS", payload: projects });
+        }
+      } catch (e) {
+        console.error("Failed to load projects", e);
       }
-    } catch (e) {
-      console.error("Failed to load projects", e);
     }
-  }, []);
 
-  // Save to localStorage when projects change
+    loadProjects();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, isSignedIn]);
+
+  // Persist the active project after local edits.
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        "paperforge-projects",
-        JSON.stringify(state.projects)
-      );
-    } catch (e) {
-      console.error("Failed to save projects", e);
-    }
-  }, [state.projects]);
+    if (!isLoaded || !isSignedIn || !state.currentProject) return;
+
+    const serialized = JSON.stringify(state.currentProject);
+    if (serialized === lastSavedProject.current) return;
+
+    const timeoutId = window.setTimeout(() => {
+      lastSavedProject.current = serialized;
+      saveProject(state.currentProject!).catch((e) => {
+        console.error("Failed to save project", e);
+        lastSavedProject.current = null;
+      });
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isLoaded, isSignedIn, state.currentProject]);
 
   return (
     <StoreContext.Provider value={{ state, dispatch }}>

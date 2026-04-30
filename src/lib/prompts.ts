@@ -1,16 +1,17 @@
 export function ideaParserPrompt(rawIdea: string): string {
   return `你是一个博弈论研究助手。分析以下研究 idea，提取其中涉及的博弈论要素。
 
-研究 idea：${rawIdea}
+研究 idea：
+${rawIdea}
 
 请按以下格式输出分析结果：
 
 ## 已检测到的要素
-- 参与者（Players）: [列出已提到的参与者]
-- 策略（Strategies）: [列出已提到的策略]
-- 收益（Payoffs）: [描述已提到的收益结构]
-- 博弈类型: [提到的类型，如同时博弈/序贯博弈/重复博弈等]
-- 平台属性（如果涉及双边市场）: [描述]
+- 参与者（Players）：[列出已经提到的参与者]
+- 策略（Strategies）：[列出已经提到的策略]
+- 收益（Payoffs）：[描述已经提到的收益结构]
+- 博弈类型：[提到的类型，如同时博弈/序贯博弈/重复博弈等]
+- 平台属性（如果涉及双边市场）：[描述]
 
 ## 需要补充的信息
 提出 2-3 个具体的引导性问题，帮助完善模型定义。
@@ -43,7 +44,7 @@ export function modelSetupPrompt(modelJson: string): string {
 模型定义：
 ${modelJson}
 
-请生成包含以下内容的学术章节（使用 LaTeX 风格的 Markdown 格式）：
+请生成包含以下内容的学术章节，使用 Markdown 和简洁 LaTeX：
 
 ## Model Setup
 
@@ -57,16 +58,18 @@ ${modelJson}
 描述收益/效用函数的结构。
 
 ### 4. Timing of the Game
-说明博弈的时序（同时/序贯/重复等）。
+说明博弈时序（同时/序贯/重复等）。
 
 ### 5. Key Assumptions
-列出关键假设（信息结构、理性假设等）。
+列出关键信息结构、理性假设和平台市场假设。
 
 要求：
-- 使用学术写作风格
-- 数学符号用 LaTeX 格式（$...$ 或 $$...$$）
-- 如果涉及双边平台,强调跨边网络效应
-- 内容要具体，不要泛泛而谈`;
+- 使用学术写作风格，但每个小节控制在 2-4 段
+- 数学符号使用简单 LaTeX，例如 $...$ 或独立的 $$...$$
+- 不要使用 \\underbrace、\\overbrace、复杂嵌套分式或超长单行公式
+- 收益函数使用普通公式展示，并在公式下方用项目符号解释每一项
+- 如果涉及双边或多边平台，强调跨边网络效应
+- 内容具体，不要泛泛而谈`;
 }
 
 export function literaturePrompt(modelJson: string): string {
@@ -76,18 +79,18 @@ export function literaturePrompt(modelJson: string): string {
 ${modelJson}
 
 请推荐最相关的论文，优先包括以下经典文献（如果相关）：
-- Rochet & Tirole (2003) — Platform competition in two-sided markets
-- Armstrong (2006) — Competition in two-sided markets
-- Caillaud & Jullien (2003) — Chicken & egg: Competition among intermediation service providers
-- Tirole (1988) — The theory of industrial organization
-- 及其他与模型具体相关的文献
+- Rochet & Tirole (2003) - Platform competition in two-sided markets
+- Armstrong (2006) - Competition in two-sided markets
+- Caillaud & Jullien (2003) - Chicken & egg: Competition among intermediation service providers
+- Tirole (1988) - The theory of industrial organization
+- 其他与模型具体相关的文献
 
 每篇论文包含：标题、作者、年份、与本研究的关联。
 
 按以下分类组织：
-1. Foundational Theory
-2. Two-Sided Platform Literature
-3. Methodology & Related Approaches
+## Foundational Theory
+## Two-Sided Platform Literature
+## Methodology & Related Approaches
 
 用中文回复关联说明，论文标题用原文。`;
 }

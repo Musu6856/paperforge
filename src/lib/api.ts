@@ -1,6 +1,15 @@
 import type { GameTheoryModel } from "./types";
+import type { ResearchProject } from "./types";
 
 const BASE_URL = "/api";
+
+async function readJson<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`);
+  }
+
+  return res.json() as Promise<T>;
+}
 
 export async function chatStream(
   messages: { role: "user" | "assistant" | "system"; content: string }[],
@@ -46,4 +55,48 @@ export async function fetchLiterature(
 
   const data = await res.json();
   return data.content;
+}
+
+export async function fetchProjects(): Promise<ResearchProject[]> {
+  const data = await readJson<{ projects: ResearchProject[] }>(
+    await fetch(`${BASE_URL}/projects`)
+  );
+
+  return data.projects;
+}
+
+export async function fetchProject(id: string): Promise<ResearchProject> {
+  const data = await readJson<{ project: ResearchProject }>(
+    await fetch(`${BASE_URL}/projects/${id}`)
+  );
+
+  return data.project;
+}
+
+export async function createProject(
+  project: ResearchProject
+): Promise<ResearchProject> {
+  const data = await readJson<{ project: ResearchProject }>(
+    await fetch(`${BASE_URL}/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project }),
+    })
+  );
+
+  return data.project;
+}
+
+export async function saveProject(
+  project: ResearchProject
+): Promise<ResearchProject> {
+  const data = await readJson<{ project: ResearchProject }>(
+    await fetch(`${BASE_URL}/projects/${project.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project }),
+    })
+  );
+
+  return data.project;
 }
