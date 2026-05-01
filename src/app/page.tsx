@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { cloneElement, useState, type ReactElement, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   SignInButton,
@@ -15,7 +15,22 @@ import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/lib/store";
 import { chatStream, createProject } from "@/lib/api";
 import { ideaParserPrompt } from "@/lib/prompts";
-import { Loader2, ArrowRight, BookOpen, Sparkles, Network, Library } from "lucide-react";
+import { toast } from "sonner";
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  FileText,
+  Folder,
+  Library,
+  LockKeyhole,
+  Loader2,
+  Network,
+  RefreshCw,
+  Sparkles,
+} from "lucide-react";
 
 export default function HomePage() {
   const router = useRouter();
@@ -55,6 +70,9 @@ export default function HomePage() {
       router.push(`/projects/${project.id}`);
     } catch (e) {
       console.error("Failed to process idea", e);
+      toast.error("创建项目失败", {
+        description: "AI 分析暂时不可用，请稍后再试",
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -62,14 +80,20 @@ export default function HomePage() {
 
   return (
     <div className="flex-1 flex flex-col">
-      <header className="border-b bg-background/80 backdrop-blur-sm">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header className="border-b bg-background/90 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
               <BookOpen className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">PaperForge</span>
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Beta</Badge>
+            <div className="flex items-center gap-2">
+              <span className="text-base font-semibold tracking-tight">
+                PaperForge
+              </span>
+              <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+                Beta
+              </Badge>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {isSignedIn ? (
@@ -90,121 +114,321 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center px-6 py-20 animate-fade-in">
-        <div className="max-w-2xl w-full text-center space-y-10">
-          {/* Hero */}
-          <div className="space-y-5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border bg-background/60 text-xs text-muted-foreground">
-              <Sparkles className="h-3 w-3" />
-              AI 驱动的博弈论论文写作助手
+      <main className="mx-auto flex w-full max-w-7xl flex-1 px-5 py-8 sm:px-6 lg:py-10">
+        <div className="grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <section className="space-y-5 animate-fade-in">
+            <div className="space-y-3">
+              <div className="max-w-3xl space-y-3">
+                <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+                  从研究想法开始，搭建可写入论文的博弈模型
+                </h1>
+                <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                  输入一个研究问题，PaperForge 会先整理建模方向，再进入参与者、策略、收益和平台属性的分步定义流程。
+                </p>
+              </div>
             </div>
-            <h1 className="text-5xl font-bold tracking-tight leading-tight">
-              博弈论
-              <span className="text-primary">论文工坊</span>
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              输入你的研究 idea，AI 引导你逐步定义博弈模型，<br />
-              生成专业的 <span className="font-medium text-foreground">Model Setup</span> 章节和经典文献推荐
-            </p>
-          </div>
 
-          {/* Input Card */}
-          <Card className="shadow-lg border-0 ring-1 ring-border overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
-            <CardContent className="p-6 space-y-4">
-              <Textarea
-                placeholder="例如：分析网约车平台如何设计补贴策略来平衡司机和乘客双侧用户，在竞争环境中最大化平台利润..."
-                className="min-h-[130px] resize-y bg-muted/50 border-0 ring-1 ring-input focus-visible:ring-primary text-sm leading-relaxed"
-                value={idea}
-                onChange={(e) => setIdea(e.target.value)}
+            <Card className="overflow-hidden border-0 shadow-sm ring-1 ring-border">
+              <div className="h-0.5 bg-primary" />
+              <CardContent className="space-y-4 p-5 sm:p-6">
+                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h2 className="text-sm font-semibold">创建研究项目</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      建议写清研究对象、平台/市场场景和你关心的机制。
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="w-fit text-[10px]">
+                    Step 1
+                  </Badge>
+                </div>
+                <Textarea
+                  placeholder="例如：分析网约车平台如何设计补贴策略来平衡司机和乘客双侧用户，在竞争环境中最大化平台利润..."
+                  className="min-h-[170px] resize-y border-0 bg-muted/40 text-sm leading-relaxed ring-1 ring-input focus-visible:ring-primary"
+                  value={idea}
+                  onChange={(e) => setIdea(e.target.value)}
+                />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {idea.trim().length > 0
+                      ? `${idea.trim().length} 个字符，准备进入 AI 分析`
+                      : "登录后可创建项目并保存到你的工作区"}
+                  </p>
+                  {isSignedIn ? (
+                    <Button
+                      className="h-9 gap-2 sm:w-auto"
+                      onClick={handleStart}
+                      disabled={!idea.trim() || isProcessing || !isLoaded}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          AI 分析中
+                        </>
+                      ) : (
+                        <>
+                          开始构建模型
+                          <ArrowRight className="h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <SignInButton mode="modal">
+                      <Button className="h-9 gap-2 sm:w-auto" disabled={!isLoaded}>
+                        登录后开始
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </SignInButton>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              <WorkflowItem
+                icon={<Sparkles className="h-4 w-4" />}
+                title="整理 idea"
+                description="把宽泛问题压成可建模的研究设定。"
               />
-              {isSignedIn ? (
-                <Button
-                  className="w-full h-11 gap-2 text-base"
-                  onClick={handleStart}
-                  disabled={!idea.trim() || isProcessing || !isLoaded}
-                >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    AI 分析中...
-                  </>
-                ) : (
-                  <>
-                    开始构建模型
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-                </Button>
-              ) : (
-                <SignInButton mode="modal">
+              <WorkflowItem
+                icon={<Network className="h-4 w-4" />}
+                title="定义模型"
+                description="补齐参与者、策略、收益和平台属性。"
+              />
+              <WorkflowItem
+                icon={<Library className="h-4 w-4" />}
+                title="生成正文"
+                description="输出 Model Setup、文献推荐和 LaTeX。"
+              />
+            </div>
+          </section>
+
+          <aside className="animate-fade-in">
+            <Card className="h-fit border-0 bg-card/85 shadow-sm ring-1 ring-border">
+              <CardContent className="flex flex-col gap-3 p-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                      <BookOpen className="h-3.5 w-3.5" />
+                    </div>
+                    <h2 className="text-sm font-semibold">工作区</h2>
+                  </div>
                   <Button
-                    className="w-full h-11 gap-2 text-base"
-                    disabled={!isLoaded}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5"
+                    onClick={() => window.location.reload()}
                   >
-                    登录后开始
-                    <ArrowRight className="h-4 w-4" />
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    刷新
                   </Button>
-                </SignInButton>
-              )}
-            </CardContent>
-          </Card>
+                </div>
 
-          {/* Features */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-card/50">
-              <Network className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-medium">分步模型定义</p>
-                <p className="text-xs text-muted-foreground mt-0.5">参与者 · 策略 · 收益 · 博弈类型</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-card/50">
-              <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-medium">AI 生成章节</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Model Setup + LaTeX 渲染</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-card/50">
-              <Library className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-medium">文献推荐</p>
-                <p className="text-xs text-muted-foreground mt-0.5">经典双边平台论文匹配</p>
-              </div>
-            </div>
-          </div>
+                <div className="flex items-center justify-between gap-2 rounded-lg border bg-accent/45 p-2.5">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-background text-primary ring-1 ring-border">
+                      <LockKeyhole className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">待登录同步</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        登录后同步你的项目与设置
+                      </p>
+                    </div>
+                  </div>
+                  {!isSignedIn && (
+                    <SignInButton mode="modal">
+                      <Button size="sm" className="h-8 shrink-0">
+                        登录 / 注册
+                      </Button>
+                    </SignInButton>
+                  )}
+                </div>
 
-          {/* Recent projects */}
-          {state.projects.length > 0 && (
-            <div className="text-left space-y-3">
-              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                近期项目
-              </h2>
-              <div className="space-y-2">
-                {state.projects.slice(0, 5).map((p, i) => (
-                  <Card
-                    key={p.id}
-                    className="cursor-pointer hover:bg-accent/50 transition-all duration-200 border-0 ring-1 ring-border hover:ring-primary/30 group animate-fade-in"
-                    style={{ animationDelay: `${i * 50}ms` }}
-                    onClick={() => router.push(`/projects/${p.id}`)}
-                  >
-                    <CardContent className="py-3 px-4 flex items-center justify-between">
-                      <div className="min-w-0">
-                        <p className="text-sm truncate">{p.rawIdea}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {new Date(p.createdAt).toLocaleDateString("zh-CN")}
-                        </p>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground/0 group-hover:text-muted-foreground transition-all" />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <StatusMetric
+                    label="项目"
+                    value={`${state.projects.length} 个`}
+                    hint="已创建"
+                  />
+                  <StatusMetric
+                    label="流程"
+                    value={isSignedIn ? "可用" : "-"}
+                    hint={isSignedIn ? "可继续" : "未登录"}
+                  />
+                </div>
+
+                <div className="space-y-2.5 border-t pt-3">
+                  <StatusLine
+                    icon={<CheckCircle2 />}
+                    text="自动保存"
+                    description="每一步自动保存到工作区"
+                  />
+                  <StatusLine
+                    icon={<FileText />}
+                    text="Model Setup 导出"
+                    description="一键导出模型设定文档"
+                  />
+                  <StatusLine
+                    icon={<Clock3 />}
+                    text="AI 生成通常约 30 秒"
+                    description="视模型复杂度而定"
+                  />
+                </div>
+
+                <div className="space-y-2.5 border-t pt-3">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm font-semibold">最近项目</h2>
+                    {state.projects.length > 0 && (
+                      <Button variant="ghost" size="sm" className="h-7 gap-1 px-1.5">
+                        查看全部
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                  <RecentProjects
+                    projects={state.projects}
+                    onOpen={(id) => router.push(`/projects/${id}`)}
+                  />
+                </div>
+
+                <div className="space-y-2 rounded-lg border bg-background/65 p-2.5">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm font-semibold">流程预览</h2>
+                    <span className="text-xs text-muted-foreground">共 5 步</span>
+                  </div>
+                  <div className="relative grid grid-cols-5 items-start gap-1">
+                    <div className="absolute left-[10%] right-[10%] top-2.5 h-px bg-border" />
+                    {["创题设定", "参与者", "策略", "收益", "平台属性"].map(
+                      (step, index) => (
+                        <div key={step} className="relative text-center">
+                          <div
+                            className="relative z-10 mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground ring-1 ring-border data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                            data-active={index === 0}
+                          >
+                            {index + 1}
+                          </div>
+                          <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                            {step}
+                          </p>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </aside>
         </div>
       </main>
+    </div>
+  );
+}
+
+function WorkflowItem({
+  icon,
+  title,
+  description,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-lg border bg-card/70 p-4">
+      <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+        {icon}
+      </div>
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function StatusMetric({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+}) {
+  return (
+    <div className="rounded-lg border bg-background/70 p-2.5">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-base font-semibold">{value}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+    </div>
+  );
+}
+
+function StatusLine({
+  icon,
+  text,
+  description,
+}: {
+  icon: ReactElement<{ className?: string }>;
+  text: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      {cloneElement(icon, {
+        className: "mt-0.5 h-3.5 w-3.5 text-primary",
+      })}
+      <div>
+        <p className="text-sm font-medium leading-4">{text}</p>
+        <p className="text-xs leading-4 text-muted-foreground">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function RecentProjects({
+  projects,
+  onOpen,
+}: {
+  projects: ReturnType<typeof useStore>["state"]["projects"];
+  onOpen: (id: string) => void;
+}) {
+  if (projects.length === 0) {
+    return (
+      <div className="flex min-h-[74px] items-center justify-center rounded-lg border border-dashed bg-background/50 p-3 text-center">
+        <div>
+          <Folder className="mx-auto h-6 w-6 text-muted-foreground/45" />
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
+            暂无项目
+          </p>
+          <p className="text-xs text-muted-foreground">
+            创建第一个项目后，它会显示在这里。
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {projects.slice(0, 3).map((project) => (
+        <button
+          key={project.id}
+          className="group flex w-full items-center justify-between gap-3 rounded-md border bg-background/70 px-3 py-2.5 text-left transition-colors hover:bg-accent/50"
+          onClick={() => onOpen(project.id)}
+        >
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium">
+              {project.rawIdea}
+            </span>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {new Date(project.createdAt).toLocaleDateString("zh-CN")}
+            </span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/0 transition-all group-hover:text-muted-foreground" />
+        </button>
+      ))}
     </div>
   );
 }

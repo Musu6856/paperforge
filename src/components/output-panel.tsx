@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { cloneElement, useMemo, useState, type ReactElement } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  CheckCircle2,
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  Clock3,
   Download,
   FileText,
   Loader2,
@@ -158,10 +160,17 @@ export function OutputPanel({
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-lg border bg-card/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-medium">生成内容</h2>
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+            <FileText className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold">生成内容</h2>
+            <p className="text-xs text-muted-foreground">
+              Model Setup、参考文献和导出操作集中在这里
+            </p>
+          </div>
           {hasGenerated && (
             <Badge variant="secondary" className="text-[10px]">
               {modelPages.length} 页正文
@@ -204,26 +213,40 @@ export function OutputPanel({
       </div>
 
       {!hasGenerated && (
-        <Card className="ring-1 ring-border overflow-hidden">
-          <div className="h-0.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+        <Card className="min-h-[520px] overflow-hidden border-0 ring-1 ring-border">
+          <div className="h-0.5 bg-primary" />
           <CardContent className="p-6">
             {!isGenerating && (
-              <div className="text-center py-12">
-                <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  完成模型定义后，点击上方按钮生成论文章节
+              <div className="flex min-h-[460px] flex-col items-center justify-center text-center">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+                  <FileText className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-base font-semibold">等待生成正文</h3>
+                <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+                  完成左侧模型定义后，点击上方按钮生成 Model Setup。生成后这里会切换成分页阅读视图。
                 </p>
+                <div className="mt-5 grid w-full max-w-md gap-2 text-left sm:grid-cols-3">
+                  <OutputHint icon={<CheckCircle2 />} text="模型定义" />
+                  <OutputHint icon={<Sparkles />} text="生成章节" />
+                  <OutputHint icon={<Download />} text="导出 LaTeX" />
+                </div>
               </div>
             )}
             {isGenerating && (
-              <div className="flex items-center justify-center py-12">
-                <div className="flex items-center gap-3">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">AI 正在生成内容...</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      这可能需要 30 秒左右
+              <div className="flex min-h-[460px] flex-col justify-center">
+                <div className="mx-auto flex max-w-md items-start gap-3 rounded-lg border bg-background/70 p-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold">AI 正在生成内容</p>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      正在组织论文正文和数学表述，页面会保持在当前工作区。
                     </p>
+                    <div className="flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
+                      <Clock3 className="h-3.5 w-3.5" />
+                      通常需要 30 秒左右
+                    </div>
                   </div>
                 </div>
               </div>
@@ -276,15 +299,20 @@ export function OutputPanel({
           )}
 
           {activeView === "references" && (
-            <Card className="ring-1 ring-border overflow-hidden">
-              <div className="h-0.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+            <Card className="min-h-[520px] overflow-hidden border-0 ring-1 ring-border">
+              <div className="h-0.5 bg-primary" />
               <CardContent className="p-6">
                 {isLoadingLiterature && !referencePages[safeReferencePage] ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      正在生成参考文献推荐...
-                    </span>
+                  <div className="flex min-h-[420px] items-center justify-center">
+                    <div className="flex items-center gap-3 rounded-lg border bg-background/70 p-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <div>
+                        <p className="text-sm font-medium">正在生成参考文献推荐</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          会根据当前模型匹配经典文献方向
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ) : referencePages[safeReferencePage] ? (
                   <ReaderBody
@@ -303,8 +331,14 @@ export function OutputPanel({
                     }
                   />
                 ) : (
-                  <div className="text-center py-12 text-sm text-muted-foreground">
-                    参考文献还没有生成。
+                  <div className="flex min-h-[420px] flex-col items-center justify-center text-center">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+                      <BookOpen className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-base font-semibold">参考文献还没有生成</h3>
+                    <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+                      点击“参考文献”后会自动请求推荐；如果没有开始，请重新切换此标签。
+                    </p>
                   </div>
                 )}
               </CardContent>
@@ -331,7 +365,7 @@ function ReaderCard({
 }) {
   return (
     <Card className="ring-1 ring-border overflow-hidden">
-      <div className="h-0.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+      <div className="h-0.5 bg-primary" />
       <CardContent className="p-6">
         <ReaderBody
           page={page}
@@ -342,6 +376,23 @@ function ReaderCard({
         />
       </CardContent>
     </Card>
+  );
+}
+
+function OutputHint({
+  icon,
+  text,
+}: {
+  icon: ReactElement<{ className?: string }>;
+  text: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+      {cloneElement(icon, {
+        className: "h-3.5 w-3.5 text-primary",
+      })}
+      <span>{text}</span>
+    </div>
   );
 }
 
