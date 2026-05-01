@@ -150,17 +150,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [isLoaded, isSignedIn]);
 
   // Persist the active project after local edits.
+  // A generation counter prevents stale saves from overwriting newer data.
+  const saveGeneration = useRef(0);
+
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !state.currentProject) return;
 
     const serialized = JSON.stringify(state.currentProject);
     if (serialized === lastSavedProject.current) return;
 
+    const gen = ++saveGeneration.current;
     const timeoutId = window.setTimeout(() => {
       lastSavedProject.current = serialized;
       saveProject(state.currentProject!).catch((e) => {
         console.error("Failed to save project", e);
-        lastSavedProject.current = null;
+        if (saveGeneration.current === gen) {
+          lastSavedProject.current = null;
+        }
       });
     }, 500);
 

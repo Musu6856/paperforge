@@ -1,61 +1,15 @@
 import { auth } from "@clerk/nextjs/server";
-
-const DEFAULT_BASE_URL = "https://api.xiaomimimo.com/v1";
-const DEFAULT_MODEL = "mimo-v2.5-pro";
+import {
+  getProviderConfig,
+  jsonError,
+  providerErrorResponse,
+} from "@/lib/provider";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 type ChatMessage = {
   role: "user" | "assistant" | "system";
   content: string;
 };
-
-function jsonError(error: string, status: number, code: string) {
-  return new Response(JSON.stringify({ error, code }), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-function getProviderConfig() {
-  return {
-    apiKey:
-      process.env.XIAOMI_API_KEY ||
-      process.env.MIMO_API_KEY ||
-      process.env.ANTHROPIC_API_KEY,
-    baseUrl: process.env.XIAOMI_BASE_URL || process.env.MIMO_BASE_URL || DEFAULT_BASE_URL,
-    model: process.env.XIAOMI_MODEL || process.env.MIMO_MODEL || DEFAULT_MODEL,
-  };
-}
-
-async function providerErrorResponse(response: Response) {
-  const body = await response.text();
-  console.error("Xiaomi MiMo API error:", {
-    status: response.status,
-    statusText: response.statusText,
-    body,
-  });
-
-  if (response.status === 401 || response.status === 403) {
-    return jsonError(
-      "Xiaomi MiMo authentication failed. Check your API key in Vercel.",
-      502,
-      "mimo_auth_failed"
-    );
-  }
-
-  if (response.status === 429) {
-    return jsonError(
-      "Xiaomi MiMo rate limit reached. Please try again later.",
-      429,
-      "mimo_rate_limited"
-    );
-  }
-
-  return jsonError(
-    "Xiaomi MiMo request failed. Check XIAOMI_MODEL and account access.",
-    502,
-    "mimo_request_failed"
-  );
-}
 
 function extractDelta(line: string) {
   if (!line.startsWith("data: ")) return "";
@@ -76,6 +30,15 @@ export async function POST(request: Request) {
     const { userId } = await auth();
     if (!userId) {
       return jsonError("Unauthorized", 401, "unauthorized");
+    }
+
+    const limit = checkRateLimit(userId);
+    if (!limit.ok) {
+      return jsonError(
+        `Too many requests. Try again in ${limit.retryAfter}s.`,
+        429,
+        "rate_limited"
+      );
     }
 
     const { messages } = await request.json();

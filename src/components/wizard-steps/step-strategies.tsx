@@ -69,9 +69,9 @@ export function StepStrategies({ model, onUpdate, onAiRefine, aiResponse, isLoad
           <p className="text-sm font-medium mb-2">{s.player} 的策略集:</p>
           <div className="flex flex-wrap gap-1.5">
             {s.options.map((opt, j) => (
-              <Badge key={j} variant="secondary" className="gap-1">
-                {opt}
-                <button onClick={() => removeOption(s.player, j)} className="hover:text-destructive">
+              <Badge key={j} variant="secondary" className="gap-1 max-w-full">
+                <span className="truncate">{opt}</span>
+                <button onClick={() => removeOption(s.player, j)} className="hover:text-destructive shrink-0">
                   <X className="h-3 w-3" />
                 </button>
               </Badge>

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { useStore } from "@/lib/store";
 import { chatStream } from "@/lib/api";
 import { modelStepPrompt } from "@/lib/prompts";
@@ -133,6 +132,7 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
     const nextIdx = currentIdx + 1;
     if (nextIdx < STEP_ORDER.length) {
       setSlideDir("right");
+      setAiResponse("");
       dispatch({ type: "SET_WIZARD_STEP", payload: STEP_ORDER[nextIdx] });
       if (nextIdx === STEP_ORDER.length - 1) onComplete();
     }
@@ -142,6 +142,7 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
     const prevIdx = currentIdx - 1;
     if (prevIdx >= 0) {
       setSlideDir("left");
+      setAiResponse("");
       dispatch({ type: "SET_WIZARD_STEP", payload: STEP_ORDER[prevIdx] });
     }
   }
@@ -236,13 +237,13 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
             />
           )}
 
-          {/* Review step — formatted summary instead of raw JSON */}
+          {/* Review step — two-column grid layout */}
           {state.wizardStep === "review" && (
             <div className="space-y-4">
               {!project.model ? (
                 <p className="text-sm text-muted-foreground text-center py-4">暂无模型数据</p>
               ) : (
-                <>
+                <div className="grid gap-4 md:grid-cols-2">
                   {/* Players */}
                   <div>
                     <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -262,7 +263,6 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
                       </div>
                     )}
                   </div>
-                  <Separator />
 
                   {/* Strategies */}
                   <div>
@@ -273,18 +273,19 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
                       <p className="text-sm text-muted-foreground">未定义</p>
                     ) : (
                       project.model.strategies.map((s, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm mb-1">
-                          <span className="font-medium w-20 shrink-0">{s.player}:</span>
-                          <div className="flex flex-wrap gap-1">
+                        <div key={i} className="text-sm mb-2">
+                          <span className="font-medium">{s.player}:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
                             {s.options.map((o, j) => (
-                              <Badge key={j} variant="secondary" className="text-xs">{o}</Badge>
+                              <Badge key={j} variant="secondary" className="text-xs max-w-full">
+                                <span className="truncate">{o}</span>
+                              </Badge>
                             ))}
                           </div>
                         </div>
                       ))
                     )}
                   </div>
-                  <Separator />
 
                   {/* Payoffs */}
                   <div>
@@ -296,7 +297,6 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
                       <p className="text-sm mt-1">{project.model.payoffs.description || "未定义"}</p>
                     </div>
                   </div>
-                  <Separator />
 
                   {/* Game Type */}
                   <div>
@@ -317,26 +317,25 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
                       </div>
                     )}
                   </div>
+
+                  {/* Platform Context — spans full width */}
                   {project.model.platformContext && (
-                    <>
-                      <Separator />
-                      <div>
-                        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                          <LayoutGrid className="h-3 w-3" /> 平台属性
-                        </h4>
-                        <div className="bg-muted/50 rounded-md px-3 py-2 text-sm space-y-1">
-                          <p>网络效应: {project.model.platformContext.hasCrossNetworkEffects ? "有" : "无"}</p>
-                          {project.model.platformContext.sides.length > 0 && (
-                            <p>参与边: {project.model.platformContext.sides.join(", ")}</p>
-                          )}
-                          {project.model.platformContext.pricingModel && (
-                            <p>定价模式: {project.model.platformContext.pricingModel}</p>
-                          )}
-                        </div>
+                    <div className="md:col-span-2">
+                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <LayoutGrid className="h-3 w-3" /> 平台属性
+                      </h4>
+                      <div className="bg-muted/50 rounded-md px-3 py-2 text-sm space-y-1">
+                        <p>网络效应: {project.model.platformContext.hasCrossNetworkEffects ? "有" : "无"}</p>
+                        {project.model.platformContext.sides.length > 0 && (
+                          <p>参与边: {project.model.platformContext.sides.join(", ")}</p>
+                        )}
+                        {project.model.platformContext.pricingModel && (
+                          <p>定价模式: {project.model.platformContext.pricingModel}</p>
+                        )}
                       </div>
-                    </>
+                    </div>
                   )}
-                </>
+                </div>
               )}
             </div>
           )}

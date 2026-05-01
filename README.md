@@ -24,7 +24,7 @@ Academic writing with AI breaks down when the model has no structure to follow. 
 - Model Setup generation
 - Literature recommendation for platform/game theory topics
 - Markdown + KaTeX rendering
-- Local project history via `localStorage`
+- Cloud project persistence via Neon database (Clerk auth + Drizzle ORM)
 - LaTeX export
 - Deployed on Vercel
 
@@ -35,6 +35,8 @@ Academic writing with AI breaks down when the model has no structure to follow. 
 - TypeScript
 - Tailwind CSS 4
 - shadcn/ui-style components
+- Clerk (authentication & user management)
+- Neon + Drizzle ORM (cloud database)
 - Xiaomi MiMo API through an OpenAI-compatible chat completions endpoint
 - KaTeX / react-markdown for academic output
 
@@ -84,4 +86,4 @@ npm run build
 
 ## Project Status
 
-This is an MVP/demo project. The current version is useful for showing the product idea and end-to-end AI workflow. The next improvements would be persistent cloud storage, real citation metadata from a scholarly API, better export formatting, and multi-turn model revision.
+This is an MVP/demo project. The current version is useful for showing the product idea and end-to-end AI workflow. Cloud persistence is implemented (Clerk auth + Neon + Drizzle ORM). Next improvements: real citation metadata from a scholarly API, better export formatting, AI usage rate limiting, and multi-turn model revision.

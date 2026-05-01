@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   FileText,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -30,6 +31,7 @@ export default function ProjectPage() {
   const [isLoadingLit, setIsLoadingLit] = useState(false);
   const [literatureContent, setLiteratureContent] = useState("");
   const [loadError, setLoadError] = useState(false);
+  const [wizardCompleted, setWizardCompleted] = useState(false);
 
   const project = state.currentProject;
   const hasGeneratedContent = Boolean(project?.sections.length);
@@ -233,51 +235,49 @@ export default function ProjectPage() {
       <main
         className="mx-auto w-full max-w-7xl flex-1 px-5 py-6 animate-fade-in sm:px-6"
       >
-        <div className="grid gap-6 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)]">
-          <aside className="space-y-4">
-            <Card className="border-0 bg-card/80 shadow-sm ring-1 ring-border">
-              <CardContent className="space-y-4 p-4">
-                <div className="flex items-start justify-between gap-3">
+        <div className={hasGeneratedContent ? "grid gap-6 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)]" : "mx-auto max-w-3xl space-y-4"}>
+          {hasGeneratedContent && (
+            <aside className="space-y-4">
+              <Card className="border-0 bg-card/80 shadow-sm ring-1 ring-border">
+                <CardContent className="space-y-4 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        项目上下文
+                      </p>
+                      <h1 className="mt-2 line-clamp-2 text-base font-semibold leading-6">
+                        {project.rawIdea}
+                      </h1>
+                    </div>
+                    <Badge variant="secondary">已生成</Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 border-y py-3">
+                    <ProjectMetric
+                      label="模型"
+                      value={project.model ? "已定义" : "待定义"}
+                    />
+                    <ProjectMetric
+                      label="章节"
+                      value={project.sections.length.toString()}
+                    />
+                    <ProjectMetric
+                      label="文献"
+                      value={project.references.length.toString()}
+                    />
+                  </div>
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      项目上下文
+                    <div className="mb-2 flex items-center gap-2">
+                      <SparkLabel icon={<FileText className="h-3.5 w-3.5" />}>
+                        AI 分析结果
+                      </SparkLabel>
+                    </div>
+                    <p className="max-h-56 overflow-auto whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+                      {project.refinedIdea || "暂无分析结果。"}
                     </p>
-                    <h1 className="mt-2 line-clamp-2 text-base font-semibold leading-6">
-                      {project.rawIdea}
-                    </h1>
                   </div>
-                  <Badge variant={hasGeneratedContent ? "secondary" : "outline"}>
-                    {hasGeneratedContent ? "已生成" : "建模中"}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-3 gap-2 border-y py-3">
-                  <ProjectMetric
-                    label="模型"
-                    value={project.model ? "已定义" : "待定义"}
-                  />
-                  <ProjectMetric
-                    label="章节"
-                    value={project.sections.length.toString()}
-                  />
-                  <ProjectMetric
-                    label="文献"
-                    value={project.references.length.toString()}
-                  />
-                </div>
-                <div>
-                  <div className="mb-2 flex items-center gap-2">
-                    <SparkLabel icon={<FileText className="h-3.5 w-3.5" />}>
-                      AI 分析结果
-                    </SparkLabel>
-                  </div>
-                  <p className="max-h-56 overflow-auto whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
-                    {project.refinedIdea || "暂无分析结果。"}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {hasGeneratedContent ? (
               <Card className="border-0 bg-card/70 ring-1 ring-border">
                 <CardContent className="space-y-3 p-4">
                   <SparkLabel icon={<CheckCircle2 className="h-3.5 w-3.5" />}>
@@ -303,44 +303,124 @@ export default function ProjectPage() {
                   </div>
                 </CardContent>
               </Card>
-            ) : (
-              <ModelWizard
-                onComplete={() => {
-                  toast.success("模型定义已完成，可以生成 Model Setup");
-                }}
-              />
-            )}
-          </aside>
+            </aside>
+          )}
 
-          <section className="min-w-0 space-y-6">
-            <ErrorBoundary
-              fallback={
-                <Card className="border-destructive/20 bg-card">
-                  <CardContent className="flex min-h-[420px] flex-col items-center justify-center px-6 text-center">
-                    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-md bg-destructive/10">
-                      <AlertTriangle className="h-5 w-5 text-destructive" />
+          {!hasGeneratedContent && (
+            <>
+              <Card className="border-0 bg-card/80 shadow-sm ring-1 ring-border">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        项目上下文
+                      </p>
+                      <h1 className="mt-2 line-clamp-2 text-base font-semibold leading-6">
+                        {project.rawIdea}
+                      </h1>
                     </div>
-                    <h2 className="text-sm font-semibold">输出面板出现错误</h2>
-                    <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-                      生成内容没有被修改。刷新页面后可以继续查看项目。
+                    <Badge variant="outline">建模中</Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 border-y py-3 mt-4">
+                    <ProjectMetric
+                      label="模型"
+                      value={project.model ? "已定义" : "待定义"}
+                    />
+                    <ProjectMetric
+                      label="章节"
+                      value={project.sections.length.toString()}
+                    />
+                    <ProjectMetric
+                      label="文献"
+                      value={project.references.length.toString()}
+                    />
+                  </div>
+                  <div className="mt-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <SparkLabel icon={<FileText className="h-3.5 w-3.5" />}>
+                        AI 分析结果
+                      </SparkLabel>
+                    </div>
+                    <p className="max-h-56 overflow-auto whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+                      {project.refinedIdea || "暂无分析结果。"}
                     </p>
-                    <Button className="mt-5" onClick={() => window.location.reload()}>
-                      刷新页面
+                  </div>
+                </CardContent>
+              </Card>
+
+              {wizardCompleted ? (
+                <Card className="border-0 bg-card/80 shadow-sm ring-1 ring-border">
+                  <CardContent className="p-5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h2 className="text-sm font-semibold">模型定义已完成</h2>
+                        <p className="text-xs text-muted-foreground">点击下方按钮生成 Model Setup 正文和参考文献</p>
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full h-10 gap-2"
+                      onClick={handleGenerate}
+                      disabled={isGenerating}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          生成中...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          生成 Model Setup
+                        </>
+                      )}
                     </Button>
                   </CardContent>
                 </Card>
-              }
-            >
-              <OutputPanel
-                sections={project.sections}
-                isGenerating={isGenerating}
-                onGenerate={handleGenerate}
-                literatureContent={literatureContent}
-                isLoadingLiterature={isLoadingLit}
-                onGenerateReferences={handleGenerateReferences}
-              />
-            </ErrorBoundary>
-          </section>
+              ) : (
+                <ModelWizard
+                  onComplete={() => {
+                    setWizardCompleted(true);
+                    toast.success("模型定义已完成，可以生成 Model Setup");
+                  }}
+                />
+              )}
+            </>
+          )}
+
+          {hasGeneratedContent && (
+            <section className="min-w-0 space-y-6">
+              <ErrorBoundary
+                fallback={
+                  <Card className="border-destructive/20 bg-card">
+                    <CardContent className="flex min-h-[420px] flex-col items-center justify-center px-6 text-center">
+                      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-md bg-destructive/10">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                      </div>
+                      <h2 className="text-sm font-semibold">输出面板出现错误</h2>
+                      <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+                        生成内容没有被修改。刷新页面后可以继续查看项目。
+                      </p>
+                      <Button className="mt-5" onClick={() => window.location.reload()}>
+                        刷新页面
+                      </Button>
+                    </CardContent>
+                  </Card>
+                }
+              >
+                <OutputPanel
+                  sections={project.sections}
+                  isGenerating={isGenerating}
+                  onGenerate={handleGenerate}
+                  literatureContent={literatureContent}
+                  isLoadingLiterature={isLoadingLit}
+                  onGenerateReferences={handleGenerateReferences}
+                />
+              </ErrorBoundary>
+            </section>
+          )}
         </div>
       </main>
     </div>

@@ -13,7 +13,7 @@
 
 > "这是首页。核心流程很简单：输入一个研究 idea，AI 会引导你逐步定义博弈模型，然后生成 Model Setup 章节和文献推荐。"
 
-- 打开 http://localhost:3000
+- 打开 https://paperforge-sable.vercel.app/（或本地 http://localhost:3000）
 - 指着输入框和按钮
 
 ## Step 3: 输入 idea（15s）
@@ -64,7 +64,7 @@
 | 问题 | 回答方向 |
 |------|----------|
 | 为什么不做一键生成？ | 学术写作需要严谨，结构化引导可以减少 hallucination，也让用户真正理解模型 |
-| 技术栈是什么？ | Next.js + Claude API + KaTeX，纯前端，数据存 localStorage |
+| 技术栈是什么？ | Next.js + 小米 MiMo API + KaTeX + Clerk 认证 + Neon 数据库 |
 | 最难的部分？ | Prompt 设计——分 4 个阶段引导比一个 prompt 效果好得多 |
 | 怎么验证质量？ | 拿自己论文的模型定义做测试，对比 AI 生成和人工写的差异 |
 | 如果继续做，加什么？ | 导出 LaTeX、多轮对话迭代、文献真实检索（连 Semantic Scholar API） |

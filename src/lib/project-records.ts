@@ -13,6 +13,11 @@ export function projectFromRow(row: ProjectRow): ResearchProject {
   };
 }
 
+const MAX_IDEAL_LENGTH = 5000;
+const MAX_REFINED_LENGTH = 20000;
+const MAX_SECTIONS = 50;
+const MAX_REFERENCES = 100;
+
 export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
   if (!value || typeof value !== "object") return null;
 
@@ -25,6 +30,16 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     typeof project.refinedIdea !== "string" ||
     !Array.isArray(project.sections) ||
     !Array.isArray(project.references)
+  ) {
+    return null;
+  }
+
+  if (
+    project.id.length > 100 ||
+    project.rawIdea.length > MAX_IDEAL_LENGTH ||
+    project.refinedIdea.length > MAX_REFINED_LENGTH ||
+    project.sections.length > MAX_SECTIONS ||
+    project.references.length > MAX_REFERENCES
   ) {
     return null;
   }

@@ -38,6 +38,7 @@ export default function HomePage() {
   const { isLoaded, isSignedIn } = useUser();
   const [idea, setIdea] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showAllProjects, setShowAllProjects] = useState(false);
 
   async function handleStart() {
     if (!idea.trim() || isProcessing || !isSignedIn) return;
@@ -227,12 +228,20 @@ export default function HomePage() {
                 <div className="flex items-center justify-between gap-2 rounded-lg border bg-accent/45 p-2.5">
                   <div className="flex min-w-0 items-center gap-2.5">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-background text-primary ring-1 ring-border">
-                      <LockKeyhole className="h-4 w-4" />
+                      {isSignedIn ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        <LockKeyhole className="h-4 w-4" />
+                      )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">待登录同步</p>
+                      <p className="text-sm font-medium">
+                        {isSignedIn ? "已登录" : "待登录同步"}
+                      </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        登录后同步你的项目与设置
+                        {isSignedIn
+                          ? "项目已自动同步到云端"
+                          : "登录后同步你的项目与设置"}
                       </p>
                     </div>
                   </div>
@@ -279,16 +288,17 @@ export default function HomePage() {
                 <div className="space-y-2.5 border-t pt-3">
                   <div className="flex items-center justify-between">
                     <h2 className="text-sm font-semibold">最近项目</h2>
-                    {state.projects.length > 0 && (
-                      <Button variant="ghost" size="sm" className="h-7 gap-1 px-1.5">
-                        查看全部
-                        <ChevronRight className="h-3.5 w-3.5" />
+                    {state.projects.length > 2 && (
+                      <Button variant="ghost" size="sm" className="h-7 gap-1 px-1.5" onClick={() => setShowAllProjects(!showAllProjects)}>
+                        {showAllProjects ? "收起" : "查看全部"}
+                        <ChevronRight className={`h-3.5 w-3.5 transition-transform ${showAllProjects ? "rotate-90" : ""}`} />
                       </Button>
                     )}
                   </div>
                   <RecentProjects
                     projects={state.projects}
                     onOpen={(id) => router.push(`/projects/${id}`)}
+                    showAll={showAllProjects}
                   />
                 </div>
 
@@ -390,9 +400,11 @@ function StatusLine({
 function RecentProjects({
   projects,
   onOpen,
+  showAll,
 }: {
   projects: ReturnType<typeof useStore>["state"]["projects"];
   onOpen: (id: string) => void;
+  showAll: boolean;
 }) {
   if (projects.length === 0) {
     return (
@@ -412,7 +424,7 @@ function RecentProjects({
 
   return (
     <div className="space-y-2">
-      {projects.slice(0, 3).map((project) => (
+      {(showAll ? projects : projects.slice(0, 2)).map((project) => (
         <button
           key={project.id}
           className="group flex w-full items-center justify-between gap-3 rounded-md border bg-background/70 px-3 py-2.5 text-left transition-colors hover:bg-accent/50"

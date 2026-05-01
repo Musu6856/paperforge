@@ -23,8 +23,34 @@ interface ReaderPage {
   content: string;
 }
 
+function markdownToLatex(md: string): string {
+  const lines = md.split("\n");
+  const out: string[] = [];
+
+  for (const line of lines) {
+    const h3 = line.match(/^###\s+(.+)$/);
+    if (h3) { out.push(`\\subsection{${h3[1]}}`); continue; }
+
+    const h2 = line.match(/^##\s+(.+)$/);
+    if (h2) { out.push(`\\section{${h2[1]}}`); continue; }
+
+    const h1 = line.match(/^#\s+(.+)$/);
+    if (h1) { out.push(`\\chapter{${h1[1]}}`); continue; }
+
+    out.push(line);
+  }
+
+  return out
+    .join("\n")
+    .replace(/\$\$([\s\S]*?)\$\$/g, "\\[$1\\]")
+    .replace(/\$(.*?)\$/g, "\\($1\\)")
+    .replace(/\*\*\*(.*?)\*\*\*/g, "\\textbf{\\textit{$1}}")
+    .replace(/\*\*(.*?)\*\*/g, "\\textbf{$1}")
+    .replace(/\*(.*?)\*/g, "\\textit{$1}");
+}
+
 function exportLatex(sections: PaperSection[]) {
-  const content = sections.map((s) => s.content).join("\n\n");
+  const content = markdownToLatex(sections.map((s) => s.content).join("\n\n"));
 
   const latex = `\\documentclass[12pt,a4paper]{article}
 \\usepackage[utf8]{inputenc}
@@ -41,14 +67,7 @@ function exportLatex(sections: PaperSection[]) {
 \\begin{document}
 \\maketitle
 
-${content
-  .replace(/### /g, "\\subsection{")
-  .replace(/## /g, "\\section{")
-  .replace(/(?<=section\{[^}]+)\n/g, "}\n")
-  .replace(/\*\*(.*?)\*\*/g, "\\textbf{$1}")
-  .replace(/\*(.*?)\*/g, "\\textit{$1}")
-  .replace(/\$\$([\s\S]*?)\$\$/g, "\\[$1\\]")
-  .replace(/\$(.*?)\$/g, "\\($1\\)")}
+${content}
 
 \\end{document}
 `;
