@@ -1,6 +1,8 @@
 # PaperForge
 
-PaperForge is an AI-assisted writing tool for game theory papers. Instead of trying to generate a paper in one click, it guides the researcher through a structured modeling workflow first: players, strategies, payoffs, game type, platform context, and assumptions.
+AI-assisted game theory paper workspace for turning rough research ideas into structured model setups, literature directions, and LaTeX-ready academic drafts.
+
+PaperForge does not try to generate a paper in one click. It guides the researcher through a structured modeling workflow first: players, strategies, payoffs, game type, platform context, and assumptions.
 
 Live demo: https://paperforge-sable.vercel.app/
 
@@ -81,9 +83,12 @@ Then open http://localhost:3000.
 
 ```bash
 npm run lint
+npm exec tsc -- --noEmit
 npm run build
 ```
 
 ## Project Status
 
-This is an MVP/demo project. The current version is useful for showing the product idea and end-to-end AI workflow. Cloud persistence is implemented (Clerk auth + Neon + Drizzle ORM). Next improvements: real citation metadata from a scholarly API, better export formatting, AI usage rate limiting, and multi-turn model revision.
+This is an MVP/demo project. The current version is useful for showing the product idea and end-to-end AI workflow. Cloud persistence is implemented with Clerk auth, Neon, and Drizzle ORM.
+
+Next improvements: real citation metadata from a scholarly API, PDF export, project sharing, and multi-turn model revision.
