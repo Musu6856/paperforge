@@ -56,6 +56,7 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
         rawIdea: project.rawIdea,
         refinedIdea: project.refinedIdea,
         model: project.model,
+        wizardCompleted: project.wizardCompleted,
         sections: project.sections,
         references: project.references,
         updatedAt: new Date(),

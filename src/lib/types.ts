@@ -56,6 +56,7 @@ export interface ResearchProject {
   rawIdea: string;
   refinedIdea: string;
   model: GameTheoryModel | null;
+  wizardCompleted: boolean;
   sections: PaperSection[];
   references: Reference[];
 }

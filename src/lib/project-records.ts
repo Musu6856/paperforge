@@ -8,6 +8,7 @@ export function projectFromRow(row: ProjectRow): ResearchProject {
     rawIdea: row.rawIdea,
     refinedIdea: row.refinedIdea,
     model: row.model,
+    wizardCompleted: row.wizardCompleted || row.sections.length > 0,
     sections: row.sections,
     references: row.references,
   };
@@ -28,6 +29,8 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     typeof project.createdAt !== "number" ||
     typeof project.rawIdea !== "string" ||
     typeof project.refinedIdea !== "string" ||
+    (project.wizardCompleted !== undefined &&
+      typeof project.wizardCompleted !== "boolean") ||
     !Array.isArray(project.sections) ||
     !Array.isArray(project.references)
   ) {
@@ -50,6 +53,7 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     rawIdea: project.rawIdea,
     refinedIdea: project.refinedIdea,
     model: project.model ?? null,
+    wizardCompleted: project.wizardCompleted ?? false,
     sections: project.sections,
     references: project.references,
   };

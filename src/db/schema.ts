@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   jsonb,
   pgTable,
@@ -16,6 +17,7 @@ export const projects = pgTable(
     rawIdea: text("raw_idea").notNull(),
     refinedIdea: text("refined_idea").notNull(),
     model: jsonb("model").$type<GameTheoryModel | null>(),
+    wizardCompleted: boolean("wizard_completed").notNull().default(false),
     sections: jsonb("sections").$type<PaperSection[]>().notNull(),
     references: jsonb("references").$type<Reference[]>().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })

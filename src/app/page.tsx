@@ -59,6 +59,7 @@ export default function HomePage() {
         rawIdea: idea,
         refinedIdea,
         model: null,
+        wizardCompleted: false,
         sections: [],
         references: [],
       });

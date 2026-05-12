@@ -92,5 +92,8 @@ ${modelJson}
 ## Two-Sided Platform Literature
 ## Methodology & Related Approaches
 
+每篇论文请使用稳定的项目符号格式：
+- **Title** | Authors | Year | 与本研究的关联
+
 用中文回复关联说明，论文标题用原文。`;
 }

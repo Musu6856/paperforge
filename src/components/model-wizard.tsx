@@ -134,7 +134,6 @@ export function ModelWizard({ onComplete }: ModelWizardProps) {
       setSlideDir("right");
       setAiResponse("");
       dispatch({ type: "SET_WIZARD_STEP", payload: STEP_ORDER[nextIdx] });
-      if (nextIdx === STEP_ORDER.length - 1) onComplete();
     }
   }
 

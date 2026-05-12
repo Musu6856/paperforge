@@ -21,6 +21,7 @@ import { ModelWizard } from "@/components/model-wizard";
 import { OutputPanel } from "@/components/output-panel";
 import { chatStream, fetchLiterature, fetchProject } from "@/lib/api";
 import { modelSetupPrompt } from "@/lib/prompts";
+import { parseReferencesFromMarkdown } from "@/lib/references";
 import { toast } from "sonner";
 
 export default function ProjectPage() {
@@ -31,10 +32,10 @@ export default function ProjectPage() {
   const [isLoadingLit, setIsLoadingLit] = useState(false);
   const [literatureContent, setLiteratureContent] = useState("");
   const [loadError, setLoadError] = useState(false);
-  const [wizardCompleted, setWizardCompleted] = useState(false);
 
   const project = state.currentProject;
   const hasGeneratedContent = Boolean(project?.sections.length);
+  const wizardCompleted = Boolean(project?.wizardCompleted);
 
   useEffect(() => {
     const id = params.id as string;
@@ -98,7 +99,12 @@ export default function ProjectPage() {
 
       setIsLoadingLit(true);
       const litContent = await fetchLiterature(project.model);
+      const references = parseReferencesFromMarkdown(litContent);
       setLiteratureContent(litContent);
+      dispatch({
+        type: "SET_REFERENCES",
+        payload: references,
+      });
       dispatch({
         type: "ADD_SECTION",
         payload: {
@@ -124,7 +130,12 @@ export default function ProjectPage() {
 
     try {
       const litContent = await fetchLiterature(project.model);
+      const references = parseReferencesFromMarkdown(litContent);
       setLiteratureContent(litContent);
+      dispatch({
+        type: "SET_REFERENCES",
+        payload: references,
+      });
       dispatch({
         type: "ADD_SECTION",
         payload: {
@@ -382,7 +393,10 @@ export default function ProjectPage() {
               ) : (
                 <ModelWizard
                   onComplete={() => {
-                    setWizardCompleted(true);
+                    dispatch({
+                      type: "UPDATE_PROJECT",
+                      payload: { wizardCompleted: true },
+                    });
                     toast.success("模型定义已完成，可以生成 Model Setup");
                   }}
                 />

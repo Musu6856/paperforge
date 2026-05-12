@@ -48,6 +48,7 @@ export async function POST(request: Request) {
         rawIdea: project.rawIdea,
         refinedIdea: project.refinedIdea,
         model: project.model,
+        wizardCompleted: project.wizardCompleted,
         sections: project.sections,
         references: project.references,
         createdAt: new Date(project.createdAt),
