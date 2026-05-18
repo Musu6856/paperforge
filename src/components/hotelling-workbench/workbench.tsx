@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 import type { LiteratureAnalysis, ResearchProject } from "@/lib/types";
+import { AnalysisStep } from "./analysis-step";
 import { BackgroundStep } from "./background-step";
 import { CodeBlock } from "./code-block";
+import { EquilibriumStep } from "./equilibrium-step";
 import { LiteratureStep } from "./literature-step";
 import { ModelStep } from "./model-step";
 import { WorkbenchShell, type WorkbenchStep } from "./workbench-shell";
@@ -133,6 +135,14 @@ function WorkbenchMain({
     return <ModelStep project={project} />;
   }
 
+  if (activeStep === "equilibrium") {
+    return <EquilibriumStep project={project} />;
+  }
+
+  if (activeStep === "analysis") {
+    return <AnalysisStep project={project} />;
+  }
+
   return <WorkbenchPlaceholder copy={copy} project={project} />;
 }
 
@@ -220,14 +230,105 @@ function OutputPanel({
             </p>
           )}
         </div>
-      ) : (
+      ) : activeStep === "equilibrium" ? (
         <>
           <p className="text-sm leading-6 text-muted-foreground">
             {copy.sideBody}
           </p>
-          {activeStep === "equilibrium" ? <CodeBlock code={code} /> : null}
+          <EquilibriumOutputSummary project={project} />
+          <CodeBlock code={code} />
         </>
+      ) : activeStep === "analysis" ? (
+        <>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {copy.sideBody}
+          </p>
+          <AnalysisOutputSummary project={project} />
+        </>
+      ) : (
+        <p className="text-sm leading-6 text-muted-foreground">
+          {copy.sideBody}
+        </p>
       )}
+    </div>
+  );
+}
+
+function EquilibriumOutputSummary({ project }: { project: ResearchProject }) {
+  const equilibrium = project.equilibriumResult;
+
+  if (!equilibrium) {
+    return (
+      <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
+        No symbolic equilibrium has been generated yet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="min-w-0 space-y-3 border-l pl-3">
+      <div className="min-w-0">
+        <p className="break-words text-sm font-medium">
+          {equilibrium.concept || "Equilibrium concept not specified"}
+        </p>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          Status: {equilibrium.status}. FOCs:{" "}
+          {equilibrium.focs.filter((item) => item.trim()).length}. Conditions:{" "}
+          {equilibrium.conditions.filter((item) => item.trim()).length}.
+        </p>
+      </div>
+      <p className="line-clamp-5 whitespace-pre-wrap break-words text-xs leading-5 text-muted-foreground">
+        {equilibrium.closedForm ||
+          equilibrium.derivation ||
+          "Closed-form symbolic results will appear here after derivation."}
+      </p>
+      {equilibrium.warnings.length ? (
+        <OutputList
+          title="Warnings"
+          items={equilibrium.warnings.filter((item) => item.trim()).slice(0, 3)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function AnalysisOutputSummary({ project }: { project: ResearchProject }) {
+  const analyses = project.propertyAnalyses ?? [];
+  const latestAnalysis = analyses.at(-1);
+
+  if (!latestAnalysis) {
+    return (
+      <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
+        No symbolic property analysis has been added yet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="min-w-0 space-y-3 border-l pl-3">
+      <div className="min-w-0">
+        <p className="break-words text-sm font-medium">
+          {latestAnalysis.target || "Untitled symbolic target"}
+        </p>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          {analyses.length} analyses · {latestAnalysis.operation} · parameter{" "}
+          {latestAnalysis.parameter || "not specified"}
+        </p>
+      </div>
+      <p className="line-clamp-5 whitespace-pre-wrap break-words text-xs leading-5 text-muted-foreground">
+        {latestAnalysis.propositionDraft ||
+          latestAnalysis.symbolicResult ||
+          latestAnalysis.proofSketch ||
+          "Latest proof sketch will appear here."}
+      </p>
+      {latestAnalysis.warnings.length ? (
+        <OutputList
+          title="Warnings"
+          items={latestAnalysis.warnings
+            .filter((item) => item.trim())
+            .slice(0, 3)}
+        />
+      ) : null}
     </div>
   );
 }
