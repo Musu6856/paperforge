@@ -66,7 +66,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
         (content) => {
           setEquilibrium({
             ...baseResult,
-            status: "solved",
+            status: "needs_revision",
             derivation: content,
           });
         }
@@ -74,7 +74,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
 
       setEquilibrium({
         ...baseResult,
-        status: "solved",
+        status: "needs_revision",
         derivation: finalText,
       });
     } catch (generationError) {

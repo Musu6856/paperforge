@@ -2,6 +2,7 @@
 
 import React, {
   createContext,
+  useCallback,
   useContext,
   useReducer,
   useEffect,
@@ -170,6 +171,40 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { isLoaded, isSignedIn } = useUser();
   const lastSavedProject = useRef<string | null>(null);
+  const saveInFlight = useRef(false);
+  const pendingSave = useRef<{
+    project: ResearchProject;
+    serialized: string;
+  } | null>(null);
+
+  const flushPendingSave = useCallback(async () => {
+    if (saveInFlight.current) return;
+
+    saveInFlight.current = true;
+
+    try {
+      while (pendingSave.current) {
+        const nextSave = pendingSave.current;
+        pendingSave.current = null;
+
+        if (nextSave.serialized === lastSavedProject.current) {
+          continue;
+        }
+
+        try {
+          await saveProject(nextSave.project);
+          lastSavedProject.current = nextSave.serialized;
+        } catch (e) {
+          console.error("Failed to save project", e);
+          if (!pendingSave.current) {
+            lastSavedProject.current = null;
+          }
+        }
+      }
+    } finally {
+      saveInFlight.current = false;
+    }
+  }, []);
 
   // Load projects from Neon once Clerk knows the current auth state.
   useEffect(() => {
@@ -178,6 +213,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!isSignedIn) {
       dispatch({ type: "CLEAR_PROJECTS" });
       lastSavedProject.current = null;
+      pendingSave.current = null;
       return;
     }
 
@@ -202,28 +238,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [isLoaded, isSignedIn]);
 
   // Persist the active project after local edits.
-  // A generation counter prevents stale saves from overwriting newer data.
-  const saveGeneration = useRef(0);
-
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !state.currentProject) return;
 
     const serialized = JSON.stringify(state.currentProject);
     if (serialized === lastSavedProject.current) return;
 
-    const gen = ++saveGeneration.current;
     const timeoutId = window.setTimeout(() => {
-      lastSavedProject.current = serialized;
-      saveProject(state.currentProject!).catch((e) => {
-        console.error("Failed to save project", e);
-        if (saveGeneration.current === gen) {
-          lastSavedProject.current = null;
-        }
-      });
+      pendingSave.current = {
+        project: state.currentProject!,
+        serialized,
+      };
+      void flushPendingSave();
     }, 500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isLoaded, isSignedIn, state.currentProject]);
+  }, [flushPendingSave, isLoaded, isSignedIn, state.currentProject]);
 
   return (
     <StoreContext.Provider value={{ state, dispatch }}>
