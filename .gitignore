@@ -20,6 +20,9 @@
 # production
 /build
 
+# local brainstorming companion sessions
+.superpowers/
+
 # misc
 .DS_Store
 *.pem
