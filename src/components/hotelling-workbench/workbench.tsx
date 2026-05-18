@@ -91,16 +91,20 @@ function WorkbenchPlaceholder({
   project: ResearchProject;
 }) {
   return (
-    <div className="flex min-h-[520px] flex-col">
+    <div className="flex min-h-[520px] min-w-0 flex-col">
       <div className="border-b pb-3">
         <p className="text-xs font-medium text-muted-foreground">{copy.label}</p>
-        <h3 className="mt-1 text-base font-semibold">{copy.mainTitle}</h3>
+        <h3 className="mt-1 break-words text-base font-semibold">
+          {copy.mainTitle}
+        </h3>
       </div>
 
       <div className="grid flex-1 place-items-center py-8">
-        <div className="w-full max-w-xl rounded-md border bg-muted/20 p-4">
-          <p className="text-sm leading-6 text-foreground">{copy.mainBody}</p>
-          <p className="mt-3 text-xs leading-5 text-muted-foreground">
+        <div className="min-w-0 border-l border-dashed border-muted-foreground/30 pl-4">
+          <p className="max-w-xl break-words text-sm leading-6 text-foreground">
+            {copy.mainBody}
+          </p>
+          <p className="mt-3 max-w-xl break-words text-xs leading-5 text-muted-foreground [overflow-wrap:anywhere]">
             当前项目：
             <span className="font-medium text-foreground">
               {project.refinedIdea || project.rawIdea || "未命名研究项目"}

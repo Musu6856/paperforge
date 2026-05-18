@@ -5,6 +5,9 @@ export function MathChip({ symbol }: { symbol: SymbolDefinition }) {
     <span
       className="inline-flex min-h-7 items-center rounded-md border bg-muted/40 px-2 font-mono text-sm leading-none text-foreground shadow-xs"
       title={`${symbol.name}: ${symbol.meaning}`}
+      aria-label={`${symbol.name || symbol.baseSymbol}: ${
+        symbol.meaning || symbol.symbol
+      }`}
     >
       <span>{symbol.baseSymbol}</span>
       {symbol.subscript ? (

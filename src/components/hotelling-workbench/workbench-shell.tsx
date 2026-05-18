@@ -57,7 +57,10 @@ export function WorkbenchShell({
       </div>
 
       <div className="grid min-h-[620px] grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_340px]">
-        <nav className="border-b bg-muted/20 p-2 lg:border-b-0 lg:border-r">
+        <nav
+          className="border-b bg-muted/20 p-2 lg:border-b-0 lg:border-r"
+          aria-label="Hotelling 工作台步骤"
+        >
           <div className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-x-visible">
             {STEPS.map((step, index) => {
               const Icon = step.icon;
