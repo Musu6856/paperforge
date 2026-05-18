@@ -11,8 +11,13 @@ import { useUser } from "@clerk/nextjs";
 import { fetchProjects, saveProject } from "./api";
 import type {
   ResearchProject,
+  BackgroundStory,
+  EquilibriumResult,
   GameTheoryModel,
+  HotellingModel,
+  LiteratureAnalysis,
   PaperSection,
+  PropertyAnalysis,
   Reference,
   WizardStep,
 } from "./types";
@@ -27,6 +32,11 @@ interface AppState {
 type Action =
   | { type: "SET_PROJECT"; payload: ResearchProject }
   | { type: "UPDATE_PROJECT"; payload: Partial<ResearchProject> }
+  | { type: "SET_BACKGROUND"; payload: BackgroundStory }
+  | { type: "SET_LITERATURE_ANALYSES"; payload: LiteratureAnalysis[] }
+  | { type: "SET_HOTELLING_MODEL"; payload: HotellingModel }
+  | { type: "SET_EQUILIBRIUM_RESULT"; payload: EquilibriumResult }
+  | { type: "SET_PROPERTY_ANALYSES"; payload: PropertyAnalysis[] }
   | { type: "SET_MODEL"; payload: GameTheoryModel }
   | { type: "ADD_SECTION"; payload: PaperSection }
   | { type: "UPDATE_SECTION"; payload: { id: string; content: string } }
@@ -52,6 +62,48 @@ function reducer(state: AppState, action: Action): AppState {
       if (!state.currentProject) return state;
       const updated = { ...state.currentProject, ...action.payload };
       return { ...state, currentProject: updated };
+    case "SET_BACKGROUND":
+      if (!state.currentProject) return state;
+      return {
+        ...state,
+        currentProject: { ...state.currentProject, background: action.payload },
+      };
+    case "SET_LITERATURE_ANALYSES":
+      if (!state.currentProject) return state;
+      return {
+        ...state,
+        currentProject: {
+          ...state.currentProject,
+          literatureAnalyses: action.payload,
+        },
+      };
+    case "SET_HOTELLING_MODEL":
+      if (!state.currentProject) return state;
+      return {
+        ...state,
+        currentProject: {
+          ...state.currentProject,
+          hotellingModel: action.payload,
+        },
+      };
+    case "SET_EQUILIBRIUM_RESULT":
+      if (!state.currentProject) return state;
+      return {
+        ...state,
+        currentProject: {
+          ...state.currentProject,
+          equilibriumResult: action.payload,
+        },
+      };
+    case "SET_PROPERTY_ANALYSES":
+      if (!state.currentProject) return state;
+      return {
+        ...state,
+        currentProject: {
+          ...state.currentProject,
+          propertyAnalyses: action.payload,
+        },
+      };
     case "SET_MODEL":
       if (!state.currentProject) return state;
       return {
