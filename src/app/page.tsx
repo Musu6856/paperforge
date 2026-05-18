@@ -119,25 +119,25 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-7xl flex-1 px-5 py-8 sm:px-6 lg:py-10">
-        <div className="grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <section className="space-y-5 animate-fade-in">
-            <div className="space-y-3">
-              <div className="max-w-3xl space-y-3">
-                <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">
+      <main className="mx-auto flex w-full min-w-0 max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:py-10">
+        <div className="grid w-full min-w-0 max-w-full gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <section className="min-w-0 max-w-full space-y-5 animate-fade-in">
+            <div className="min-w-0 max-w-full space-y-3">
+              <div className="max-w-3xl min-w-0 space-y-3">
+                <h1 className="max-w-full break-words text-[1.375rem] font-semibold leading-tight [overflow-wrap:anywhere] sm:text-3xl">
                   Hotelling 双边平台论文工作台
                 </h1>
-                <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+                <p className="max-w-2xl break-words text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere]">
                   从一个平台经济研究想法开始，按背景故事、文献启发、模型建立、符号均衡、性质分析推进。V1 只做符号推导，不做仿真。
                 </p>
               </div>
             </div>
 
-            <Card className="overflow-hidden border-0 shadow-sm ring-1 ring-border">
+            <Card className="max-w-full overflow-hidden border-0 shadow-sm ring-1 ring-border">
               <div className="h-0.5 bg-primary" />
               <CardContent className="space-y-4 p-5 sm:p-6">
-                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
+                <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="min-w-0">
                     <h2 className="text-sm font-semibold">新建 Hotelling 项目</h2>
                     <p className="mt-1 text-xs text-muted-foreground">
                       写清平台两侧用户、差异化来源、收费或补贴机制，以及你希望证明的符号性质。
@@ -149,19 +149,19 @@ export default function HomePage() {
                 </div>
                 <Textarea
                   placeholder="例如：分析两个网约车平台在 Hotelling 差异化下如何同时向司机和乘客定价，并研究跨边网络效应增强时均衡价格与平台利润的变化..."
-                  className="min-h-[170px] resize-y border-0 bg-muted/40 text-sm leading-relaxed ring-1 ring-input focus-visible:ring-primary"
+                  className="min-h-[170px] max-w-full resize-y break-words border-0 bg-muted/40 text-sm leading-relaxed ring-1 ring-input [overflow-wrap:anywhere] focus-visible:ring-primary"
                   value={idea}
                   onChange={(e) => setIdea(e.target.value)}
                 />
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-xs text-muted-foreground">
+                <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="min-w-0 break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
                     {idea.trim().length > 0
                       ? `${idea.trim().length} 个字符，准备整理为背景故事`
                       : "登录后可创建项目并保存到研究工作区"}
                   </p>
                   {isSignedIn ? (
                     <Button
-                      className="h-9 gap-2 sm:w-auto"
+                      className="h-9 w-full gap-2 sm:w-auto"
                       onClick={handleStart}
                       disabled={!idea.trim() || isProcessing || !isLoaded}
                     >
@@ -179,7 +179,7 @@ export default function HomePage() {
                     </Button>
                   ) : (
                     <SignInButton mode="modal">
-                      <Button className="h-9 gap-2 sm:w-auto" disabled={!isLoaded}>
+                      <Button className="h-9 w-full gap-2 sm:w-auto" disabled={!isLoaded}>
                         登录后开始
                         <ArrowRight className="h-4 w-4" />
                       </Button>
@@ -189,7 +189,7 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid min-w-0 gap-3 md:grid-cols-3">
               <WorkflowItem
                 icon={<Sparkles className="h-4 w-4" />}
                 title="背景故事"
@@ -208,7 +208,7 @@ export default function HomePage() {
             </div>
           </section>
 
-          <aside className="animate-fade-in">
+          <aside className="min-w-0 max-w-full animate-fade-in">
             <Card className="h-fit border-0 bg-card/85 shadow-sm ring-1 ring-border">
               <CardContent className="flex flex-col gap-3 p-3.5">
                 <div className="flex items-center justify-between">
