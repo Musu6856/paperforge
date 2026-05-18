@@ -164,6 +164,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
             onChange={(event) =>
               updateEquilibrium({ concept: event.currentTarget.value })
             }
+            disabled={isGenerating}
             className="text-sm"
           />
         </div>
@@ -180,6 +181,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
                   .value as EquilibriumResult["status"],
               })
             }
+            disabled={isGenerating}
             className="h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <option value="idle">Idle</option>
@@ -196,12 +198,14 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
           label="Solving steps, one per line"
           value={equilibrium.solvingSteps}
           onChange={(solvingSteps) => updateEquilibrium({ solvingSteps })}
+          disabled={isGenerating}
         />
         <EditableList
           id="equilibrium-focs"
           label="FOCs, one per line"
           value={equilibrium.focs}
           onChange={(focs) => updateEquilibrium({ focs })}
+          disabled={isGenerating}
         />
       </section>
 
@@ -216,6 +220,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
             onChange={(event) =>
               updateEquilibrium({ closedForm: event.currentTarget.value })
             }
+            disabled={isGenerating}
             rows={5}
             placeholder="Symbolic closed-form expressions only."
             className="min-h-28 resize-y font-mono text-sm leading-6"
@@ -226,6 +231,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
           label="Conditions, one per line"
           value={equilibrium.conditions}
           onChange={(conditions) => updateEquilibrium({ conditions })}
+          disabled={isGenerating}
           rows={5}
         />
       </section>
@@ -240,6 +246,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
           onChange={(event) =>
             updateEquilibrium({ derivation: event.currentTarget.value })
           }
+          disabled={isGenerating}
           rows={9}
           placeholder="Generated symbolic derivation will stream here."
           className="min-h-52 resize-y text-sm leading-6"
@@ -252,6 +259,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
           label="Warnings, one per line"
           value={equilibrium.warnings}
           onChange={(warnings) => updateEquilibrium({ warnings })}
+          disabled={isGenerating}
           rows={5}
         />
         <div className="grid min-w-0 gap-1.5">
@@ -264,6 +272,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
             onChange={(event) =>
               updateEquilibrium({ code: event.currentTarget.value })
             }
+            disabled={isGenerating}
             rows={5}
             className="min-h-28 resize-y font-mono text-sm leading-5"
           />
@@ -281,12 +290,14 @@ function EditableList({
   value,
   onChange,
   rows = 4,
+  disabled = false,
 }: {
   id: string;
   label: string;
   value: string[];
   onChange: (value: string[]) => void;
   rows?: number;
+  disabled?: boolean;
 }) {
   return (
     <div className="grid min-w-0 gap-1.5">
@@ -297,6 +308,7 @@ function EditableList({
         id={id}
         value={listToLines(value)}
         onChange={(event) => onChange(linesToList(event.currentTarget.value))}
+        disabled={disabled}
         rows={rows}
         className="min-h-24 resize-y text-sm leading-5"
       />

@@ -75,6 +75,8 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
     id: string,
     updater: (analysis: PropertyAnalysis) => PropertyAnalysis
   ) {
+    if (isGenerating) return;
+
     setAnalyses(
       analyses.map((analysis) =>
         analysis.id === id ? updater(analysis) : analysis
@@ -83,6 +85,8 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
   }
 
   function deleteAnalysis(id: string) {
+    if (isGenerating) return;
+
     setAnalyses(analyses.filter((analysis) => analysis.id !== id));
   }
 
@@ -95,8 +99,17 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
       operation,
     };
 
-    if (!request.target && !request.parameter && operation !== "custom") {
-      setError("Please specify a target and parameter for symbolic analysis.");
+    const hasTargetLikeRequest = Boolean(request.target || request.parameter);
+
+    if (
+      (operation === "custom" && !hasTargetLikeRequest) ||
+      (operation !== "custom" && (!request.target || !request.parameter))
+    ) {
+      setError(
+        operation === "custom"
+          ? "Please specify a custom symbolic request in the target or parameter field."
+          : "Please specify both a target expression and parameter for symbolic analysis."
+      );
       return;
     }
 
@@ -227,6 +240,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
             id="analysis-target"
             value={target}
             onChange={(event) => setTarget(event.currentTarget.value)}
+            disabled={isGenerating}
             placeholder="e.g. p_A^*, profit_A^* - profit_B^*"
             className="text-sm"
           />
@@ -239,6 +253,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
             id="analysis-parameter"
             value={parameter}
             onChange={(event) => setParameter(event.currentTarget.value)}
+            disabled={isGenerating}
             placeholder="e.g. t, alpha, beta"
             className="text-sm"
           />
@@ -253,6 +268,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
             onChange={(event) =>
               setOperation(event.currentTarget.value as Operation)
             }
+            disabled={isGenerating}
             className="h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             {Object.entries(OPERATION_LABELS).map(([value, label]) => (
@@ -293,6 +309,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                     variant="ghost"
                     size="icon-xs"
                     onClick={() => deleteAnalysis(analysis.id)}
+                    disabled={isGenerating}
                     aria-label={`Delete analysis ${index + 1}`}
                   >
                     <Trash2 aria-hidden="true" />
@@ -304,6 +321,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                     id={`${analysis.id}-target`}
                     label="Target"
                     value={analysis.target}
+                    disabled={isGenerating}
                     onChange={(value) =>
                       updateAnalysis(analysis.id, (current) => ({
                         ...current,
@@ -315,6 +333,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                     id={`${analysis.id}-parameter`}
                     label="Parameter"
                     value={analysis.parameter}
+                    disabled={isGenerating}
                     onChange={(value) =>
                       updateAnalysis(analysis.id, (current) => ({
                         ...current,
@@ -338,6 +357,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                           operation: event.currentTarget.value as Operation,
                         }))
                       }
+                      disabled={isGenerating}
                       className="h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
                       {Object.entries(OPERATION_LABELS).map(
@@ -356,6 +376,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                     id={`${analysis.id}-symbolic-result`}
                     label="Symbolic result"
                     value={analysis.symbolicResult}
+                    disabled={isGenerating}
                     onChange={(value) =>
                       updateAnalysis(analysis.id, (current) => ({
                         ...current,
@@ -367,6 +388,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                     id={`${analysis.id}-sign-condition`}
                     label="Sign or threshold condition"
                     value={analysis.signCondition}
+                    disabled={isGenerating}
                     onChange={(value) =>
                       updateAnalysis(analysis.id, (current) => ({
                         ...current,
@@ -378,6 +400,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                     id={`${analysis.id}-proposition`}
                     label="Proposition draft"
                     value={analysis.propositionDraft}
+                    disabled={isGenerating}
                     onChange={(value) =>
                       updateAnalysis(analysis.id, (current) => ({
                         ...current,
@@ -389,6 +412,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                     id={`${analysis.id}-intuition`}
                     label="Economic intuition"
                     value={analysis.intuition}
+                    disabled={isGenerating}
                     onChange={(value) =>
                       updateAnalysis(analysis.id, (current) => ({
                         ...current,
@@ -402,6 +426,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                   id={`${analysis.id}-proof`}
                   label="Proof sketch"
                   value={analysis.proofSketch}
+                  disabled={isGenerating}
                   onChange={(value) =>
                     updateAnalysis(analysis.id, (current) => ({
                       ...current,
@@ -415,6 +440,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                   id={`${analysis.id}-warnings`}
                   label="Warnings, one per line"
                   value={listToLines(analysis.warnings)}
+                  disabled={isGenerating}
                   onChange={(value) =>
                     updateAnalysis(analysis.id, (current) => ({
                       ...current,
@@ -437,11 +463,13 @@ function AnalysisInput({
   label,
   value,
   onChange,
+  disabled = false,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="grid min-w-0 gap-1.5">
@@ -452,6 +480,7 @@ function AnalysisInput({
         id={id}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
+        disabled={disabled}
         className="text-sm"
       />
     </div>
@@ -464,12 +493,14 @@ function AnalysisTextarea({
   value,
   onChange,
   rows = 4,
+  disabled = false,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
   rows?: number;
+  disabled?: boolean;
 }) {
   return (
     <div className="grid min-w-0 gap-1.5">
@@ -480,6 +511,7 @@ function AnalysisTextarea({
         id={id}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
+        disabled={disabled}
         rows={rows}
         className="min-h-24 resize-y text-sm leading-5"
       />
