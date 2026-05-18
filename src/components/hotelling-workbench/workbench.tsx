@@ -5,6 +5,7 @@ import type { LiteratureAnalysis, ResearchProject } from "@/lib/types";
 import { BackgroundStep } from "./background-step";
 import { CodeBlock } from "./code-block";
 import { LiteratureStep } from "./literature-step";
+import { ModelStep } from "./model-step";
 import { WorkbenchShell, type WorkbenchStep } from "./workbench-shell";
 
 const LITERATURE_DECOMPOSITION_KEYS: Array<
@@ -126,6 +127,10 @@ function WorkbenchMain({
 
   if (activeStep === "literature") {
     return <LiteratureStep project={project} />;
+  }
+
+  if (activeStep === "model") {
+    return <ModelStep project={project} />;
   }
 
   return <WorkbenchPlaceholder copy={copy} project={project} />;
