@@ -42,6 +42,10 @@ export async function chatStream(
   return full;
 }
 
+export async function generateFromPrompt(prompt: string): Promise<string> {
+  return chatStream([{ role: "user", content: prompt }], () => {});
+}
+
 export async function fetchLiterature(
   model: GameTheoryModel
 ): Promise<string> {
