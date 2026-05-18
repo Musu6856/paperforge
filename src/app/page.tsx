@@ -83,16 +83,19 @@ export default function HomePage() {
   return (
     <div className="flex-1 flex flex-col">
       <header className="border-b bg-background/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary">
               <BookOpen className="h-4 w-4 text-primary-foreground" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-base font-semibold tracking-tight">
+            <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+              <span className="truncate text-base font-semibold tracking-tight">
                 PaperForge
               </span>
-              <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+              <Badge
+                variant="secondary"
+                className="hidden shrink-0 px-1.5 py-0 text-[10px] min-[360px]:inline-flex"
+              >
                 Hotelling V1
               </Badge>
             </div>
