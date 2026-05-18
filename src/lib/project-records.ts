@@ -11,6 +11,11 @@ export function projectFromRow(row: ProjectRow): ResearchProject {
     wizardCompleted: row.wizardCompleted || row.sections.length > 0,
     sections: row.sections,
     references: row.references,
+    background: row.background ?? undefined,
+    literatureAnalyses: row.literatureAnalyses ?? [],
+    hotellingModel: row.hotellingModel ?? undefined,
+    equilibriumResult: row.equilibriumResult ?? undefined,
+    propertyAnalyses: row.propertyAnalyses ?? [],
   };
 }
 
@@ -18,6 +23,8 @@ const MAX_IDEAL_LENGTH = 5000;
 const MAX_REFINED_LENGTH = 20000;
 const MAX_SECTIONS = 50;
 const MAX_REFERENCES = 100;
+const MAX_LITERATURE_ANALYSES = 20;
+const MAX_PROPERTY_ANALYSES = 50;
 
 export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
   if (!value || typeof value !== "object") return null;
@@ -42,7 +49,11 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     project.rawIdea.length > MAX_IDEAL_LENGTH ||
     project.refinedIdea.length > MAX_REFINED_LENGTH ||
     project.sections.length > MAX_SECTIONS ||
-    project.references.length > MAX_REFERENCES
+    project.references.length > MAX_REFERENCES ||
+    (project.literatureAnalyses !== undefined &&
+      project.literatureAnalyses.length > MAX_LITERATURE_ANALYSES) ||
+    (project.propertyAnalyses !== undefined &&
+      project.propertyAnalyses.length > MAX_PROPERTY_ANALYSES)
   ) {
     return null;
   }
@@ -56,5 +67,10 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     wizardCompleted: project.wizardCompleted ?? false,
     sections: project.sections,
     references: project.references,
+    background: project.background,
+    literatureAnalyses: project.literatureAnalyses ?? [],
+    hotellingModel: project.hotellingModel,
+    equilibriumResult: project.equilibriumResult,
+    propertyAnalyses: project.propertyAnalyses ?? [],
   };
 }

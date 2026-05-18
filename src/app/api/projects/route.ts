@@ -51,6 +51,11 @@ export async function POST(request: Request) {
         wizardCompleted: project.wizardCompleted,
         sections: project.sections,
         references: project.references,
+        background: project.background ?? null,
+        literatureAnalyses: project.literatureAnalyses ?? [],
+        hotellingModel: project.hotellingModel ?? null,
+        equilibriumResult: project.equilibriumResult ?? null,
+        propertyAnalyses: project.propertyAnalyses ?? [],
         createdAt: new Date(project.createdAt),
         updatedAt: new Date(),
       })

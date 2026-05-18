@@ -7,7 +7,16 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { GameTheoryModel, PaperSection, Reference } from "@/lib/types";
+import type {
+  BackgroundStory,
+  EquilibriumResult,
+  GameTheoryModel,
+  HotellingModel,
+  LiteratureAnalysis,
+  PaperSection,
+  PropertyAnalysis,
+  Reference,
+} from "@/lib/types";
 
 export const projects = pgTable(
   "projects",
@@ -20,6 +29,17 @@ export const projects = pgTable(
     wizardCompleted: boolean("wizard_completed").notNull().default(false),
     sections: jsonb("sections").$type<PaperSection[]>().notNull(),
     references: jsonb("references").$type<Reference[]>().notNull(),
+    background: jsonb("background").$type<BackgroundStory | null>(),
+    literatureAnalyses: jsonb("literature_analyses")
+      .$type<LiteratureAnalysis[]>()
+      .notNull()
+      .default([]),
+    hotellingModel: jsonb("hotelling_model").$type<HotellingModel | null>(),
+    equilibriumResult: jsonb("equilibrium_result").$type<EquilibriumResult | null>(),
+    propertyAnalyses: jsonb("property_analyses")
+      .$type<PropertyAnalysis[]>()
+      .notNull()
+      .default([]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

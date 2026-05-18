@@ -59,6 +59,11 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
         wizardCompleted: project.wizardCompleted,
         sections: project.sections,
         references: project.references,
+        background: project.background ?? null,
+        literatureAnalyses: project.literatureAnalyses ?? [],
+        hotellingModel: project.hotellingModel ?? null,
+        equilibriumResult: project.equilibriumResult ?? null,
+        propertyAnalyses: project.propertyAnalyses ?? [],
         updatedAt: new Date(),
       })
       .where(and(eq(projects.id, id), eq(projects.ownerId, userId)))
