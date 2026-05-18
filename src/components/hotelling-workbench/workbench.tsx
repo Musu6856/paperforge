@@ -1,11 +1,28 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ResearchProject } from "@/lib/types";
+import type { LiteratureAnalysis, ResearchProject } from "@/lib/types";
 import { BackgroundStep } from "./background-step";
 import { CodeBlock } from "./code-block";
 import { LiteratureStep } from "./literature-step";
 import { WorkbenchShell, type WorkbenchStep } from "./workbench-shell";
+
+const LITERATURE_DECOMPOSITION_KEYS: Array<
+  keyof Pick<
+    LiteratureAnalysis,
+    | "researchQuestion"
+    | "modelStructure"
+    | "timing"
+    | "utilityDesign"
+    | "equilibriumMethod"
+  >
+> = [
+  "researchQuestion",
+  "modelStructure",
+  "timing",
+  "utilityDesign",
+  "equilibriumMethod",
+];
 
 const STEP_COPY: Record<
   WorkbenchStep,
@@ -160,6 +177,15 @@ function OutputPanel({
 }) {
   const analyses = project.literatureAnalyses ?? [];
   const latestAnalysis = analyses.at(-1);
+  const completedLiteratureFields = analyses.reduce(
+    (count, analysis) =>
+      count +
+      LITERATURE_DECOMPOSITION_KEYS.filter((key) => analysis[key].trim())
+        .length,
+    0
+  );
+  const totalLiteratureFields =
+    analyses.length * LITERATURE_DECOMPOSITION_KEYS.length;
 
   return (
     <div className="space-y-4">
@@ -178,17 +204,11 @@ function OutputPanel({
       ) : activeStep === "literature" ? (
         <div className="min-w-0 space-y-3">
           <p className="text-sm leading-6 text-muted-foreground">
-            已导入 {analyses.length} 篇文献。
+            已导入 {analyses.length} 篇文献；拆解字段完成{" "}
+            {completedLiteratureFields}/{totalLiteratureFields}。
           </p>
           {latestAnalysis ? (
-            <div className="min-w-0 border-l pl-3">
-              <p className="break-words text-sm font-medium">
-                {latestAnalysis.title || "未命名文献"}
-              </p>
-              <p className="mt-1 line-clamp-4 break-words text-xs leading-5 text-muted-foreground">
-                {latestAnalysis.sourceText || "暂无原文片段"}
-              </p>
-            </div>
+            <LiteratureOutputSummary analysis={latestAnalysis} />
           ) : (
             <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
               尚无文献。添加标题和摘要后，这里会显示最新导入的线索。
@@ -202,6 +222,64 @@ function OutputPanel({
           </p>
           {activeStep === "equilibrium" ? <CodeBlock code={code} /> : null}
         </>
+      )}
+    </div>
+  );
+}
+
+function LiteratureOutputSummary({
+  analysis,
+}: {
+  analysis: LiteratureAnalysis;
+}) {
+  const completedFields = LITERATURE_DECOMPOSITION_KEYS.filter((key) =>
+    analysis[key].trim()
+  ).length;
+  const topBorrowableIdeas = analysis.borrowableIdeas
+    .map((idea) => idea.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+  const topDifferentiationPoints = analysis.differentiationPoints
+    .map((point) => point.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
+  return (
+    <div className="min-w-0 space-y-3 border-l pl-3">
+      <div className="min-w-0">
+        <p className="break-words text-sm font-medium">
+          {analysis.title || "未命名文献"}
+        </p>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          最新文献拆解 {completedFields}/{LITERATURE_DECOMPOSITION_KEYS.length}
+        </p>
+        <p className="mt-1 line-clamp-3 break-words text-xs leading-5 text-muted-foreground">
+          {analysis.sourceText || "暂无原文片段"}
+        </p>
+      </div>
+
+      <OutputList title="可借鉴" items={topBorrowableIdeas} />
+      <OutputList title="差异化" items={topDifferentiationPoints} />
+    </div>
+  );
+}
+
+function OutputList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs font-medium text-foreground">{title}</p>
+      {items.length ? (
+        <ul className="mt-1 space-y-1 text-xs leading-5 text-muted-foreground">
+          {items.map((item, index) => (
+            <li key={`${title}-${index}`} className="break-words">
+              {item}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          暂未填写
+        </p>
       )}
     </div>
   );
