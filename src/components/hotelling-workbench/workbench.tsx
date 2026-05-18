@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { ResearchProject } from "@/lib/types";
+import { BackgroundStep } from "./background-step";
 import { CodeBlock } from "./code-block";
+import { LiteratureStep } from "./literature-step";
 import { WorkbenchShell, type WorkbenchStep } from "./workbench-shell";
 
 const STEP_COPY: Record<
@@ -19,17 +21,17 @@ const STEP_COPY: Record<
     label: "背景故事",
     mainTitle: "研究情境编辑区",
     mainBody:
-      "这里将承载背景故事、研究谜题与 Hotelling 直觉的结构化编辑器。",
+      "这里承载背景故事、研究谜题与 Hotelling 直觉的结构化编辑。",
     sideTitle: "背景输出",
-    sideBody: "后续会在这里沉淀可直接进入论文引言的背景草稿。",
+    sideBody: "背景草稿会在这里沉淀，方便继续改写为论文引言。",
   },
   literature: {
     label: "文献启发",
     mainTitle: "文献拆解编辑区",
     mainBody:
-      "这里将用于记录参考文献的模型结构、效用设计、均衡方法与可借鉴思路。",
+      "这里用于记录参考文献的模型结构、效用设计、均衡方法与可借鉴思路。",
     sideTitle: "文献输出",
-    sideBody: "后续会在这里整理文献启发与差异化切入点。",
+    sideBody: "这里汇总文献启发与差异化切入点。",
   },
   model: {
     label: "模型建立",
@@ -77,10 +79,39 @@ export function HotellingWorkbench({ project }: { project: ResearchProject }) {
       activeStep={activeStep}
       onStepChange={setActiveStep}
       title={title}
-      main={<WorkbenchPlaceholder copy={copy} project={project} />}
-      side={<OutputPlaceholder copy={copy} code={activeStep === "equilibrium" ? code : ""} />}
+      main={
+        <WorkbenchMain activeStep={activeStep} copy={copy} project={project} />
+      }
+      side={
+        <OutputPanel
+          activeStep={activeStep}
+          copy={copy}
+          code={activeStep === "equilibrium" ? code : ""}
+          project={project}
+        />
+      }
     />
   );
+}
+
+function WorkbenchMain({
+  activeStep,
+  copy,
+  project,
+}: {
+  activeStep: WorkbenchStep;
+  copy: (typeof STEP_COPY)[WorkbenchStep];
+  project: ResearchProject;
+}) {
+  if (activeStep === "background") {
+    return <BackgroundStep project={project} />;
+  }
+
+  if (activeStep === "literature") {
+    return <LiteratureStep project={project} />;
+  }
+
+  return <WorkbenchPlaceholder copy={copy} project={project} />;
 }
 
 function WorkbenchPlaceholder({
@@ -116,13 +147,20 @@ function WorkbenchPlaceholder({
   );
 }
 
-function OutputPlaceholder({
+function OutputPanel({
+  activeStep,
   copy,
   code,
+  project,
 }: {
+  activeStep: WorkbenchStep;
   copy: (typeof STEP_COPY)[WorkbenchStep];
   code: string;
+  project: ResearchProject;
 }) {
+  const analyses = project.literatureAnalyses ?? [];
+  const latestAnalysis = analyses.at(-1);
+
   return (
     <div className="space-y-4">
       <div className="border-b pb-3">
@@ -130,8 +168,41 @@ function OutputPlaceholder({
         <h3 className="mt-1 text-sm font-semibold">{copy.sideTitle}</h3>
       </div>
 
-      <p className="text-sm leading-6 text-muted-foreground">{copy.sideBody}</p>
-      <CodeBlock code={code} />
+      {activeStep === "background" ? (
+        <div className="min-w-0 border-l pl-3">
+          <p className="whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
+            {project.background?.draft ||
+              "尚无背景草稿。先补全研究情境、谜题和机制直觉。"}
+          </p>
+        </div>
+      ) : activeStep === "literature" ? (
+        <div className="min-w-0 space-y-3">
+          <p className="text-sm leading-6 text-muted-foreground">
+            已导入 {analyses.length} 篇文献。
+          </p>
+          {latestAnalysis ? (
+            <div className="min-w-0 border-l pl-3">
+              <p className="break-words text-sm font-medium">
+                {latestAnalysis.title || "未命名文献"}
+              </p>
+              <p className="mt-1 line-clamp-4 break-words text-xs leading-5 text-muted-foreground">
+                {latestAnalysis.sourceText || "暂无原文片段"}
+              </p>
+            </div>
+          ) : (
+            <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
+              尚无文献。添加标题和摘要后，这里会显示最新导入的线索。
+            </p>
+          )}
+        </div>
+      ) : (
+        <>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {copy.sideBody}
+          </p>
+          {activeStep === "equilibrium" ? <CodeBlock code={code} /> : null}
+        </>
+      )}
     </div>
   );
 }
