@@ -24,6 +24,7 @@ This document is a product-design specification for implementation planning. It 
 - Reusable symbolic solving code, primarily SymPy-oriented.
 - Symbolic property analysis using differentiation, comparisons, threshold conditions, and proposition-style outputs.
 - Clear failure explanations and model simplification suggestions when symbolic expressions become unmanageable.
+- A redesigned UI that is practical for dense theoretical work and polished enough to feel like a serious research tool.
 
 ### Out of Scope
 
@@ -114,7 +115,7 @@ The symbol dictionary belongs inside this module, not as a separate top-level st
 
 The user should be able to choose symbols and define their meanings.
 
-System-recommended symbols should include common Greek, Latin, and subscripted math symbols with code-safe identifiers, such as:
+System-recommended symbols should include common Greek, Latin, subscripted, and superscripted math symbols with code-safe identifiers, such as:
 
 - `alpha` / `α`, `beta` / `β`, `gamma` / `γ` for network effects or sensitivity parameters.
 - `t` for transportation cost.
@@ -123,12 +124,16 @@ System-recommended symbols should include common Greek, Latin, and subscripted m
 - `s_i` for subsidy.
 - `q_i` for service quality or non-price investment.
 - `c` for marginal cost or investment cost parameter.
-- `n_i` or `m_i` for side-specific participation levels.
+- `n_i`, `n_i^C`, or `n_i^M` for consumer-side and merchant-side user masses, counts, or participation levels.
+- `m_i` only when the user explicitly wants merchant-side notation separated from `n`.
 - `theta` for user type, preference, or sensitivity.
 
 Each symbol should store:
 
 - Display symbol.
+- Base symbol, such as `n`.
+- Subscript, such as `i`, `A`, `B`, `C`, or `M`.
+- Superscript, such as `C`, `M`, `H`, `L`, `0`, or `1`.
 - Code identifier used in generated SymPy code.
 - Plain-text name.
 - Meaning.
@@ -137,7 +142,9 @@ Each symbol should store:
 - Sign or domain assumption, such as positive, nonnegative, real, bounded in `[0,1]`, or unrestricted.
 - Whether the symbol was recommended by the system or created by the user.
 
-The system can recommend meanings and assumptions, but the user can override them.
+The system can recommend meanings and assumptions, but the user can override them. It must not assume a universal meaning for a symbol such as `n`; in this project, `n` commonly denotes consumers and merchants, differentiated by side labels and upper/lower indices.
+
+The symbol picker should make side notation easy. Users should be able to create expressions such as `n_i^C`, `n_i^M`, `p_i^C`, `p_i^M`, or `q_i^G` without manually fighting text input. The UI should still store a code-safe name such as `n_i_C` for SymPy generation.
 
 #### 3.2 Hotelling Setup
 
@@ -250,6 +257,32 @@ Step navigation:
 
 The previous wizard labels such as players, strategies, payoffs, game type, and platform should be folded into the Model step instead of remaining top-level steps.
 
+## UI Design Direction
+
+The current UI is not sufficient for the new workflow. V1 needs a more deliberate research-tool interface: dense, legible, elegant, and useful under repeated daily use.
+
+Design requirements:
+
+- Prioritize practical workflow over landing-page decoration.
+- Use a workspace layout, not a marketing layout.
+- Avoid nested cards, decorative blobs, generic hero sections, and over-large headings inside tool panels.
+- Support dense mathematical forms without visual clutter.
+- Make step status, model completeness, warnings, and generated outputs visible without forcing constant scrolling.
+- Treat symbols, equations, assumptions, and generated code as first-class objects.
+- Use restrained color with enough contrast and clear hierarchy.
+- Keep controls compact, predictable, and keyboard-friendly.
+- Make formula and code blocks copyable.
+- Provide polished empty, loading, warning, and failure states.
+
+Suggested V1 workspace layout:
+
+- Left rail: step navigation, completion state, model warnings.
+- Main pane: active editor for background, literature, model, equilibrium, or analysis.
+- Right pane or bottom drawer: generated output, derivation trace, and reusable code.
+- In the Model step, place symbol dictionary, timing, utilities, demand, and profit functions in clearly separated sections.
+
+Impeccable can be used as a design workflow and audit layer for this redesign. It is not a React component library and should not be added as a runtime UI dependency.
+
 ## Data Model
 
 The existing `ResearchProject` type should be extended rather than discarded.
@@ -303,6 +336,9 @@ interface LiteratureAnalysis {
 interface SymbolDefinition {
   id: string
   symbol: string
+  baseSymbol: string
+  subscript?: string
+  superscript?: string
   codeName: string
   name: string
   meaning: string
@@ -441,6 +477,7 @@ Manual verification should cover:
 3. How strict the formula override path should be in the first implementation slice.
 4. Whether existing generic game-theory wizard code should be adapted or replaced with Hotelling-specific modules.
 5. Whether database migrations should store new fields as additional JSONB columns or fold them into existing project JSON fields.
+6. Whether to install Impeccable project-locally for design commands and anti-pattern checks, or use only its `npx impeccable detect` CLI during UI review.
 
 ## Approval Gate
 
