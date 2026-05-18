@@ -38,11 +38,18 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     typeof project.refinedIdea !== "string" ||
     (project.wizardCompleted !== undefined &&
       typeof project.wizardCompleted !== "boolean") ||
+    (project.literatureAnalyses !== undefined &&
+      !Array.isArray(project.literatureAnalyses)) ||
+    (project.propertyAnalyses !== undefined &&
+      !Array.isArray(project.propertyAnalyses)) ||
     !Array.isArray(project.sections) ||
     !Array.isArray(project.references)
   ) {
     return null;
   }
+
+  const literatureAnalyses = project.literatureAnalyses ?? [];
+  const propertyAnalyses = project.propertyAnalyses ?? [];
 
   if (
     project.id.length > 100 ||
@@ -50,10 +57,8 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     project.refinedIdea.length > MAX_REFINED_LENGTH ||
     project.sections.length > MAX_SECTIONS ||
     project.references.length > MAX_REFERENCES ||
-    (project.literatureAnalyses !== undefined &&
-      project.literatureAnalyses.length > MAX_LITERATURE_ANALYSES) ||
-    (project.propertyAnalyses !== undefined &&
-      project.propertyAnalyses.length > MAX_PROPERTY_ANALYSES)
+    literatureAnalyses.length > MAX_LITERATURE_ANALYSES ||
+    propertyAnalyses.length > MAX_PROPERTY_ANALYSES
   ) {
     return null;
   }
@@ -68,9 +73,9 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     sections: project.sections,
     references: project.references,
     background: project.background,
-    literatureAnalyses: project.literatureAnalyses ?? [],
+    literatureAnalyses,
     hotellingModel: project.hotellingModel,
     equilibriumResult: project.equilibriumResult,
-    propertyAnalyses: project.propertyAnalyses ?? [],
+    propertyAnalyses,
   };
 }
