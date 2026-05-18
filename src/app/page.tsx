@@ -93,7 +93,7 @@ export default function HomePage() {
                 PaperForge
               </span>
               <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
-                Beta
+                Hotelling V1
               </Badge>
             </div>
           </div>
@@ -121,11 +121,11 @@ export default function HomePage() {
           <section className="space-y-5 animate-fade-in">
             <div className="space-y-3">
               <div className="max-w-3xl space-y-3">
-                <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-                  从研究想法开始，搭建可写入论文的博弈模型
+                <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">
+                  Hotelling 双边平台论文工作台
                 </h1>
-                <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                  输入一个研究问题，PaperForge 会先整理建模方向，再进入参与者、策略、收益和平台属性的分步定义流程。
+                <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+                  从一个平台经济研究想法开始，按背景故事、文献启发、模型建立、符号均衡、性质分析推进。V1 只做符号推导，不做仿真。
                 </p>
               </div>
             </div>
@@ -135,17 +135,17 @@ export default function HomePage() {
               <CardContent className="space-y-4 p-5 sm:p-6">
                 <div className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <h2 className="text-sm font-semibold">创建研究项目</h2>
+                    <h2 className="text-sm font-semibold">新建 Hotelling 项目</h2>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      建议写清研究对象、平台/市场场景和你关心的机制。
+                      写清平台两侧用户、差异化来源、收费或补贴机制，以及你希望证明的符号性质。
                     </p>
                   </div>
                   <Badge variant="outline" className="w-fit text-[10px]">
-                    Step 1
+                    背景故事
                   </Badge>
                 </div>
                 <Textarea
-                  placeholder="例如：分析网约车平台如何设计补贴策略来平衡司机和乘客双侧用户，在竞争环境中最大化平台利润..."
+                  placeholder="例如：分析两个网约车平台在 Hotelling 差异化下如何同时向司机和乘客定价，并研究跨边网络效应增强时均衡价格与平台利润的变化..."
                   className="min-h-[170px] resize-y border-0 bg-muted/40 text-sm leading-relaxed ring-1 ring-input focus-visible:ring-primary"
                   value={idea}
                   onChange={(e) => setIdea(e.target.value)}
@@ -153,8 +153,8 @@ export default function HomePage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-muted-foreground">
                     {idea.trim().length > 0
-                      ? `${idea.trim().length} 个字符，准备进入 AI 分析`
-                      : "登录后可创建项目并保存到你的工作区"}
+                      ? `${idea.trim().length} 个字符，准备整理为背景故事`
+                      : "登录后可创建项目并保存到研究工作区"}
                   </p>
                   {isSignedIn ? (
                     <Button
@@ -165,11 +165,11 @@ export default function HomePage() {
                       {isProcessing ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          AI 分析中
+                          正在整理背景故事
                         </>
                       ) : (
                         <>
-                          开始构建模型
+                          进入工作台
                           <ArrowRight className="h-4 w-4" />
                         </>
                       )}
@@ -189,18 +189,18 @@ export default function HomePage() {
             <div className="grid gap-3 md:grid-cols-3">
               <WorkflowItem
                 icon={<Sparkles className="h-4 w-4" />}
-                title="整理 idea"
-                description="把宽泛问题压成可建模的研究设定。"
+                title="背景故事"
+                description="把现实平台问题整理为可建模的研究谜题。"
               />
               <WorkflowItem
                 icon={<Network className="h-4 w-4" />}
-                title="定义模型"
-                description="补齐参与者、策略、收益和平台属性。"
+                title="模型建立"
+                description="定义两侧用户、平台策略、效用、需求和利润函数。"
               />
               <WorkflowItem
                 icon={<Library className="h-4 w-4" />}
-                title="生成正文"
-                description="输出 Model Setup、文献推荐和 LaTeX。"
+                title="符号均衡"
+                description="推导闭式均衡，并继续做符号性质分析。"
               />
             </div>
           </section>
@@ -276,13 +276,13 @@ export default function HomePage() {
                   />
                   <StatusLine
                     icon={<FileText />}
-                    text="Model Setup 导出"
-                    description="一键导出模型设定文档"
+                    text="符号推导优先"
+                    description="均衡与性质分析不使用数值仿真"
                   />
                   <StatusLine
                     icon={<Clock3 />}
-                    text="AI 生成通常约 30 秒"
-                    description="视模型复杂度而定"
+                    text="五步研究流程"
+                    description="背景故事到性质分析保持同一模型上下文"
                   />
                 </div>
 
@@ -310,7 +310,7 @@ export default function HomePage() {
                   </div>
                   <div className="relative grid grid-cols-5 items-start gap-1">
                     <div className="absolute left-[10%] right-[10%] top-2.5 h-px bg-border" />
-                    {["创题设定", "参与者", "策略", "收益", "平台属性"].map(
+                    {["背景故事", "文献启发", "模型建立", "符号均衡", "性质分析"].map(
                       (step, index) => (
                         <div key={step} className="relative text-center">
                           <div
@@ -319,7 +319,7 @@ export default function HomePage() {
                           >
                             {index + 1}
                           </div>
-                          <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                          <p className="mt-0.5 text-[10px] leading-3 text-muted-foreground">
                             {step}
                           </p>
                         </div>
