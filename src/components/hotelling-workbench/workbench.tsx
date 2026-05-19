@@ -9,6 +9,7 @@ import { EquilibriumStep } from "./equilibrium-step";
 import { LiteratureStep } from "./literature-step";
 import { ModelStep } from "./model-step";
 import { WorkbenchShell, type WorkbenchStep } from "./workbench-shell";
+import { cleanWorkbenchTitle } from "@/lib/workbench-format";
 
 const LITERATURE_DECOMPOSITION_KEYS: Array<
   keyof Pick<
@@ -79,20 +80,30 @@ const STEP_COPY: Record<
   },
 };
 
+const EQUILIBRIUM_STATUS_LABELS = {
+  idle: "待求解",
+  solved: "已求解",
+  needs_revision: "需修正",
+  symbolic_failure: "符号失败",
+} as const;
+
+const PROPERTY_OPERATION_LABELS = {
+  differentiate: "求导",
+  compare: "相减比较",
+  threshold: "阈值条件",
+  custom: "自定义",
+} as const;
+
 export function HotellingWorkbench({ project }: { project: ResearchProject }) {
   const [activeStep, setActiveStep] = useState<WorkbenchStep>("background");
   const copy = STEP_COPY[activeStep];
   const code = project.equilibriumResult?.code ?? "";
 
   const title = useMemo(() => {
-    const sourceTitle =
-      project.hotellingModel?.modelSetupDraft ||
-      project.background?.scenario ||
-      project.refinedIdea ||
-      project.rawIdea;
+    const cleanTitle = cleanWorkbenchTitle(project.refinedIdea, project.rawIdea);
 
-    return sourceTitle ? `Hotelling 工作台 - ${sourceTitle}` : "Hotelling 工作台";
-  }, [project]);
+    return `Hotelling 工作台 - ${cleanTitle}`;
+  }, [project.refinedIdea, project.rawIdea]);
 
   return (
     <WorkbenchShell
@@ -260,7 +271,7 @@ function EquilibriumOutputSummary({ project }: { project: ResearchProject }) {
   if (!equilibrium) {
     return (
       <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
-        No symbolic equilibrium has been generated yet.
+        尚未生成符号均衡解。
       </p>
     );
   }
@@ -269,22 +280,22 @@ function EquilibriumOutputSummary({ project }: { project: ResearchProject }) {
     <div className="min-w-0 space-y-3 border-l pl-3">
       <div className="min-w-0">
         <p className="break-words text-sm font-medium">
-          {equilibrium.concept || "Equilibrium concept not specified"}
+          {equilibrium.concept || "未指定均衡概念"}
         </p>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Status: {equilibrium.status}. FOCs:{" "}
-          {equilibrium.focs.filter((item) => item.trim()).length}. Conditions:{" "}
-          {equilibrium.conditions.filter((item) => item.trim()).length}.
+          状态：{EQUILIBRIUM_STATUS_LABELS[equilibrium.status]}；一阶条件：{" "}
+          {equilibrium.focs.filter((item) => item.trim()).length}；约束条件：{" "}
+          {equilibrium.conditions.filter((item) => item.trim()).length}。
         </p>
       </div>
       <p className="line-clamp-5 whitespace-pre-wrap break-words text-xs leading-5 text-muted-foreground">
         {equilibrium.closedForm ||
           equilibrium.derivation ||
-          "Closed-form symbolic results will appear here after derivation."}
+          "推导完成后，闭式符号结果会显示在这里。"}
       </p>
       {equilibrium.warnings.length ? (
         <OutputList
-          title="Warnings"
+          title="警告"
           items={equilibrium.warnings.filter((item) => item.trim()).slice(0, 3)}
         />
       ) : null}
@@ -299,7 +310,7 @@ function AnalysisOutputSummary({ project }: { project: ResearchProject }) {
   if (!latestAnalysis) {
     return (
       <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
-        No symbolic property analysis has been added yet.
+        尚未添加符号性质分析。
       </p>
     );
   }
@@ -308,22 +319,23 @@ function AnalysisOutputSummary({ project }: { project: ResearchProject }) {
     <div className="min-w-0 space-y-3 border-l pl-3">
       <div className="min-w-0">
         <p className="break-words text-sm font-medium">
-          {latestAnalysis.target || "Untitled symbolic target"}
+          {latestAnalysis.target || "未命名分析对象"}
         </p>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          {analyses.length} analyses · {latestAnalysis.operation} · parameter{" "}
-          {latestAnalysis.parameter || "not specified"}
+          {analyses.length} 项分析 ·{" "}
+          {PROPERTY_OPERATION_LABELS[latestAnalysis.operation]} · 参数{" "}
+          {latestAnalysis.parameter || "未指定"}
         </p>
       </div>
       <p className="line-clamp-5 whitespace-pre-wrap break-words text-xs leading-5 text-muted-foreground">
         {latestAnalysis.propositionDraft ||
           latestAnalysis.symbolicResult ||
           latestAnalysis.proofSketch ||
-          "Latest proof sketch will appear here."}
+          "最新证明思路会显示在这里。"}
       </p>
       {latestAnalysis.warnings.length ? (
         <OutputList
-          title="Warnings"
+          title="警告"
           items={latestAnalysis.warnings
             .filter((item) => item.trim())
             .slice(0, 3)}

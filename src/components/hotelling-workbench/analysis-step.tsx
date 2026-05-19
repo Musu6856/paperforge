@@ -14,10 +14,10 @@ import type { PropertyAnalysis, ResearchProject } from "@/lib/types";
 type Operation = PropertyAnalysis["operation"];
 
 const OPERATION_LABELS: Record<Operation, string> = {
-  differentiate: "Differentiate",
-  compare: "Compare",
-  threshold: "Threshold",
-  custom: "Custom",
+  differentiate: "求导",
+  compare: "相减比较",
+  threshold: "阈值条件",
+  custom: "自定义",
 };
 
 function linesToList(value: string) {
@@ -107,8 +107,8 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
     ) {
       setError(
         operation === "custom"
-          ? "Please specify a custom symbolic request in the target or parameter field."
-          : "Please specify both a target expression and parameter for symbolic analysis."
+          ? "请在分析对象或参数栏写明自定义符号分析请求。"
+          : "请同时填写分析对象和参数，再做符号性质分析。"
       );
       return;
     }
@@ -117,8 +117,8 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
     setError("");
 
     const nextAnalysis = createAnalysis(
-      request.target || "Custom symbolic target",
-      request.parameter || "Custom request",
+      request.target || "自定义分析对象",
+      request.parameter || "自定义请求",
       operation
     );
     const baseAnalyses = [...analyses, nextAnalysis];
@@ -163,7 +163,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
       const message =
         generationError instanceof Error
           ? generationError.message
-          : "Provider request failed";
+          : "模型请求失败";
 
       setError(message);
       setAnalyses(
@@ -173,7 +173,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                 ...analysis,
                 warnings: [
                   ...analysis.warnings,
-                  `Provider failure: ${message}. No numerical comparative static was generated; simplify the expression or add sign assumptions.`,
+                  `模型请求失败：${message}。本步骤没有生成数值比较静态，请简化表达式或补充符号假设。`,
                 ],
               }
             : analysis
@@ -187,10 +187,10 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
   return (
     <section className="flex min-h-[520px] min-w-0 flex-col gap-4">
       <header className="border-b pb-3">
-        <p className="text-xs font-medium text-muted-foreground">Analysis</p>
+        <p className="text-xs font-medium text-muted-foreground">性质分析</p>
         <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
           <h3 className="break-words text-base font-semibold">
-            Symbolic property analysis
+            符号性质分析
           </h3>
           <Button
             size="sm"
@@ -206,61 +206,56 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
       <div className="flex min-w-0 gap-2 border-l-2 border-amber-500/70 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-900 dark:text-amber-200">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <p className="min-w-0 break-words">
-          Symbolic analysis only: derivative, symbolic comparison, threshold,
-          sign condition, proposition, and proof sketch. V1 does not include
-          numerical simulation or numerical comparative statics.
+          这里只做符号分析：求导、相减比较、阈值条件、符号条件、命题草稿和证明思路。V1 不包含数值仿真，也不使用数值比较静态替代性质分析。
         </p>
       </div>
 
       {!model ? (
         <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
-          Build the Hotelling model first, then solve symbolic equilibrium
-          before requesting property analysis.
+          请先建立 Hotelling 模型，并完成符号均衡求解，再请求性质分析。
         </p>
       ) : !hasEquilibriumContext ? (
         <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
-          Add a symbolic equilibrium derivation or closed-form result first.
-          Property analysis needs symbolic expressions to differentiate,
-          compare, or threshold.
+          请先补充符号均衡推导或闭式结果。性质分析需要可求导、可相减或可构造阈值的符号表达式。
         </p>
       ) : null}
 
       {error ? (
         <p className="border-l border-destructive pl-3 text-sm leading-6 text-destructive">
-          Generation failed: {error}
+          生成失败：{error}
         </p>
       ) : null}
 
       <section className="grid min-w-0 gap-3 border-b pb-4 md:grid-cols-4">
         <div className="grid min-w-0 gap-1.5 md:col-span-2">
           <Label htmlFor="analysis-target" className="text-xs">
-            Target expression
+            分析对象
           </Label>
           <Input
             id="analysis-target"
             value={target}
             onChange={(event) => setTarget(event.currentTarget.value)}
             disabled={isGenerating}
-            placeholder="e.g. p_A^*, profit_A^* - profit_B^*"
+            placeholder="如 p_A^*、profit_A^* - profit_B^*"
             className="text-sm"
           />
         </div>
         <div className="grid min-w-0 gap-1.5">
           <Label htmlFor="analysis-parameter" className="text-xs">
-            Parameter
+            参数
           </Label>
           <Input
             id="analysis-parameter"
             value={parameter}
             onChange={(event) => setParameter(event.currentTarget.value)}
             disabled={isGenerating}
-            placeholder="e.g. t, alpha, beta"
+            placeholder="如 t、alpha、beta"
             className="text-sm"
           />
         </div>
         <div className="grid min-w-0 gap-1.5">
           <Label htmlFor="analysis-operation" className="text-xs">
-            Operation
+            操作
           </Label>
           <select
             id="analysis-operation"
@@ -282,13 +277,12 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
 
       <section className="min-w-0 space-y-2">
         <p className="text-xs font-medium text-muted-foreground">
-          Property analyses: {analyses.length}
+          已有性质分析：{analyses.length} 项
         </p>
 
         {analyses.length === 0 ? (
           <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
-            No analyses yet. Choose a target expression and operation to create
-            a proposition-ready symbolic result.
+            尚无分析。选择分析对象、参数和操作后，可以生成适合整理成命题的符号结果。
           </p>
         ) : (
           <div className="min-w-0 divide-y rounded-lg border">
@@ -298,10 +292,10 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                   <div className="min-w-0">
                     <h4 className="break-words text-sm font-medium leading-5">
                       {OPERATION_LABELS[analysis.operation]}:{" "}
-                      {analysis.target || "Untitled symbolic target"}
+                      {analysis.target || "未命名分析对象"}
                     </h4>
                     <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
-                      Parameter: {analysis.parameter || "not specified"} · #
+                      参数：{analysis.parameter || "未指定"} · #
                       {index + 1}
                     </p>
                   </div>
@@ -310,7 +304,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                     size="icon-xs"
                     onClick={() => deleteAnalysis(analysis.id)}
                     disabled={isGenerating}
-                    aria-label={`Delete analysis ${index + 1}`}
+                    aria-label={`删除分析 ${index + 1}`}
                   >
                     <Trash2 aria-hidden="true" />
                   </Button>
@@ -319,7 +313,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                 <div className="grid min-w-0 gap-2 md:grid-cols-3">
                   <AnalysisInput
                     id={`${analysis.id}-target`}
-                    label="Target"
+                    label="分析对象"
                     value={analysis.target}
                     disabled={isGenerating}
                     onChange={(value) =>
@@ -331,7 +325,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                   />
                   <AnalysisInput
                     id={`${analysis.id}-parameter`}
-                    label="Parameter"
+                    label="参数"
                     value={analysis.parameter}
                     disabled={isGenerating}
                     onChange={(value) =>
@@ -346,7 +340,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                       htmlFor={`${analysis.id}-operation`}
                       className="text-xs"
                     >
-                      Operation
+                      操作
                     </Label>
                     <select
                       id={`${analysis.id}-operation`}
@@ -374,7 +368,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                 <div className="grid min-w-0 gap-2 md:grid-cols-2">
                   <AnalysisTextarea
                     id={`${analysis.id}-symbolic-result`}
-                    label="Symbolic result"
+                    label="符号结果"
                     value={analysis.symbolicResult}
                     disabled={isGenerating}
                     onChange={(value) =>
@@ -386,7 +380,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                   />
                   <AnalysisTextarea
                     id={`${analysis.id}-sign-condition`}
-                    label="Sign or threshold condition"
+                    label="符号或阈值条件"
                     value={analysis.signCondition}
                     disabled={isGenerating}
                     onChange={(value) =>
@@ -398,7 +392,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                   />
                   <AnalysisTextarea
                     id={`${analysis.id}-proposition`}
-                    label="Proposition draft"
+                    label="命题草稿"
                     value={analysis.propositionDraft}
                     disabled={isGenerating}
                     onChange={(value) =>
@@ -410,7 +404,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
                   />
                   <AnalysisTextarea
                     id={`${analysis.id}-intuition`}
-                    label="Economic intuition"
+                    label="经济直觉"
                     value={analysis.intuition}
                     disabled={isGenerating}
                     onChange={(value) =>
@@ -424,7 +418,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
 
                 <AnalysisTextarea
                   id={`${analysis.id}-proof`}
-                  label="Proof sketch"
+                  label="证明思路"
                   value={analysis.proofSketch}
                   disabled={isGenerating}
                   onChange={(value) =>
@@ -438,7 +432,7 @@ export function AnalysisStep({ project }: { project: ResearchProject }) {
 
                 <AnalysisTextarea
                   id={`${analysis.id}-warnings`}
-                  label="Warnings, one per line"
+                  label="警告与修正建议，每行一个"
                   value={listToLines(analysis.warnings)}
                   disabled={isGenerating}
                   onChange={(value) =>

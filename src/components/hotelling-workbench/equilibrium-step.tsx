@@ -13,6 +13,16 @@ import { useStore } from "@/lib/store";
 import type { EquilibriumResult, ResearchProject } from "@/lib/types";
 import { CodeBlock } from "./code-block";
 
+const STATUS_OPTIONS: Array<{
+  value: EquilibriumResult["status"];
+  label: string;
+}> = [
+  { value: "idle", label: "待求解" },
+  { value: "solved", label: "已求解" },
+  { value: "needs_revision", label: "需修正" },
+  { value: "symbolic_failure", label: "符号失败" },
+];
+
 function linesToList(value: string) {
   if (!value.trim()) return [];
   return value.split(/\r?\n/);
@@ -81,7 +91,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
       const message =
         generationError instanceof Error
           ? generationError.message
-          : "Provider request failed";
+          : "模型请求失败";
 
       setError(message);
       setEquilibrium({
@@ -89,7 +99,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
         status: "needs_revision",
         warnings: [
           ...baseResult.warnings,
-          `Provider failure: ${message}. No numerical substitute was generated; simplify the model or try again.`,
+          `模型请求失败：${message}。本步骤没有生成数值代入结果，请简化模型或重试。`,
         ],
       });
     } finally {
@@ -102,15 +112,14 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
       <section className="flex min-h-[520px] min-w-0 flex-col gap-4">
         <header className="border-b pb-3">
           <p className="text-xs font-medium text-muted-foreground">
-            Equilibrium
+            均衡求解
           </p>
           <h3 className="mt-1 break-words text-base font-semibold">
-            Symbolic equilibrium solving
+            符号均衡求解
           </h3>
         </header>
         <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
-          Build the Hotelling model first. Equilibrium solving needs the
-          structured symbols, demand construction, timing, and profit functions.
+          请先建立 Hotelling 模型。均衡求解需要结构化符号、需求构造、时序和利润函数。
         </p>
       </section>
     );
@@ -120,11 +129,11 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
     <section className="flex min-h-[520px] min-w-0 flex-col gap-4">
       <header className="border-b pb-3">
         <p className="text-xs font-medium text-muted-foreground">
-          Equilibrium
+          均衡求解
         </p>
         <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
           <h3 className="break-words text-base font-semibold">
-            Symbolic equilibrium derivation
+            符号均衡推导
           </h3>
           <Button
             size="sm"
@@ -140,23 +149,20 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
       <div className="flex min-w-0 gap-2 border-l-2 border-amber-500/70 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-900 dark:text-amber-200">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <p className="min-w-0 break-words">
-          Symbolic analytic results only. This step must not treat numerical
-          substitution, simulation, or calibrated examples as equilibrium. If
-          closed forms become unmanageable, record the symbolic failure and
-          simplify assumptions, timing, or parameter scope.
+          这里只接受符号解析结果。数值代入、仿真或校准例子不能作为均衡解；如果闭式解发生符号爆炸，请记录失败原因，并从假设、时序或参数范围上简化模型。
         </p>
       </div>
 
       {error ? (
         <p className="border-l border-destructive pl-3 text-sm leading-6 text-destructive">
-          Generation failed: {error}
+          生成失败：{error}
         </p>
       ) : null}
 
       <section className="grid min-w-0 gap-3 md:grid-cols-2">
         <div className="grid min-w-0 gap-1.5">
           <Label htmlFor="equilibrium-concept" className="text-xs">
-            Equilibrium concept
+            均衡概念
           </Label>
           <Input
             id="equilibrium-concept"
@@ -170,7 +176,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
         </div>
         <div className="grid min-w-0 gap-1.5">
           <Label htmlFor="equilibrium-status" className="text-xs">
-            Status
+            状态
           </Label>
           <select
             id="equilibrium-status"
@@ -184,10 +190,11 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
             disabled={isGenerating}
             className="h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            <option value="idle">Idle</option>
-            <option value="solved">Solved</option>
-            <option value="needs_revision">Needs revision</option>
-            <option value="symbolic_failure">Symbolic failure</option>
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
       </section>
@@ -195,14 +202,14 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
       <section className="grid min-w-0 gap-3 md:grid-cols-2">
         <EditableList
           id="equilibrium-solving-steps"
-          label="Solving steps, one per line"
+          label="求解步骤，每行一个"
           value={equilibrium.solvingSteps}
           onChange={(solvingSteps) => updateEquilibrium({ solvingSteps })}
           disabled={isGenerating}
         />
         <EditableList
           id="equilibrium-focs"
-          label="FOCs, one per line"
+          label="一阶条件，每行一个"
           value={equilibrium.focs}
           onChange={(focs) => updateEquilibrium({ focs })}
           disabled={isGenerating}
@@ -212,7 +219,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
       <section className="grid min-w-0 gap-3 md:grid-cols-2">
         <div className="grid min-w-0 gap-1.5">
           <Label htmlFor="equilibrium-closed-form" className="text-xs">
-            Closed-form equilibrium
+            闭式均衡解
           </Label>
           <Textarea
             id="equilibrium-closed-form"
@@ -222,13 +229,13 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
             }
             disabled={isGenerating}
             rows={5}
-            placeholder="Symbolic closed-form expressions only."
+            placeholder="仅填写符号闭式表达式。"
             className="min-h-28 resize-y font-mono text-sm leading-6"
           />
         </div>
         <EditableList
           id="equilibrium-conditions"
-          label="Conditions, one per line"
+          label="成立条件，每行一个"
           value={equilibrium.conditions}
           onChange={(conditions) => updateEquilibrium({ conditions })}
           disabled={isGenerating}
@@ -238,7 +245,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
 
       <div className="grid min-w-0 gap-1.5">
         <Label htmlFor="equilibrium-derivation" className="text-xs">
-          Streamed derivation
+          推导过程
         </Label>
         <Textarea
           id="equilibrium-derivation"
@@ -248,7 +255,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
           }
           disabled={isGenerating}
           rows={9}
-          placeholder="Generated symbolic derivation will stream here."
+          placeholder="生成的符号推导过程会显示在这里。"
           className="min-h-52 resize-y text-sm leading-6"
         />
       </div>
@@ -256,7 +263,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
       <section className="grid min-w-0 gap-3 border-t pt-4 md:grid-cols-2">
         <EditableList
           id="equilibrium-warnings"
-          label="Warnings, one per line"
+          label="警告与修正建议，每行一个"
           value={equilibrium.warnings}
           onChange={(warnings) => updateEquilibrium({ warnings })}
           disabled={isGenerating}
@@ -264,7 +271,7 @@ export function EquilibriumStep({ project }: { project: ResearchProject }) {
         />
         <div className="grid min-w-0 gap-1.5">
           <Label htmlFor="equilibrium-code" className="text-xs">
-            SymPy code
+            SymPy 求解代码
           </Label>
           <Textarea
             id="equilibrium-code"

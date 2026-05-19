@@ -67,7 +67,7 @@ function createStage(order: number): ModelStage {
   return {
     id: crypto.randomUUID(),
     order,
-    name: `Stage ${order}`,
+    name: `阶段 ${order}`,
     decisions: [],
   };
 }
@@ -109,13 +109,13 @@ export function ModelStep({ project }: { project: ResearchProject }) {
     return (
       <section className="flex min-h-[520px] min-w-0 flex-col gap-4">
         <header className="border-b pb-3">
-          <p className="text-xs font-medium text-muted-foreground">Model</p>
+          <p className="text-xs font-medium text-muted-foreground">模型建立</p>
           <h3 className="mt-1 break-words text-base font-semibold">
-            Initializing Hotelling model
+            正在初始化 Hotelling 模型
           </h3>
         </header>
         <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
-          Creating the default two-sided platform setup.
+          正在创建默认双边平台设定。
         </p>
       </section>
     );
@@ -213,29 +213,27 @@ export function ModelStep({ project }: { project: ResearchProject }) {
   return (
     <section className="flex min-h-[520px] min-w-0 flex-col gap-5">
       <header className="border-b pb-3">
-        <p className="text-xs font-medium text-muted-foreground">Model</p>
+        <p className="text-xs font-medium text-muted-foreground">模型建立</p>
         <h3 className="mt-1 break-words text-base font-semibold">
-          Hotelling model builder
+          Hotelling 模型构建器
         </h3>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          {completedCounts.symbols} symbols, {completedCounts.utilities} utility
-          functions, {completedCounts.profits} profit functions,{" "}
-          {completedCounts.assumptions} assumptions.
+          {completedCounts.symbols} 个符号，{completedCounts.utilities} 个效用函数，
+          {completedCounts.profits} 个利润函数，{completedCounts.assumptions} 条假设。
         </p>
       </header>
 
       <section className="min-w-0 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h4 className="text-sm font-semibold">Symbol dictionary</h4>
+            <h4 className="text-sm font-semibold">符号字典</h4>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Keep n_i^C and n_i^M for side quantities unless the paper
-              explicitly needs separate m notation.
+              建议用 n_i^C 与 n_i^M 表示消费者侧和商家侧数量，除非论文明确需要单独的 m 记号。
             </p>
           </div>
           <Button size="sm" onClick={addSymbol}>
             <Plus aria-hidden="true" />
-            Symbol
+            符号
           </Button>
         </div>
 
@@ -257,7 +255,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
                       {symbol.name || symbol.codeName || symbol.symbol}
                     </span>
                     <span className="mt-0.5 block line-clamp-2 break-words text-xs leading-5 text-muted-foreground">
-                      {symbol.meaning || "No meaning recorded"}
+                      {symbol.meaning || "未记录含义"}
                     </span>
                   </span>
                 </button>
@@ -265,7 +263,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
                   variant="ghost"
                   size="icon-xs"
                   onClick={() => deleteSymbol(symbol.id)}
-                  aria-label={`Delete ${symbol.name || symbol.codeName}`}
+                  aria-label={`删除 ${symbol.name || symbol.codeName}`}
                 >
                   <Trash2 aria-hidden="true" />
                 </Button>
@@ -278,7 +276,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
               <SymbolEditor symbol={editingSymbol} onChange={updateSymbol} />
             ) : (
               <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
-                Add a symbol to start the dictionary.
+                添加一个符号后即可开始整理字典。
               </p>
             )}
           </div>
@@ -288,7 +286,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
       <section className="grid min-w-0 gap-3 border-t pt-4 md:grid-cols-2">
         <div className="grid min-w-0 gap-1.5">
           <Label htmlFor="consumer-side-name" className="text-xs">
-            Consumer side name
+            消费者侧名称
           </Label>
           <Input
             id="consumer-side-name"
@@ -307,7 +305,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
         </div>
         <div className="grid min-w-0 gap-1.5">
           <Label htmlFor="merchant-side-name" className="text-xs">
-            Merchant side name
+            商家侧名称
           </Label>
           <Input
             id="merchant-side-name"
@@ -326,7 +324,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
         </div>
         <div className="grid min-w-0 gap-1.5 md:col-span-2">
           <Label htmlFor="platforms" className="text-xs">
-            Platforms, one per line
+            平台列表，每行一个
           </Label>
           <Textarea
             id="platforms"
@@ -345,10 +343,10 @@ export function ModelStep({ project }: { project: ResearchProject }) {
 
       <section className="min-w-0 space-y-3 border-t pt-4">
         <div className="flex items-center justify-between gap-3">
-          <h4 className="text-sm font-semibold">Timing stages</h4>
+          <h4 className="text-sm font-semibold">时序阶段</h4>
           <Button size="sm" variant="outline" onClick={addStage}>
             <Plus aria-hidden="true" />
-            Stage
+            阶段
           </Button>
         </div>
         <div className="min-w-0 divide-y rounded-lg border">
@@ -356,7 +354,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
             <div key={stage.id} className="grid min-w-0 gap-2 p-3 md:grid-cols-5">
               <div className="grid min-w-0 gap-1.5">
                 <Label htmlFor={`${stage.id}-order`} className="text-xs">
-                  Order
+                  顺序
                 </Label>
                 <Input
                   id={`${stage.id}-order`}
@@ -373,7 +371,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
               </div>
               <div className="grid min-w-0 gap-1.5 md:col-span-2">
                 <Label htmlFor={`${stage.id}-name`} className="text-xs">
-                  Stage
+                  阶段名称
                 </Label>
                 <Input
                   id={`${stage.id}-name`}
@@ -387,13 +385,13 @@ export function ModelStep({ project }: { project: ResearchProject }) {
               <div className="grid min-w-0 gap-1.5 md:col-span-2">
                 <div className="flex items-center justify-between gap-2">
                   <Label htmlFor={`${stage.id}-decisions`} className="text-xs">
-                    Decisions, one per line
+                    决策内容，每行一个
                   </Label>
                   <Button
                     variant="ghost"
                     size="icon-xs"
                     onClick={() => deleteStage(stage.id)}
-                    aria-label={`Delete ${stage.name}`}
+                    aria-label={`删除 ${stage.name}`}
                   >
                     <Trash2 aria-hidden="true" />
                   </Button>
@@ -416,7 +414,14 @@ export function ModelStep({ project }: { project: ResearchProject }) {
       </section>
 
       <EditableFunctionSection
-        title="Utility functions"
+        title="效用函数"
+        addLabel="条目"
+        emptyLabel="暂无条目。"
+        sideLabel="参与侧"
+        platformLabel="平台"
+        expressionLabel="表达式"
+        notesLabel="备注"
+        deleteLabel="删除效用函数条目"
         entries={model.utilityFunctions}
         platforms={model.platforms}
         onAdd={() =>
@@ -442,7 +447,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
 
       <section className="grid min-w-0 gap-1.5 border-t pt-4">
         <Label htmlFor="demand-derivation" className="text-xs">
-          Demand derivation
+          需求推导
         </Label>
         <Textarea
           id="demand-derivation"
@@ -454,13 +459,19 @@ export function ModelStep({ project }: { project: ResearchProject }) {
             }))
           }
           rows={5}
-          placeholder="Indifferent-user conditions, market coverage, and resulting n_i^C / n_i^M expressions."
+          placeholder="无差异用户条件、市场覆盖条件，以及推导得到的 n_i^C / n_i^M 表达式。"
           className="min-h-28 resize-y text-sm leading-6"
         />
       </section>
 
       <EditableFunctionSection
-        title="Profit functions"
+        title="利润函数"
+        addLabel="条目"
+        emptyLabel="暂无条目。"
+        platformLabel="平台"
+        expressionLabel="表达式"
+        notesLabel="备注"
+        deleteLabel="删除利润函数条目"
         entries={model.profitFunctions}
         platforms={model.platforms}
         onAdd={() =>
@@ -486,7 +497,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
       <section className="grid min-w-0 gap-3 border-t pt-4 md:grid-cols-2">
         <div className="grid min-w-0 gap-1.5">
           <Label htmlFor="assumptions" className="text-xs">
-            Assumptions, one per line
+            假设条件，每行一个
           </Label>
           <Textarea
             id="assumptions"
@@ -503,7 +514,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
         </div>
         <div className="grid min-w-0 gap-1.5">
           <Label htmlFor="model-setup-draft" className="text-xs">
-            Model setup draft
+            模型设定草稿
           </Label>
           <Textarea
             id="model-setup-draft"
@@ -515,7 +526,7 @@ export function ModelStep({ project }: { project: ResearchProject }) {
               }))
             }
             rows={7}
-            placeholder="Formal prose for the model setup section."
+            placeholder="用于论文模型设定部分的正式表述。"
             className="min-h-40 resize-y text-sm leading-6"
           />
         </div>
@@ -526,6 +537,13 @@ export function ModelStep({ project }: { project: ResearchProject }) {
 
 function EditableFunctionSection<T extends UtilityFunction | ProfitFunction>({
   title,
+  addLabel = "条目",
+  emptyLabel = "暂无条目。",
+  sideLabel = "参与侧",
+  platformLabel = "平台",
+  expressionLabel = "表达式",
+  notesLabel = "备注",
+  deleteLabel = "删除条目",
   entries,
   platforms,
   onAdd,
@@ -534,6 +552,13 @@ function EditableFunctionSection<T extends UtilityFunction | ProfitFunction>({
   withSide = false,
 }: {
   title: string;
+  addLabel?: string;
+  emptyLabel?: string;
+  sideLabel?: string;
+  platformLabel?: string;
+  expressionLabel?: string;
+  notesLabel?: string;
+  deleteLabel?: string;
   entries: T[];
   platforms: string[];
   onAdd: () => void;
@@ -547,13 +572,13 @@ function EditableFunctionSection<T extends UtilityFunction | ProfitFunction>({
         <h4 className="text-sm font-semibold">{title}</h4>
         <Button size="sm" variant="outline" onClick={onAdd}>
           <Plus aria-hidden="true" />
-          Entry
+          {addLabel}
         </Button>
       </div>
 
       {entries.length === 0 ? (
         <p className="border-l border-dashed pl-3 text-sm leading-6 text-muted-foreground">
-          No entries yet.
+          {emptyLabel}
         </p>
       ) : (
         <div className="min-w-0 divide-y rounded-lg border">
@@ -565,7 +590,7 @@ function EditableFunctionSection<T extends UtilityFunction | ProfitFunction>({
               {withSide ? (
                 <div className="grid min-w-0 gap-1.5">
                   <Label htmlFor={`${entry.id}-side`} className="text-xs">
-                    Side
+                    {sideLabel}
                   </Label>
                   <select
                     id={`${entry.id}-side`}
@@ -578,14 +603,14 @@ function EditableFunctionSection<T extends UtilityFunction | ProfitFunction>({
                     }
                     className="h-8 w-full rounded-lg border border-input bg-background px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
-                    <option value="consumer">Consumer</option>
-                    <option value="merchant">Merchant</option>
+                    <option value="consumer">消费者</option>
+                    <option value="merchant">商家</option>
                   </select>
                 </div>
               ) : null}
               <div className="grid min-w-0 gap-1.5">
                 <Label htmlFor={`${entry.id}-platform`} className="text-xs">
-                  Platform
+                  {platformLabel}
                 </Label>
                 <Input
                   id={`${entry.id}-platform`}
@@ -609,7 +634,7 @@ function EditableFunctionSection<T extends UtilityFunction | ProfitFunction>({
               </div>
               <div className="grid min-w-0 gap-1.5 md:col-span-3">
                 <Label htmlFor={`${entry.id}-expression`} className="text-xs">
-                  Expression
+                  {expressionLabel}
                 </Label>
                 <Textarea
                   id={`${entry.id}-expression`}
@@ -626,13 +651,13 @@ function EditableFunctionSection<T extends UtilityFunction | ProfitFunction>({
               <div className="grid min-w-0 gap-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <Label htmlFor={`${entry.id}-notes`} className="text-xs">
-                    Notes
+                    {notesLabel}
                   </Label>
                   <Button
                     variant="ghost"
                     size="icon-xs"
                     onClick={() => onDelete(entry.id)}
-                    aria-label={`Delete ${title} entry`}
+                    aria-label={deleteLabel}
                   >
                     <Trash2 aria-hidden="true" />
                   </Button>

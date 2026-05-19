@@ -10,15 +10,15 @@ export function MathChip({ symbol }: { symbol: SymbolDefinition }) {
       }`}
     >
       <span>{symbol.baseSymbol}</span>
-      {symbol.subscript ? (
-        <sub className="ml-0.5 text-[0.65em] leading-none text-muted-foreground">
-          {symbol.subscript}
-        </sub>
-      ) : null}
-      {symbol.superscript ? (
-        <sup className="ml-0.5 self-start pt-0.5 text-[0.65em] leading-none text-muted-foreground">
-          {symbol.superscript}
-        </sup>
+      {symbol.subscript || symbol.superscript ? (
+        <span className="ml-0.5 grid h-5 grid-rows-2 items-center self-center text-[0.62em] leading-none text-muted-foreground">
+          <span className="block h-2.5 leading-none">
+            {symbol.superscript ? symbol.superscript : "\u00a0"}
+          </span>
+          <span className="block h-2.5 leading-none">
+            {symbol.subscript ? symbol.subscript : "\u00a0"}
+          </span>
+        </span>
       ) : null}
     </span>
   );
