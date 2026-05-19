@@ -11,6 +11,7 @@ const files = [
 ];
 
 const forbiddenVisibleCopy = [
+  "代码名",
   "Hotelling model builder",
   "Symbol dictionary",
   "No meaning recorded",

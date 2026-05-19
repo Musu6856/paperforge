@@ -91,11 +91,11 @@ export function SymbolEditor({
           </div>
         </div>
         <p className="min-w-0 flex-1 break-words text-xs leading-5 text-muted-foreground">
-          下标建议表示平台或主体，上标建议表示消费者侧 C、商家侧 M；代码名保持 SymPy 可识别。
+          下标建议表示平台或主体，上标建议表示消费者侧 C、商家侧 M；求解变量由系统自动生成。
         </p>
       </div>
 
-      <div className="grid min-w-0 gap-2 md:grid-cols-4">
+      <div className="grid min-w-0 gap-2 md:grid-cols-3">
         <div className="grid min-w-0 gap-1.5">
           <Label htmlFor={`${symbol.id}-baseSymbol`} className="text-xs">
             主符号
@@ -136,18 +136,20 @@ export function SymbolEditor({
             className="text-sm"
           />
         </div>
-        <div className="grid min-w-0 gap-1.5">
-          <Label htmlFor={`${symbol.id}-codeName`} className="text-xs">
-            代码名
-          </Label>
-          <Input
-            id={`${symbol.id}-codeName`}
-            value={symbol.codeName}
-            onChange={(event) => update("codeName", event.currentTarget.value)}
-            placeholder="n_i_C"
-            className="font-mono text-sm"
-          />
+      </div>
+
+      <div className="rounded-md border bg-muted/30 px-3 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            求解变量（自动）
+          </p>
+          <code className="rounded bg-background px-2 py-1 font-mono text-xs text-foreground">
+            {symbol.codeName || toCodeName(previewSymbol) || "auto_symbol"}
+          </code>
         </div>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          仅供系统生成 SymPy/Python 求解代码使用，论文中继续使用上方预览符号。
+        </p>
       </div>
 
       <div className="grid min-w-0 gap-2 md:grid-cols-2">
