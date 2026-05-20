@@ -105,6 +105,11 @@ export default function ProjectPage() {
     );
   }
 
+  if (project.projectType === "exploration" || project.projectType === "formal") {
+    router.replace(`/research/${project.id}`);
+    return null;
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       <header className="border-b bg-background/90 backdrop-blur-sm">
