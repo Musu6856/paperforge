@@ -165,15 +165,92 @@ export interface PropertyAnalysis {
   warnings: string[];
 }
 
+export type ModelSourceProvider =
+  | "openai"
+  | "anthropic"
+  | "openai-compatible"
+  | "anthropic-compatible";
+
+export type ModelSourceSettings =
+  | {
+      source: "paperforge";
+    }
+  | {
+      source: "own";
+      provider: ModelSourceProvider;
+      apiKey: string;
+      model: string;
+      baseUrl?: string;
+    };
+
+export type ModelSourceMetadata =
+  | {
+      source: "paperforge";
+    }
+  | {
+      source: "own";
+      provider: ModelSourceProvider;
+      model: string;
+      hasBrowserApiKey: boolean;
+      baseUrl?: string;
+    };
+
+export type ResearchProjectType = "exploration" | "formal";
+
+export interface ResearchDirection {
+  id: string;
+  title: string;
+  summary: string;
+  model: string;
+  contribution: string;
+  recommended: boolean;
+}
+
+export interface ResearchSessionMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: number;
+}
+
+export interface ResearchSessionDecision {
+  kind: "choose_direction" | "answer_model_question";
+  prompt: string;
+}
+
+export type ResearchSessionEquilibriumStatus =
+  | "not_started"
+  | "等待模型确认"
+  | EquilibriumResult["status"];
+
+export interface ResearchSessionAssetSummary {
+  currentDirection?: ResearchDirection;
+  confirmedAssumptions: string[];
+  pendingDecision?: ResearchSessionDecision;
+  utilityFunctions: string[];
+  equilibriumStatus: ResearchSessionEquilibriumStatus;
+  nextActions: string[];
+}
+
+export interface ResearchSession {
+  phase: "direction" | "model" | "equilibrium" | "analysis";
+  directions: ResearchDirection[];
+  messages: ResearchSessionMessage[];
+  assetSummary: ResearchSessionAssetSummary;
+}
+
 export interface ResearchProject {
   id: string;
   createdAt: number;
   rawIdea: string;
   refinedIdea: string;
+  projectType?: ResearchProjectType;
   model: GameTheoryModel | null;
   wizardCompleted: boolean;
   sections: PaperSection[];
   references: Reference[];
+  modelSource?: ModelSourceMetadata;
+  researchSession?: ResearchSession;
   background?: BackgroundStory;
   literatureAnalyses?: LiteratureAnalysis[];
   hotellingModel?: HotellingModel;
