@@ -16,18 +16,19 @@ export default function ProjectPage() {
   const { state, dispatch } = useStore();
   const [loadError, setLoadError] = useState(false);
 
-  const project = state.currentProject;
+  const requestedId = params.id as string;
+  const project =
+    state.currentProject?.id === requestedId ? state.currentProject : null;
 
   useEffect(() => {
-    const id = params.id as string;
-    if (project?.id === id) return;
+    if (project) return;
 
     let cancelled = false;
 
     async function loadProject() {
       setLoadError(false);
       try {
-        const found = await fetchProject(id);
+        const found = await fetchProject(requestedId);
         if (!cancelled) {
           dispatch({ type: "SET_PROJECT", payload: found });
         }
@@ -45,7 +46,7 @@ export default function ProjectPage() {
     return () => {
       cancelled = true;
     };
-  }, [params.id, project?.id, dispatch]);
+  }, [requestedId, project, dispatch]);
 
   if (!project) {
     return (

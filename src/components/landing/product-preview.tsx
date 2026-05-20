@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 
 export function ProductPreview() {
   return (
@@ -44,10 +45,11 @@ export function ProductPreview() {
                     </div>
                     <Badge variant="secondary">推荐</Badge>
                   </div>
-                  <div className="mt-4 overflow-x-auto rounded bg-muted/60 px-3 py-2 text-center font-serif text-sm">
-                    U<sub>A</sub><sup>B</sup> = v<sub>B</sub> + α
-                    <sub>B</sub>n<sub>A</sub><sup>S</sup> + s<sub>A</sub> -
-                    p - t<sub>B</sub>x
+                  <div className="mt-4 overflow-x-auto rounded bg-muted/60 px-3 py-2 text-center">
+                    <MarkdownRenderer
+                      content="$U_{A}^{B}=v_B+\\alpha_B n_{A}^{S}+s_A-p-t_B x$"
+                      className="reader-page text-sm"
+                    />
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Badge variant="outline">高可解性</Badge>

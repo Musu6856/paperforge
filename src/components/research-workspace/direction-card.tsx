@@ -7,10 +7,12 @@ import type { ResearchDirection } from "@/lib/types";
 export function DirectionCard({
   direction,
   adopted,
+  disabled,
   onAdopt,
 }: {
   direction: ResearchDirection;
   adopted: boolean;
+  disabled?: boolean;
   onAdopt: (directionId: string) => void;
 }) {
   return (
@@ -46,6 +48,10 @@ export function DirectionCard({
           <Button variant="outline" size="sm" disabled className="gap-1.5">
             <CheckCircle2 className="size-3.5" />
             已采用
+          </Button>
+        ) : disabled ? (
+          <Button variant="outline" size="sm" disabled>
+            待扩展
           </Button>
         ) : (
           <Button

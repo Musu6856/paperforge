@@ -58,11 +58,23 @@ const initialState: AppState = {
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "SET_PROJECT":
-      return { ...state, currentProject: action.payload };
+      return {
+        ...state,
+        currentProject: action.payload,
+        projects: state.projects.map((project) =>
+          project.id === action.payload.id ? action.payload : project
+        ),
+      };
     case "UPDATE_PROJECT":
       if (!state.currentProject) return state;
       const updated = { ...state.currentProject, ...action.payload };
-      return { ...state, currentProject: updated };
+      return {
+        ...state,
+        currentProject: updated,
+        projects: state.projects.map((project) =>
+          project.id === updated.id ? updated : project
+        ),
+      };
     case "SET_BACKGROUND":
       if (!state.currentProject) return state;
       return {

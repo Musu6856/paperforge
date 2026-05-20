@@ -90,6 +90,10 @@ export function adoptResearchDirection(
     throw new Error("Unknown research direction.");
   }
 
+  if (!direction.recommended) {
+    throw new Error("This research direction does not have a model scaffold yet.");
+  }
+
   const model = createSecondhandCommissionSubsidyModel();
   const equilibriumResult = createSymbolicEquilibriumScaffold();
   const messages: ResearchSessionMessage[] = [

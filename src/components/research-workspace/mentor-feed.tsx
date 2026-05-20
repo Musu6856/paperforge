@@ -27,6 +27,7 @@ export function MentorFeed({
               key={direction.id}
               direction={direction}
               adopted={session.assetSummary.currentDirection?.id === direction.id}
+              disabled={!direction.recommended}
               onAdopt={onAdopt}
             />
           ))}
