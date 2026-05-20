@@ -35,6 +35,7 @@ test("creates direction discovery state with four direction cards and a pending 
 
 test("creates an exploration project payload with research session and model source metadata", () => {
   const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
     rawIdea: "研究二手平台佣金和补贴策略",
     now: 1710000000000,
     modelSource: {
@@ -46,6 +47,7 @@ test("creates an exploration project payload with research session and model sou
   });
 
   assert.equal(project.createdAt, 1710000000000);
+  assert.equal(project.id, "11111111-1111-4111-8111-111111111111");
   assert.equal(project.projectType, "exploration");
   assert.equal(project.rawIdea, "研究二手平台佣金和补贴策略");
   assert.equal(project.refinedIdea, "研究二手平台佣金和补贴策略");
@@ -62,6 +64,7 @@ test("creates an exploration project payload with research session and model sou
 
 test("adopts a research direction into model co-creation phase", () => {
   const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
     rawIdea: "研究二手平台佣金和补贴策略",
     now: 1710000000000,
   });

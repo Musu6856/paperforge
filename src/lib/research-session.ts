@@ -53,17 +53,19 @@ export function createInitialResearchSession(rawIdea: string): ResearchSession {
 }
 
 export function createExplorationProject({
+  id = createProjectId(),
   rawIdea,
   now = Date.now(),
   modelSource,
 }: {
+  id?: string;
   rawIdea: string;
   now?: number;
   modelSource?: Partial<ModelSourceSettings>;
 }): ResearchProject {
   const normalizedIdea = rawIdea.trim();
   return {
-    id: createProjectId(now),
+    id,
     createdAt: now,
     rawIdea: normalizedIdea,
     refinedIdea: normalizedIdea,
@@ -189,28 +191,28 @@ function createSecondhandCommissionSubsidyModel(): HotellingModel {
       id: "u-buyer-a",
       side: "consumer",
       platform: "A",
-      expression: "U_A^B = v_B + alpha_B n_A^S + s_A - p - t_B x",
+      expression: "U_{A}^{B} = v_B + \\alpha_B n_{A}^{S} + s_A - p - t_B x",
       notes: "买家位于 Hotelling 线段 x，选择平台 A 时获得卖家规模带来的跨边网络效应和买家补贴。",
     },
     {
       id: "u-buyer-b",
       side: "consumer",
       platform: "B",
-      expression: "U_B^B = v_B + alpha_B n_B^S + s_B - p - t_B (1 - x)",
+      expression: "U_{B}^{B} = v_B + \\alpha_B n_{B}^{S} + s_B - p - t_B (1 - x)",
       notes: "买家选择平台 B 时承担到右端平台的差异化成本。",
     },
     {
       id: "u-seller-a",
       side: "merchant",
       platform: "A",
-      expression: "U_A^S = v_S + alpha_S n_A^B - tau_A q - t_S y",
+      expression: "U_{A}^{S} = v_S + \\alpha_S n_{A}^{B} - \\tau_A q - t_S y",
       notes: "卖家位于 Hotelling 线段 y，平台 A 对成交额收取佣金 tau_A q。",
     },
     {
       id: "u-seller-b",
       side: "merchant",
       platform: "B",
-      expression: "U_B^S = v_S + alpha_S n_B^B - tau_B q - t_S (1 - y)",
+      expression: "U_{B}^{S} = v_S + \\alpha_S n_{B}^{B} - \\tau_B q - t_S (1 - y)",
       notes: "卖家选择平台 B 时在佣金和买家规模之间权衡。",
     },
   ];
@@ -227,7 +229,7 @@ function createSecondhandCommissionSubsidyModel(): HotellingModel {
         id: "stage-commission-subsidy",
         order: 1,
         name: "平台选择佣金和补贴",
-        decisions: ["tau_A", "tau_B", "s_A", "s_B"],
+        decisions: ["\\tau_A", "\\tau_B", "s_A", "s_B"],
       },
       {
         id: "stage-participation",
@@ -262,7 +264,7 @@ function createSecondhandCommissionSubsidyModel(): HotellingModel {
     assumptions: [
       "两个平台位于 Hotelling 线段两端，买家和卖家各自单归属。",
       "买家和卖家均受到对侧参与规模的正向跨边网络效应影响。",
-      "平台先同时选择卖家佣金 tau_i 和买家补贴 s_i。",
+      "平台先同时选择卖家佣金 \\tau_i 和买家补贴 s_i。",
       "佣金按单位成交价值 q 收取，补贴按买家参与规模支付。",
       "均衡分析仅采用符号化一阶条件与参数约束，不进行数值模拟。",
     ],
@@ -278,17 +280,17 @@ function createSymbolicEquilibriumScaffold(): EquilibriumResult {
     solvingSteps: [
       "写出买家侧和卖家侧无差异条件。",
       "求得两侧需求份额并代入平台利润函数。",
-      "对 tau_i 和 s_i 写出符号化一阶条件。",
+      "对 \\tau_i 和 s_i 写出符号化一阶条件。",
       "整理均衡存在所需的内部解和二阶条件。",
     ],
     focs: [
-      "d Pi_i / d tau_i = 0",
-      "d Pi_i / d s_i = 0",
+      "\\frac{\\partial \\Pi_i}{\\partial \\tau_i}=0",
+      "\\frac{\\partial \\Pi_i}{\\partial s_i}=0",
     ],
     conditions: [
       "t_B > 0",
       "t_S > 0",
-      "alpha_B 和 alpha_S 保证需求份额位于 [0, 1]",
+      "\\alpha_B 和 \\alpha_S 保证需求份额位于 [0, 1]",
     ],
     closedForm: "",
     derivation: "等待用户确认模型设定后继续推导符号化均衡。",
@@ -297,8 +299,12 @@ function createSymbolicEquilibriumScaffold(): EquilibriumResult {
   };
 }
 
-function createProjectId(now: number): string {
-  return `research-${now.toString(36)}`;
+function createProjectId(): string {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  throw new Error("crypto.randomUUID is required to create a research project.");
 }
 
 function normalizeProjectModelSource(
