@@ -7,7 +7,10 @@ export function projectFromRow(row: ProjectRow): ResearchProject {
     createdAt: row.createdAt.getTime(),
     rawIdea: row.rawIdea,
     refinedIdea: row.refinedIdea,
+    projectType: row.projectType,
     model: row.model,
+    researchSession: row.researchSession ?? undefined,
+    modelSource: row.modelSource ?? undefined,
     wizardCompleted: row.wizardCompleted || row.sections.length > 0,
     sections: row.sections,
     references: row.references,
@@ -38,6 +41,10 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     typeof project.refinedIdea !== "string" ||
     (project.wizardCompleted !== undefined &&
       typeof project.wizardCompleted !== "boolean") ||
+    (project.projectType !== undefined &&
+      project.projectType !== "exploration" &&
+      project.projectType !== "formal" &&
+      project.projectType !== "legacy") ||
     (project.literatureAnalyses !== undefined &&
       !Array.isArray(project.literatureAnalyses)) ||
     (project.propertyAnalyses !== undefined &&
@@ -68,7 +75,10 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     createdAt: project.createdAt,
     rawIdea: project.rawIdea,
     refinedIdea: project.refinedIdea,
+    projectType: project.projectType ?? "legacy",
     model: project.model ?? null,
+    researchSession: project.researchSession,
+    modelSource: project.modelSource,
     wizardCompleted: project.wizardCompleted ?? false,
     sections: project.sections,
     references: project.references,

@@ -91,6 +91,12 @@ export async function createProject(
   return data.project;
 }
 
+export async function createExplorationProjectApi(
+  project: ResearchProject
+): Promise<ResearchProject> {
+  return createProject(project);
+}
+
 export async function saveProject(
   project: ResearchProject
 ): Promise<ResearchProject> {

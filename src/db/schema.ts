@@ -16,6 +16,9 @@ import type {
   PaperSection,
   PropertyAnalysis,
   Reference,
+  ResearchProjectType,
+  ResearchSession,
+  ModelSourceMetadata,
 } from "@/lib/types";
 
 export const projects = pgTable(
@@ -25,7 +28,13 @@ export const projects = pgTable(
     ownerId: text("owner_id").notNull(),
     rawIdea: text("raw_idea").notNull(),
     refinedIdea: text("refined_idea").notNull(),
+    projectType: text("project_type")
+      .$type<ResearchProjectType>()
+      .notNull()
+      .default("legacy"),
     model: jsonb("model").$type<GameTheoryModel | null>(),
+    researchSession: jsonb("research_session").$type<ResearchSession | null>(),
+    modelSource: jsonb("model_source").$type<ModelSourceMetadata | null>(),
     wizardCompleted: boolean("wizard_completed").notNull().default(false),
     sections: jsonb("sections").$type<PaperSection[]>().notNull(),
     references: jsonb("references").$type<Reference[]>().notNull(),

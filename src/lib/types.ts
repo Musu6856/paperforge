@@ -195,7 +195,7 @@ export type ModelSourceMetadata =
       baseUrl?: string;
     };
 
-export type ResearchProjectType = "exploration" | "formal";
+export type ResearchProjectType = "exploration" | "formal" | "legacy";
 
 export interface ResearchDirection {
   id: string;

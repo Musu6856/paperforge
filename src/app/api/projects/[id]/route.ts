@@ -55,7 +55,10 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
       .set({
         rawIdea: project.rawIdea,
         refinedIdea: project.refinedIdea,
+        projectType: project.projectType ?? "legacy",
         model: project.model,
+        researchSession: project.researchSession ?? null,
+        modelSource: project.modelSource ?? null,
         wizardCompleted: project.wizardCompleted,
         sections: project.sections,
         references: project.references,
