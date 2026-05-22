@@ -100,6 +100,29 @@ test("provider connectivity reports upstream HTTP errors without leaking secrets
   assert.equal(result.message.includes("sk-should-not-leak"), false);
 });
 
+test("provider connectivity gives actionable guidance for authentication errors", async () => {
+  const result = await checkProviderConnectivity(
+    {
+      apiKey: "sk-test",
+      baseUrl: "https://api.deepseek.com",
+      model: "deepseek-chat",
+    },
+    {
+      fetch: async () =>
+        new Response("unauthorized", {
+          status: 401,
+          statusText: "Unauthorized",
+        }),
+    }
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "upstream_http_error");
+  assert.match(result.message, /认证失败|API Key/);
+  assert.match(result.message, /DeepSeek|api\.deepseek\.com/);
+  assert.match(result.message, /HTTP 401/);
+});
+
 test("provider connectivity reports invalid completion payloads", async () => {
   const result = await checkProviderConnectivity(baseConfig, {
     fetch: async () =>

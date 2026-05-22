@@ -18,7 +18,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -34,6 +34,7 @@ import {
   normalizeModelSourceSettings,
   parseStoredModelSourceSettings,
 } from "@/lib/model-source";
+import { describeModelSourceForUi } from "@/lib/model-source-display";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import type { ModelSourceSettings, ResearchProject } from "@/lib/types";
@@ -60,9 +61,38 @@ export function ResearchSidebar({
   const [modelSettings, setModelSettings] = useState<ModelSourceSettings>({
     source: "paperforge",
   });
+  const [activeModelSettings, setActiveModelSettings] =
+    useState<ModelSourceSettings>({
+      source: "paperforge",
+    });
   const [providerHealth, setProviderHealth] =
     useState<ProviderHealthResult | null>(null);
   const [isCheckingProvider, setIsCheckingProvider] = useState(false);
+  const activeModelSummary = describeModelSourceForUi(
+    activeModelSettings,
+    providerHealth
+  );
+
+  useEffect(() => {
+    function readActiveModelSettings() {
+      setActiveModelSettings(
+        parseStoredModelSourceSettings(
+          window.localStorage.getItem(MODEL_SOURCE_STORAGE_KEY)
+        )
+      );
+    }
+
+    readActiveModelSettings();
+    window.addEventListener(
+      MODEL_SOURCE_CONFIGURED_EVENT,
+      readActiveModelSettings
+    );
+    return () =>
+      window.removeEventListener(
+        MODEL_SOURCE_CONFIGURED_EVENT,
+        readActiveModelSettings
+      );
+  }, []);
 
   function toggleSettings() {
     if (!settingsOpen) {
@@ -81,6 +111,11 @@ export function ResearchSidebar({
         window.localStorage.getItem(MODEL_SOURCE_STORAGE_KEY)
       )
     );
+  }
+
+  function handleModelSettingsChange(settings: ModelSourceSettings) {
+    setModelSettings(settings);
+    setProviderHealth(null);
   }
 
   const formalProjects = state.projects.filter(
@@ -266,9 +301,13 @@ export function ResearchSidebar({
                 result={providerHealth}
                 isChecking={isCheckingProvider}
               />
+              <ModelSourceSummaryBox
+                title="当前表单将使用"
+                summary={describeModelSourceForUi(modelSettings, providerHealth)}
+              />
               <ModelSourceConfigurator
                 settings={modelSettings}
-                onSettingsChange={setModelSettings}
+                onSettingsChange={handleModelSettingsChange}
                 compact
               />
               <div className="mt-4 flex justify-end gap-2">
@@ -295,6 +334,7 @@ export function ResearchSidebar({
                       window.dispatchEvent(
                         new Event(MODEL_SOURCE_CONFIGURED_EVENT)
                       );
+                      setActiveModelSettings(normalized);
                       dispatch({
                         type: "UPDATE_PROJECT",
                         payload: {
@@ -328,9 +368,11 @@ export function ResearchSidebar({
           <div className="flex min-w-0 items-center gap-2">
             <UserButton />
             <div className="min-w-0">
-              <p className="truncate text-xs font-medium">账户与偏好</p>
+              <p className="truncate text-xs font-medium">
+                {activeModelSummary.label}
+              </p>
               <p className="truncate text-[11px] text-muted-foreground">
-                语言、模型、用户信息
+                {activeModelSummary.detail}
               </p>
             </div>
           </div>
@@ -405,6 +447,22 @@ function ProviderHealthInlineStatus({
         <p className="font-medium">{status.label}</p>
         <p className="mt-0.5">{status.detail}</p>
       </div>
+    </div>
+  );
+}
+
+function ModelSourceSummaryBox({
+  title,
+  summary,
+}: {
+  title: string;
+  summary: ReturnType<typeof describeModelSourceForUi>;
+}) {
+  return (
+    <div className="rounded-md border bg-background px-3 py-2 text-xs leading-5">
+      <p className="font-medium text-foreground">{title}</p>
+      <p className="mt-0.5 text-muted-foreground">{summary.label}</p>
+      <p className="text-muted-foreground">{summary.detail}</p>
     </div>
   );
 }

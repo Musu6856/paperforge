@@ -119,9 +119,7 @@ export async function checkProviderConnectivity(
         ok: false,
         configured: true,
         code: "upstream_http_error",
-        message: `模型服务返回 ${error.status} ${
-          error.statusText || ""
-        }`.trim(),
+        message: formatProviderHttpErrorMessage(error, provider),
         provider: safeProvider,
         latencyMs: Math.max(0, finishedAt - startedAt),
         statusCode: error.status,
@@ -141,6 +139,41 @@ export async function checkProviderConnectivity(
     };
   } finally {
     clearTimeout(timeoutId);
+  }
+}
+
+function formatProviderHttpErrorMessage(
+  error: ProviderHttpError,
+  provider: Pick<ProviderConfig, "baseUrl" | "model">
+) {
+  const status = `HTTP ${error.status}`;
+  const endpoint = formatProviderEndpoint(provider.baseUrl);
+
+  if (error.status === 401 || error.status === 403) {
+    return `模型服务认证失败（${status}）。请检查 API Key 是否属于 ${endpoint}，以及模型 ${provider.model} 是否对当前账号可用。`;
+  }
+
+  if (error.status === 404) {
+    return `模型或接口地址不可用（${status}）。请检查 Base URL ${endpoint} 和模型名称 ${provider.model}。`;
+  }
+
+  if (error.status === 429) {
+    return `模型服务限流（${status}）。请稍后重试，或检查账号额度。`;
+  }
+
+  return `模型服务返回 ${status} ${error.statusText || ""}`.trim();
+}
+
+function formatProviderEndpoint(baseUrl: string) {
+  try {
+    const url = new URL(baseUrl);
+    const host = url.hostname;
+    if (host.includes("deepseek")) return `DeepSeek（${host}）`;
+    if (host.includes("xiaomimimo")) return `小米 MiMo（${host}）`;
+    if (host.includes("openai")) return `OpenAI（${host}）`;
+    return host;
+  } catch {
+    return baseUrl || "当前 Base URL";
   }
 }
 
