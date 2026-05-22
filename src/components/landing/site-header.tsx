@@ -4,10 +4,13 @@ import Link from "next/link";
 import { UserButton, useUser } from "@clerk/nextjs";
 
 import { buttonVariants } from "@/components/ui/button";
+import { isDevelopmentGuestMode } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { StartResearchLink } from "./start-research-link";
 
 export function SiteHeader() {
   const { isLoaded, isSignedIn } = useUser();
+  const guestMode = isDevelopmentGuestMode();
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/92 backdrop-blur">
@@ -29,22 +32,27 @@ export function SiteHeader() {
           <a href="#model-safety" className="transition-colors hover:text-foreground">
             模型与安全
           </a>
-          <a href="#example" className="transition-colors hover:text-foreground">
-            示例研究
+          <a href="#docs" className="transition-colors hover:text-foreground">
+            文档
           </a>
         </nav>
 
         <div className="flex items-center gap-2">
-          {isLoaded && isSignedIn ? (
+          {guestMode ? (
+            <StartResearchLink
+              label="本地测试"
+              variant="outline"
+              size="sm"
+              showArrow={false}
+            />
+          ) : isLoaded && isSignedIn ? (
             <>
-              <Link
-                href="/launch"
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "sm" })
-                )}
-              >
-                新研究
-              </Link>
+              <StartResearchLink
+                label="新研究"
+                variant="outline"
+                size="sm"
+                showArrow={false}
+              />
               <UserButton />
             </>
           ) : (

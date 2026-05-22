@@ -1,5 +1,9 @@
 import type { GameTheoryModel } from "./types";
-import type { ResearchProject } from "./types";
+import type {
+  ModelSourceMetadata,
+  ModelSourceSettings,
+  ResearchProject,
+} from "./types";
 
 const BASE_URL = "/api";
 
@@ -97,6 +101,104 @@ export async function createExplorationProjectApi(
   return createProject(project);
 }
 
+export type GenerateResearchProjectPayload =
+  | {
+      action: "discover_directions";
+      rawIdea: string;
+      modelSource?: ModelSourceMetadata;
+      runtimeModelSource?: ModelSourceSettings;
+    }
+  | {
+      action: "build_model";
+      rawIdea: string;
+      selectedDirectionId: string;
+      userMessage?: string;
+      project: ResearchProject;
+      runtimeModelSource?: ModelSourceSettings;
+    }
+  | {
+      action: "solve_equilibrium";
+      rawIdea: string;
+      project: ResearchProject;
+      runtimeModelSource?: ModelSourceSettings;
+    }
+  | {
+      action: "analyze_properties";
+      rawIdea: string;
+      project: ResearchProject;
+      runtimeModelSource?: ModelSourceSettings;
+    }
+  | {
+      action: "continue_conversation";
+      rawIdea: string;
+      userMessage: string;
+      project: ResearchProject;
+      runtimeModelSource?: ModelSourceSettings;
+    };
+
+export interface GenerateResearchProjectResult {
+  project: ResearchProject;
+  usedFallback?: boolean;
+  assistantMessage?: string;
+  assetPatch?: {
+    kind: "update_model" | "update_equilibrium" | "update_properties";
+    summary: string;
+    changes: Array<{
+      target: string;
+      op: "set" | "insert" | "remove";
+      value?: unknown;
+      reason?: string;
+    }>;
+  };
+}
+
+export async function generateResearchProjectApi(
+  payload: GenerateResearchProjectPayload
+): Promise<GenerateResearchProjectResult> {
+  return readJson<GenerateResearchProjectResult>(
+    await fetch(`${BASE_URL}/research/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+  );
+}
+
+export interface ProviderHealthResult {
+  ok: boolean;
+  configured: boolean;
+  code:
+    | "connected"
+    | "missing_api_key"
+    | "unsupported_provider"
+    | "upstream_http_error"
+    | "invalid_response"
+    | "network_error";
+  message: string;
+  provider: {
+    baseUrl: string;
+    model: string;
+  };
+  latencyMs?: number;
+  statusCode?: number;
+  checks?: {
+    chat: ProviderHealthResult;
+    json: ProviderHealthResult | null;
+  };
+}
+
+export async function checkProviderHealth(
+  modelSource?: ModelSourceSettings
+): Promise<ProviderHealthResult> {
+  return readJson<ProviderHealthResult>(
+    await fetch(`${BASE_URL}/provider/health`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ modelSource }),
+    })
+  );
+}
+
 export async function saveProject(
   project: ResearchProject
 ): Promise<ResearchProject> {
@@ -109,4 +211,12 @@ export async function saveProject(
   );
 
   return data.project;
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  await readJson<{ ok: true }>(
+    await fetch(`${BASE_URL}/projects/${id}`, {
+      method: "DELETE",
+    })
+  );
 }

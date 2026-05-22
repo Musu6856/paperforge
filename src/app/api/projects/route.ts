@@ -1,21 +1,16 @@
-import { auth } from "@clerk/nextjs/server";
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { projects } from "@/db/schema";
 import { projectFromRow, sanitizeProjectPayload } from "@/lib/project-records";
+import { getRequestUserId } from "@/lib/server-auth";
 
 function jsonError(error: string, status: number, code: string) {
   return Response.json({ error, code }, { status });
 }
 
-async function requireUserId() {
-  const { userId } = await auth();
-  return userId;
-}
-
 export async function GET() {
   try {
-    const userId = await requireUserId();
+    const userId = await getRequestUserId();
     if (!userId) return jsonError("Unauthorized", 401, "unauthorized");
 
     const rows = await getDb()
@@ -33,7 +28,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const userId = await requireUserId();
+    const userId = await getRequestUserId();
     if (!userId) return jsonError("Unauthorized", 401, "unauthorized");
 
     const body = await request.json();

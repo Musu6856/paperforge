@@ -167,9 +167,7 @@ export interface PropertyAnalysis {
 
 export type ModelSourceProvider =
   | "openai"
-  | "anthropic"
-  | "openai-compatible"
-  | "anthropic-compatible";
+  | "openai-compatible";
 
 export type ModelSourceSettings =
   | {
@@ -213,14 +211,64 @@ export interface ResearchSessionMessage {
   createdAt: number;
 }
 
+export type ResearchAssetKind = "model" | "equilibrium" | "properties";
+
+export type ResearchAssetChangeKind = "replace" | "append" | "remove";
+
+export type ResearchAssetPatchStatus = "proposed" | "applied" | "rejected";
+
+export type ResearchAssetFreshness = "fresh" | "stale";
+
+export interface ResearchAssetFreshnessMap {
+  model: ResearchAssetFreshness;
+  equilibrium: ResearchAssetFreshness;
+  properties: ResearchAssetFreshness;
+}
+
+export interface ResearchAssetChange {
+  kind: ResearchAssetChangeKind;
+  path: string;
+  value?: unknown;
+  previousValue?: unknown;
+  note?: string;
+}
+
+export interface ResearchAssetPatch {
+  id: string;
+  kind: ResearchAssetKind;
+  summary: string;
+  changes: ResearchAssetChange[];
+  status: ResearchAssetPatchStatus;
+  createdAt: number;
+  sourceMessageId?: string;
+  appliedAt?: number;
+  rejectedAt?: number;
+  rejectionReason?: string;
+}
+
+export interface ResearchAssetPatchInput {
+  id?: string;
+  kind: ResearchAssetKind;
+  summary: string;
+  changes: ResearchAssetChange[];
+  createdAt?: number;
+  sourceMessageId?: string;
+}
+
 export interface ResearchSessionDecision {
-  kind: "choose_direction" | "answer_model_question";
+  kind:
+    | "choose_direction"
+    | "answer_model_question"
+    | "solve_equilibrium"
+    | "analyze_properties";
   prompt: string;
 }
 
 export type ResearchSessionEquilibriumStatus =
   | "not_started"
   | "等待模型确认"
+  | "等待开始求解"
+  | "待推导解析解"
   | EquilibriumResult["status"];
 
 export interface ResearchSessionAssetSummary {
@@ -237,6 +285,8 @@ export interface ResearchSession {
   directions: ResearchDirection[];
   messages: ResearchSessionMessage[];
   assetSummary: ResearchSessionAssetSummary;
+  assetFreshness?: ResearchAssetFreshnessMap;
+  assetPatches?: ResearchAssetPatch[];
 }
 
 export interface ResearchProject {

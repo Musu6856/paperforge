@@ -1,4 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+
+import { shouldBypassClerkProxy } from "@/lib/proxy-auth";
 
 const isProtectedRoute = createRouteMatcher([
   "/launch(.*)",
@@ -7,11 +10,21 @@ const isProtectedRoute = createRouteMatcher([
   "/api(.*)",
 ]);
 
-export default clerkMiddleware(async (auth, request) => {
+const protectedClerkProxy = clerkMiddleware(async (auth, request) => {
   if (isProtectedRoute(request)) {
     await auth.protect();
   }
 });
+
+export default function proxy(
+  ...args: Parameters<typeof protectedClerkProxy>
+): ReturnType<typeof protectedClerkProxy> {
+  if (shouldBypassClerkProxy()) {
+    return NextResponse.next() as ReturnType<typeof protectedClerkProxy>;
+  }
+
+  return protectedClerkProxy(...args);
+}
 
 export const config = {
   matcher: [

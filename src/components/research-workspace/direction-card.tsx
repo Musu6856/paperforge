@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,13 @@ export function DirectionCard({
   direction,
   adopted,
   disabled,
+  isAdopting,
   onAdopt,
 }: {
   direction: ResearchDirection;
   adopted: boolean;
   disabled?: boolean;
+  isAdopting?: boolean;
   onAdopt: (directionId: string) => void;
 }) {
   return (
@@ -26,7 +28,7 @@ export function DirectionCard({
         </h3>
         {direction.recommended && (
           <Badge variant="secondary" className="shrink-0">
-            推荐
+            推荐方向
           </Badge>
         )}
       </div>
@@ -35,33 +37,34 @@ export function DirectionCard({
       </p>
       <div className="mt-4 space-y-2 text-xs leading-5">
         <p>
-          <span className="font-medium text-foreground">模型：</span>
+          <span className="font-medium text-foreground">模型结构：</span>
           <span className="text-muted-foreground">{direction.model}</span>
         </p>
         <p>
-          <span className="font-medium text-foreground">贡献：</span>
+          <span className="font-medium text-foreground">贡献焦点：</span>
           <span className="text-muted-foreground">{direction.contribution}</span>
         </p>
       </div>
       <div className="mt-4 flex justify-end">
         {adopted ? (
-          <Button variant="outline" size="sm" disabled className="gap-1.5">
+          <Button variant="secondary" size="sm" disabled className="gap-1.5">
             <CheckCircle2 className="size-3.5" />
-            已采用
-          </Button>
-        ) : disabled ? (
-          <Button variant="outline" size="sm" disabled>
-            待扩展
+            已采用此方向
           </Button>
         ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => onAdopt(direction.id)}
-          >
-            采用此方向
-            <ArrowRight className="size-3.5" />
+        <Button
+          variant={disabled ? "secondary" : "outline"}
+          size="sm"
+          className="gap-1.5"
+          disabled={disabled || isAdopting}
+          onClick={() => onAdopt(direction.id)}
+        >
+            {isAdopting ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <ArrowRight className="size-3.5" />
+            )}
+            {isAdopting ? "正在采用..." : "采用这个方向"}
           </Button>
         )}
       </div>

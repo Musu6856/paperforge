@@ -1,34 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { ModelSourceStep } from "./model-source-step";
-import { ResearchIdeaStep } from "./research-idea-step";
 import {
+  MODEL_SOURCE_CONFIGURED_KEY,
   MODEL_SOURCE_STORAGE_KEY,
-  normalizeModelSourceSettings,
+  hasCompletedModelSourceSetup,
+  parseStoredModelSourceSettings,
 } from "@/lib/model-source";
+import { useStore } from "@/lib/store";
 import type { ModelSourceSettings } from "@/lib/types";
 
 export function LaunchWizard() {
-  const [step, setStep] = useState<1 | 2>(1);
+  const router = useRouter();
+  const { state } = useStore();
   const [settings, setSettings] = useState<ModelSourceSettings>(() => {
     if (typeof window === "undefined") {
       return { source: "paperforge" };
     }
 
     const stored = window.localStorage.getItem(MODEL_SOURCE_STORAGE_KEY);
-    if (!stored) {
-      return { source: "paperforge" };
-    }
-
-    try {
-      return normalizeModelSourceSettings(JSON.parse(stored));
-    } catch {
-      window.localStorage.removeItem(MODEL_SOURCE_STORAGE_KEY);
-      return { source: "paperforge" };
-    }
+    return parseStoredModelSourceSettings(stored);
   });
+
+  useEffect(() => {
+    if (
+      hasCompletedModelSourceSetup(
+        window.localStorage.getItem(MODEL_SOURCE_CONFIGURED_KEY)
+      ) ||
+      state.projects.length > 0
+    ) {
+      router.replace("/research");
+    }
+  }, [router, state.projects.length]);
 
   return (
     <main className="grid min-h-screen bg-background lg:grid-cols-[minmax(0,1fr)_600px]">
@@ -66,35 +72,18 @@ export function LaunchWizard() {
         <div className="mb-10 flex items-center justify-between">
           <div>
             <p className="font-mono text-xs uppercase tracking-wide text-primary">
-              Step {step} / 2
+              Model Source
             </p>
             <h2 className="mt-1 font-serif text-2xl font-semibold">
-              {step === 1 ? "选择模型来源" : "确认研究想法"}
+              选择模型来源
             </h2>
-          </div>
-          <div className="flex gap-1.5">
-            <span
-              className="h-1.5 w-8 rounded-full bg-primary"
-              aria-hidden="true"
-            />
-            <span
-              className={`h-1.5 w-8 rounded-full ${
-                step === 2 ? "bg-primary" : "bg-muted"
-              }`}
-              aria-hidden="true"
-            />
           </div>
         </div>
 
-        {step === 1 ? (
-          <ModelSourceStep
-            settings={settings}
-            onSettingsChange={setSettings}
-            onNext={() => setStep(2)}
-          />
-        ) : (
-          <ResearchIdeaStep settings={settings} onBack={() => setStep(1)} />
-        )}
+        <ModelSourceStep
+          settings={settings}
+          onSettingsChange={setSettings}
+        />
       </section>
     </main>
   );

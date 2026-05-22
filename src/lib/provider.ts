@@ -1,18 +1,254 @@
-const DEFAULT_BASE_URL = "https://api.xiaomimimo.com/v1";
-const DEFAULT_MODEL = "mimo-v2.5-pro";
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
+
+import { validateModelSourceBaseUrl } from "./model-source.ts";
+import type { ModelSourceSettings } from "./types";
+
+const DEFAULT_BASE_URL = "https://api.deepseek.com";
+const DEFAULT_MODEL = "deepseek-v4-flash";
+
+export type ProviderConfig = {
+  apiKey?: string;
+  baseUrl: string;
+  model: string;
+};
+
+export type ProviderChatMessage = {
+  role: "developer" | "system" | "user" | "assistant";
+  content: string;
+};
+
+export type ProviderChatCompletionPayload = {
+  model: string;
+  messages: ProviderChatMessage[];
+  max_tokens: number;
+  temperature: number;
+  top_p: number;
+  stream: false;
+  stop: null;
+  frequency_penalty: number;
+  presence_penalty: number;
+  thinking: {
+    type: "disabled";
+  };
+  response_format?: {
+    type: "json_object";
+  };
+};
+
+type ProviderChatOptions = {
+  messages: ProviderChatMessage[];
+  maxCompletionTokens: number;
+  responseFormat?: "json_object";
+  temperature?: number;
+  topP?: number;
+  signal?: AbortSignal;
+  fetch?: typeof fetch;
+};
+
+type ChatCompletionResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string | null;
+    };
+  }>;
+};
 
 export function getProviderConfig() {
   return {
     apiKey:
-      process.env.XIAOMI_API_KEY ||
-      process.env.MIMO_API_KEY ||
-      process.env.ANTHROPIC_API_KEY,
+      process.env.OPENAI_COMPATIBLE_API_KEY ||
+      process.env.DEEPSEEK_API_KEY ||
+      process.env.OPENAI_API_KEY,
     baseUrl:
-      process.env.XIAOMI_BASE_URL ||
-      process.env.MIMO_BASE_URL ||
+      process.env.OPENAI_COMPATIBLE_BASE_URL ||
+      process.env.DEEPSEEK_BASE_URL ||
       DEFAULT_BASE_URL,
-    model: process.env.XIAOMI_MODEL || process.env.MIMO_MODEL || DEFAULT_MODEL,
+    model:
+      process.env.OPENAI_COMPATIBLE_MODEL ||
+      process.env.DEEPSEEK_MODEL ||
+      process.env.OPENAI_MODEL ||
+      DEFAULT_MODEL,
   };
+}
+
+export function getProviderConfigForModelSource(
+  modelSource?: ModelSourceSettings
+): ProviderConfig {
+  if (!modelSource || modelSource.source === "paperforge") {
+    return getProviderConfig();
+  }
+
+  if (
+    modelSource.provider !== "openai" &&
+    modelSource.provider !== "openai-compatible"
+  ) {
+    throw new Error(
+      "This research generation route currently supports OpenAI-compatible model sources only."
+    );
+  }
+
+  return {
+    apiKey: modelSource.apiKey,
+    baseUrl:
+      modelSource.baseUrl ??
+      (modelSource.provider === "openai"
+        ? "https://api.openai.com/v1"
+        : DEFAULT_BASE_URL),
+    model: modelSource.model,
+  };
+}
+
+export function createChatCompletionPayload(
+  provider: Pick<ProviderConfig, "model">,
+  options: Pick<
+    ProviderChatOptions,
+    "messages" | "maxCompletionTokens" | "responseFormat" | "temperature" | "topP"
+  >
+): ProviderChatCompletionPayload {
+  return {
+    model: provider.model,
+    messages: options.messages.map((message) => ({
+      ...message,
+      role: message.role === "developer" ? "system" : message.role,
+    })),
+    max_tokens: options.maxCompletionTokens,
+    temperature: options.temperature ?? 1.0,
+    top_p: options.topP ?? 0.95,
+    stream: false,
+    stop: null,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+    thinking: {
+      type: "disabled",
+    },
+    ...(options.responseFormat
+      ? {
+          response_format: {
+            type: options.responseFormat,
+          },
+        }
+      : {}),
+  };
+}
+
+export function extractChatCompletionContent(data: unknown) {
+  const response = data as ChatCompletionResponse;
+  return response.choices?.[0]?.message?.content?.trim() ?? "";
+}
+
+export async function completeProviderChat(
+  provider: ProviderConfig,
+  options: ProviderChatOptions
+) {
+  if (!provider.apiKey) {
+    throw new Error("Provider API key is missing.");
+  }
+
+  const fetchImpl = options.fetch ?? fetch;
+  await validateProviderBaseUrl(provider.baseUrl, !options.fetch);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (provider.baseUrl.includes("api.xiaomimimo.com")) {
+    headers["api-key"] = provider.apiKey;
+  } else {
+    headers.Authorization = `Bearer ${provider.apiKey}`;
+  }
+  const upstream = await fetchImpl(`${provider.baseUrl}/chat/completions`, {
+    method: "POST",
+    signal: options.signal,
+    headers,
+    body: JSON.stringify(createChatCompletionPayload(provider, options)),
+  });
+
+  if (!upstream.ok) {
+    throw new ProviderHttpError(upstream);
+  }
+
+  const data = (await upstream.json()) as unknown;
+  return extractChatCompletionContent(data);
+}
+
+export class ProviderHttpError extends Error {
+  status: number;
+  statusText: string;
+
+  constructor(response: Response) {
+    super(`Provider request failed with ${response.status}`);
+    this.name = "ProviderHttpError";
+    this.status = response.status;
+    this.statusText = response.statusText;
+  }
+}
+
+async function validateProviderBaseUrl(baseUrl: string, resolveHost: boolean) {
+  validateModelSourceBaseUrl(baseUrl);
+
+  if (!resolveHost) {
+    return;
+  }
+
+  const url = new URL(baseUrl);
+  const host = url.hostname.replace(/^\[(.*)\]$/, "$1").toLowerCase();
+
+  if (isIP(host)) {
+    if (isPrivateAddress(host)) {
+      throw new Error("Provider base URL cannot target localhost or private addresses.");
+    }
+    return;
+  }
+
+  const addresses = await lookup(host, { all: true, verbatim: true });
+  if (addresses.some((record) => isPrivateAddress(record.address))) {
+    throw new Error("Provider base URL cannot resolve to private addresses.");
+  }
+}
+
+function isPrivateAddress(address: string) {
+  const normalized = address.replace(/^\[(.*)\]$/, "$1").toLowerCase();
+  const version = isIP(normalized);
+
+  if (version === 4) {
+    const parts = normalized.split(".").map((part) => Number(part));
+    if (parts.length !== 4 || parts.some((part) => !Number.isFinite(part))) {
+      return false;
+    }
+
+    const [a, b] = parts;
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 192 && b === 0) ||
+      (a === 198 && (b === 18 || b === 19)) ||
+      (a === 203 && b === 0) ||
+      a >= 224
+    );
+  }
+
+  if (version === 6) {
+    if (normalized === "::" || normalized === "::1") {
+      return true;
+    }
+
+    if (normalized.startsWith("::ffff:")) {
+      return isPrivateAddress(normalized.slice("::ffff:".length));
+    }
+
+    const firstHextet = normalized.split(":")[0]?.toLowerCase() ?? "";
+    const numeric = Number.parseInt(firstHextet, 16);
+    if (!Number.isNaN(numeric)) {
+      if ((numeric & 0xfe00) === 0xfc00) return true;
+      if ((numeric & 0xffc0) === 0xfe80) return true;
+    }
+  }
+
+  return false;
 }
 
 export function jsonError(error: string, status: number, code: string) {
@@ -24,7 +260,7 @@ export function jsonError(error: string, status: number, code: string) {
 
 export async function providerErrorResponse(response: Response) {
   const body = await response.text();
-  console.error("Xiaomi MiMo API error:", {
+  console.error("DeepSeek API error:", {
     status: response.status,
     statusText: response.statusText,
     body,
@@ -32,23 +268,23 @@ export async function providerErrorResponse(response: Response) {
 
   if (response.status === 401 || response.status === 403) {
     return jsonError(
-      "Xiaomi MiMo authentication failed. Check your API key in Vercel.",
+      "DeepSeek authentication failed. Check your API key in the environment.",
       502,
-      "mimo_auth_failed"
+      "deepseek_auth_failed"
     );
   }
 
   if (response.status === 429) {
     return jsonError(
-      "Xiaomi MiMo rate limit reached. Please try again later.",
+      "DeepSeek rate limit reached. Please try again later.",
       429,
-      "mimo_rate_limited"
+      "deepseek_rate_limited"
     );
   }
 
   return jsonError(
-    "Xiaomi MiMo request failed. Check XIAOMI_MODEL and account access.",
+    "DeepSeek request failed. Check DEEPSEEK_MODEL and account access.",
     502,
-    "mimo_request_failed"
+    "deepseek_request_failed"
   );
 }

@@ -1,9 +1,11 @@
 import type { ProjectRow } from "@/db/schema";
 import type {
+  HotellingModel,
   ModelSourceMetadata,
   ModelSourceProvider,
   ResearchProject,
 } from "./types";
+import { normalizeSymbolRegistry } from "./symbol-governance.ts";
 
 export function projectFromRow(row: ProjectRow): ResearchProject {
   return {
@@ -14,13 +16,13 @@ export function projectFromRow(row: ProjectRow): ResearchProject {
     projectType: row.projectType,
     model: row.model,
     researchSession: row.researchSession ?? undefined,
-    modelSource: row.modelSource ?? undefined,
+    modelSource: sanitizeModelSourceMetadata(row.modelSource),
     wizardCompleted: row.wizardCompleted || row.sections.length > 0,
     sections: row.sections,
     references: row.references,
     background: row.background ?? undefined,
     literatureAnalyses: row.literatureAnalyses ?? [],
-    hotellingModel: row.hotellingModel ?? undefined,
+    hotellingModel: normalizeHotellingModel(row.hotellingModel),
     equilibriumResult: row.equilibriumResult ?? undefined,
     propertyAnalyses: row.propertyAnalyses ?? [],
   };
@@ -32,6 +34,11 @@ const MAX_SECTIONS = 50;
 const MAX_REFERENCES = 100;
 const MAX_LITERATURE_ANALYSES = 20;
 const MAX_PROPERTY_ANALYSES = 50;
+const MAX_PROJECT_JSON_CHARS = 1_000_000;
+const MAX_NESTED_STRING_CHARS = 100_000;
+const MAX_NESTED_ARRAY_ITEMS = 500;
+const MAX_NESTED_OBJECT_KEYS = 200;
+const MAX_NESTED_DEPTH = 12;
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -72,7 +79,8 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     project.sections.length > MAX_SECTIONS ||
     project.references.length > MAX_REFERENCES ||
     literatureAnalyses.length > MAX_LITERATURE_ANALYSES ||
-    propertyAnalyses.length > MAX_PROPERTY_ANALYSES
+    propertyAnalyses.length > MAX_PROPERTY_ANALYSES ||
+    !isBoundedProjectJson(project)
   ) {
     return null;
   }
@@ -91,7 +99,7 @@ export function sanitizeProjectPayload(value: unknown): ResearchProject | null {
     references: project.references,
     background: project.background,
     literatureAnalyses,
-    hotellingModel: project.hotellingModel,
+    hotellingModel: normalizeHotellingModel(project.hotellingModel),
     equilibriumResult: project.equilibriumResult,
     propertyAnalyses,
   };
@@ -135,13 +143,76 @@ function sanitizeModelSourceMetadata(
   return metadata;
 }
 
+function normalizeHotellingModel(
+  value: ResearchProject["hotellingModel"] | null
+): HotellingModel | undefined {
+  if (!value) return undefined;
+
+  return {
+    ...value,
+    symbols: normalizeSymbolRegistry(value.symbols),
+  };
+}
+
 function isModelSourceProvider(value: string): value is ModelSourceProvider {
   return (
     value === "openai" ||
-    value === "anthropic" ||
-    value === "openai-compatible" ||
-    value === "anthropic-compatible"
+    value === "openai-compatible"
   );
+}
+
+function isBoundedProjectJson(value: unknown) {
+  const budget = { chars: 0 };
+  return isBoundedJsonValue(value, 0, budget);
+}
+
+function isBoundedJsonValue(
+  value: unknown,
+  depth: number,
+  budget: { chars: number }
+): boolean {
+  if (budget.chars > MAX_PROJECT_JSON_CHARS) return false;
+  if (depth > MAX_NESTED_DEPTH) return false;
+
+  if (value === null || value === undefined) return true;
+
+  if (typeof value === "string") {
+    budget.chars += value.length;
+    return (
+      value.length <= MAX_NESTED_STRING_CHARS &&
+      budget.chars <= MAX_PROJECT_JSON_CHARS
+    );
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value);
+  }
+
+  if (typeof value === "boolean") {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length > MAX_NESTED_ARRAY_ITEMS) return false;
+    return value.every((item) =>
+      isBoundedJsonValue(item, depth + 1, budget)
+    );
+  }
+
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length > MAX_NESTED_OBJECT_KEYS) return false;
+
+    return entries.every(([key, nestedValue]) => {
+      budget.chars += key.length;
+      return (
+        budget.chars <= MAX_PROJECT_JSON_CHARS &&
+        isBoundedJsonValue(nestedValue, depth + 1, budget)
+      );
+    });
+  }
+
+  return false;
 }
 
 function cleanString(value: unknown) {

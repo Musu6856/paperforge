@@ -17,10 +17,21 @@ export default function ResearchProjectPage() {
   const [loadError, setLoadError] = useState(false);
   const id = params.id as string;
   const project =
-    state.currentProject?.id === id ? state.currentProject : null;
+    state.currentProject?.id === id
+      ? state.currentProject
+      : state.projects.find((item) => item.id === id) ?? null;
+  const fallbackProject =
+    state.currentProject && state.currentProject.id !== id
+      ? state.currentProject
+      : state.projects.find((item) => item.id !== id) ?? null;
 
   useEffect(() => {
-    if (project) return;
+    if (project || state.isLoading) return;
+
+    if (fallbackProject) {
+      router.replace(`/research/${fallbackProject.id}`);
+      return;
+    }
 
     let cancelled = false;
 
@@ -43,9 +54,13 @@ export default function ResearchProjectPage() {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, id, project]);
+  }, [dispatch, fallbackProject, id, project, router, state.isLoading]);
 
   if (loadError) {
+    if (fallbackProject) {
+      return <ResearchWorkspace project={fallbackProject} />;
+    }
+
     return (
       <main className="grid min-h-screen place-items-center bg-background px-6">
         <div className="max-w-md rounded-lg border bg-card p-8 text-center shadow-sm">
@@ -54,11 +69,14 @@ export default function ResearchProjectPage() {
           </div>
           <h1 className="font-serif text-xl font-semibold">研究加载失败</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            当前研究记录没有成功恢复。你可以返回启动页重新创建，或稍后再试。
+            当前研究记录没有成功恢复。你可以回到已有工作台记录，或重新加载当前页面。
           </p>
           <div className="mt-6 flex justify-center gap-2">
-            <Button variant="outline" onClick={() => router.push("/launch")}>
-              返回启动页
+            <Button
+              variant="outline"
+              onClick={() => router.push("/research")}
+            >
+              返回工作台
             </Button>
             <Button onClick={() => window.location.reload()}>重新加载</Button>
           </div>

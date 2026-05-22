@@ -11,7 +11,9 @@ function stabilizeMath(content: string) {
   return content
     .replace(/\\underbrace\{([^{}]+)\}_\{([^{}]+)\}/g, "$1")
     .replace(/\\overbrace\{([^{}]+)\}\^\{([^{}]+)\}/g, "$1")
-    .replace(/\\underbrace\{([^{}]+)\}_\{\\text\{([^{}]+)\}\}/g, "$1");
+    .replace(/\\underbrace\{([^{}]+)\}_\{\\text\{([^{}]+)\}\}/g, "$1")
+    .replace(/\\\(([\s\S]+?)\\\)/g, (_match, expression: string) => `$${expression}$`)
+    .replace(/\\\[([\s\S]+?)\\\]/g, (_match, expression: string) => `$$${expression}$$`);
 }
 
 export function MarkdownRenderer({
