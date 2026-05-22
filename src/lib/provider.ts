@@ -4,10 +4,12 @@ import { isIP } from "node:net";
 import { validateModelSourceBaseUrl } from "./model-source.ts";
 import type { ModelSourceSettings } from "./types";
 
-const DEFAULT_BASE_URL = "https://api.xiaomimimo.com/v1";
-const DEFAULT_MODEL = "mimo-v2.5-pro";
 const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
 const DEEPSEEK_MODEL = "deepseek-v4-flash";
+const MIMO_BASE_URL = "https://api.xiaomimimo.com/v1";
+const MIMO_MODEL = "mimo-v2.5-pro";
+const DEFAULT_BASE_URL = DEEPSEEK_BASE_URL;
+const DEFAULT_MODEL = DEEPSEEK_MODEL;
 const OPENAI_BASE_URL = "https://api.openai.com/v1";
 const OPENAI_MODEL = "gpt-5.2";
 const OFFICIAL_PROVIDER_HOSTS = new Set([
@@ -64,14 +66,6 @@ type ChatCompletionResponse = {
 };
 
 export function getProviderConfig() {
-  if (process.env.OPENAI_COMPATIBLE_API_KEY) {
-    return {
-      apiKey: process.env.OPENAI_COMPATIBLE_API_KEY,
-      baseUrl: process.env.OPENAI_COMPATIBLE_BASE_URL || DEFAULT_BASE_URL,
-      model: process.env.OPENAI_COMPATIBLE_MODEL || DEFAULT_MODEL,
-    };
-  }
-
   if (process.env.DEEPSEEK_API_KEY) {
     return {
       apiKey: process.env.DEEPSEEK_API_KEY,
@@ -80,11 +74,19 @@ export function getProviderConfig() {
     };
   }
 
+  if (process.env.OPENAI_COMPATIBLE_API_KEY) {
+    return {
+      apiKey: process.env.OPENAI_COMPATIBLE_API_KEY,
+      baseUrl: process.env.OPENAI_COMPATIBLE_BASE_URL || DEFAULT_BASE_URL,
+      model: process.env.OPENAI_COMPATIBLE_MODEL || DEFAULT_MODEL,
+    };
+  }
+
   if (process.env.MIMO_API_KEY) {
     return {
       apiKey: process.env.MIMO_API_KEY,
-      baseUrl: process.env.MIMO_BASE_URL || DEFAULT_BASE_URL,
-      model: process.env.MIMO_MODEL || DEFAULT_MODEL,
+      baseUrl: process.env.MIMO_BASE_URL || MIMO_BASE_URL,
+      model: process.env.MIMO_MODEL || MIMO_MODEL,
     };
   }
 
@@ -115,8 +117,8 @@ export function getProviderConfig() {
   if (process.env.MIMO_BASE_URL || process.env.MIMO_MODEL) {
     return {
       apiKey: undefined,
-      baseUrl: process.env.MIMO_BASE_URL || DEFAULT_BASE_URL,
-      model: process.env.MIMO_MODEL || DEFAULT_MODEL,
+      baseUrl: process.env.MIMO_BASE_URL || MIMO_BASE_URL,
+      model: process.env.MIMO_MODEL || MIMO_MODEL,
     };
   }
 

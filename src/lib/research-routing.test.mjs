@@ -11,6 +11,15 @@ test("research index opens the newest project when records exist", () => {
   assert.equal(destination, "/research/project-newer");
 });
 
+test("research index can stay on a blank composing workspace when requested", () => {
+  const destination = getResearchIndexDestination(
+    [{ id: "project-newer" }],
+    { composeNew: true }
+  );
+
+  assert.equal(destination, null);
+});
+
 test("research index stays on the workspace when no records exist", () => {
   const destination = getResearchIndexDestination([]);
 

@@ -290,7 +290,7 @@ test("build fallback honors a selected non-recommended direction", async () => {
   );
   assert.match(
     result.project.hotellingModel?.modelSetupDraft ?? "",
-    /seller multihoming|selected direction|澶氬綊灞炰笌骞冲彴瀹氫环/i
+    /卖家多归属|多归属成本|符号求解/
   );
 });
 

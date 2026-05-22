@@ -218,7 +218,7 @@ test("research primary actions stay consistent across phase surfaces", () => {
 test("model edits mark equilibrium and property assets stale", () => {
   const project = createExplorationProject({
     id: "11111111-1111-4111-8111-111111111111",
-    rawIdea: "鐮旂┒浜屾墜骞冲彴浣ｉ噾涓庤ˉ璐寸瓥鐣?",
+    rawIdea: "研究二手平台佣金与补贴策略",
     now: 1710000000000,
   });
   const analyzed = generatePropertyAnalysis(

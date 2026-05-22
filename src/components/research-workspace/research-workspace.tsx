@@ -44,7 +44,13 @@ import type {
   SymbolDefinition,
 } from "@/lib/types";
 
-export function ResearchWorkspace({ project }: { project?: ResearchProject }) {
+export function ResearchWorkspace({
+  project,
+  startComposingNewConversation = false,
+}: {
+  project?: ResearchProject;
+  startComposingNewConversation?: boolean;
+}) {
   const router = useRouter();
   const { dispatch } = useStore();
   const [isSending, setIsSending] = useState(false);
@@ -55,15 +61,16 @@ export function ResearchWorkspace({ project }: { project?: ResearchProject }) {
   const [isSolvingEquilibrium, setIsSolvingEquilibrium] = useState(false);
   const [isAnalyzingProperties, setIsAnalyzingProperties] = useState(false);
   const [isComposingNewConversation, setIsComposingNewConversation] =
-    useState(!project);
+    useState(!project || startComposingNewConversation);
   const [optimisticMessage, setOptimisticMessage] =
     useState<ResearchSessionMessage | null>(null);
   const activeProject = project
     ? normalizeResearchProjectForWorkspace(project)
     : null;
-  const session = activeProject
-    ? activeProject.researchSession ??
-      createInitialResearchSession(activeProject.rawIdea)
+  const displayedProject = isComposingNewConversation ? null : activeProject;
+  const session = displayedProject
+    ? displayedProject.researchSession ??
+      createInitialResearchSession(displayedProject.rawIdea)
     : null;
   const isBusy =
     isSending ||
@@ -514,7 +521,7 @@ export function ResearchWorkspace({ project }: { project?: ResearchProject }) {
 
   const centerMessages = (() => {
     const baseMessages =
-      !activeProject || isComposingNewConversation || !session
+      !displayedProject || isComposingNewConversation || !session
         ? []
         : session.messages;
 
@@ -523,11 +530,11 @@ export function ResearchWorkspace({ project }: { project?: ResearchProject }) {
       : baseMessages;
   })();
   const chatTitle =
-    !activeProject || isComposingNewConversation
+    !displayedProject || isComposingNewConversation
       ? "新的研究对话"
-      : activeProject.refinedIdea || activeProject.rawIdea;
+      : displayedProject.refinedIdea || displayedProject.rawIdea;
   const chatSubtitle =
-    !activeProject || isComposingNewConversation
+    !displayedProject || isComposingNewConversation
       ? "输入研究想法，PaperForge 会先发现可建模方向"
       : "中间只保留对话，结构化研究资产在右侧检查和编辑";
 
@@ -551,7 +558,7 @@ export function ResearchWorkspace({ project }: { project?: ResearchProject }) {
           onSubmit={handleSubmit}
           headerTitle={chatTitle}
           headerSubtitle={chatSubtitle}
-          placeholder={getChatPlaceholder(activeProject, session, isComposingNewConversation)}
+          placeholder={getChatPlaceholder(displayedProject, session, isComposingNewConversation)}
           emptyState={
             <NewConversationEmptyState hasExistingProject={Boolean(activeProject)} />
           }
@@ -560,7 +567,7 @@ export function ResearchWorkspace({ project }: { project?: ResearchProject }) {
       right={({ isCollapsed, toggleRight }) =>
         session ? (
           <ResearchAssetsPanel
-            project={activeProject ?? undefined}
+            project={displayedProject ?? undefined}
             session={session}
             adoptingDirectionId={adoptingDirectionId}
             isConfirmingModel={isConfirmingModel}

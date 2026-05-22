@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,9 +13,11 @@ import { useStore } from "@/lib/store";
 export default function ResearchProjectPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { state, dispatch } = useStore();
   const [loadError, setLoadError] = useState(false);
   const id = params.id as string;
+  const composeNew = searchParams.get("new") === "1";
   const project =
     state.currentProject?.id === id
       ? state.currentProject
@@ -58,7 +60,13 @@ export default function ResearchProjectPage() {
 
   if (loadError) {
     if (fallbackProject) {
-      return <ResearchWorkspace project={fallbackProject} />;
+      return (
+        <ResearchWorkspace
+          key={`${fallbackProject.id}:${composeNew ? "new" : "view"}`}
+          project={fallbackProject}
+          startComposingNewConversation={composeNew}
+        />
+      );
     }
 
     return (
@@ -96,5 +104,11 @@ export default function ResearchProjectPage() {
     );
   }
 
-  return <ResearchWorkspace project={project} />;
+  return (
+    <ResearchWorkspace
+      key={`${project.id}:${composeNew ? "new" : "view"}`}
+      project={project}
+      startComposingNewConversation={composeNew}
+    />
+  );
 }

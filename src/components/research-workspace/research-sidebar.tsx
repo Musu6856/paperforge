@@ -100,12 +100,15 @@ export function ResearchSidebar({
 
     try {
       await deleteProject(targetProject.id);
+      const remainingProjects = state.projects.filter(
+        (item) => item.id !== targetProject.id
+      );
       dispatch({ type: "DELETE_PROJECT", payload: targetProject.id });
       toast.success("记录已删除");
 
       if (targetProject.id === project.id) {
-        const fallback = state.projects.find((item) => item.id !== targetProject.id);
-        router.push(fallback ? `/research/${fallback.id}` : "/research");
+        onStartNewConversation();
+        router.push(remainingProjects.length > 0 ? "/research?new=1" : "/research");
       }
     } catch (error) {
       console.error("Failed to delete project", error);

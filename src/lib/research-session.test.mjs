@@ -147,7 +147,7 @@ test("adopts a non-recommended research direction instead of blocking it", () =>
   assert.ok(adopted.equilibriumResult);
   assert.match(
     adopted.hotellingModel?.modelSetupDraft ?? "",
-    /seller multihoming|selected direction|澶氬綊灞炰笌骞冲彴瀹氫环/i
+    /卖家多归属|多归属成本|符号求解/
   );
   assert.match(
     adopted.researchSession?.messages.at(-1)?.content ?? "",
@@ -206,7 +206,7 @@ test("non-recommended equilibrium fallback does not reuse commission subsidy clo
       solved.equilibriumResult?.derivation,
       ...(solved.equilibriumResult?.warnings ?? []),
     ].join("\n"),
-    /multihoming|seller-multihoming-pricing|direction-specific/i
+    /卖家多归属|隐函数|符号系统/
   );
   assert.equal(
     solved.researchSession?.assetSummary.pendingDecision?.kind,
@@ -283,6 +283,27 @@ test("other non-default directions use a direction-specific symbolic scaffold", 
     combinedText,
     /\\tau_A\^\*=\\tau_B\^\*=\\frac\{t_S-2\\alpha_B\}\{q\}|\\frac\{\\partial \\tau_i\^\*\}\{\\partial \\alpha_B\}=-\\frac\{2\}\{q\}/
   );
+});
+
+test("non-default local scaffolds avoid English fallback copy in user-facing assets", () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "研究二手平台质量披露",
+    now: 1710000000000,
+  });
+  const solved = generateSymbolicEquilibrium(
+    confirmResearchModel(adoptResearchDirection(project, "quality-disclosure-trust"))
+  );
+  const userFacingText = [
+    solved.hotellingModel?.modelSetupDraft,
+    solved.equilibriumResult?.concept,
+    solved.equilibriumResult?.closedForm,
+    solved.equilibriumResult?.derivation,
+    ...(solved.equilibriumResult?.warnings ?? []),
+  ].join("\n");
+
+  assert.doesNotMatch(userFacingText, /Selected direction|fallback|direction-specific/i);
+  assert.match(userFacingText, /质量|披露|符号|机制/);
 });
 
 test("confirms the model and marks the session ready for symbolic solving", () => {

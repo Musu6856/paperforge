@@ -116,7 +116,7 @@ test("provider payload maps developer messages to system for OpenAI-compatible A
   );
 });
 
-test("provider config prefers generic OpenAI-compatible environment variables", async () => {
+test("provider config uses generic OpenAI-compatible environment variables when no dedicated provider is set", async () => {
   const previous = {
     OPENAI_COMPATIBLE_API_KEY: process.env.OPENAI_COMPATIBLE_API_KEY,
     OPENAI_COMPATIBLE_BASE_URL: process.env.OPENAI_COMPATIBLE_BASE_URL,
@@ -125,6 +125,8 @@ test("provider config prefers generic OpenAI-compatible environment variables", 
     MIMO_BASE_URL: process.env.MIMO_BASE_URL,
     MIMO_MODEL: process.env.MIMO_MODEL,
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+    DEEPSEEK_BASE_URL: process.env.DEEPSEEK_BASE_URL,
+    DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
   };
 
   process.env.OPENAI_COMPATIBLE_API_KEY = "sk-compatible";
@@ -133,7 +135,9 @@ test("provider config prefers generic OpenAI-compatible environment variables", 
   process.env.MIMO_API_KEY = "sk-mimo";
   process.env.MIMO_BASE_URL = "https://api.xiaomimimo.com/v1";
   process.env.MIMO_MODEL = "mimo-v2.5-pro";
-  process.env.DEEPSEEK_API_KEY = "sk-deepseek";
+  delete process.env.DEEPSEEK_API_KEY;
+  delete process.env.DEEPSEEK_BASE_URL;
+  delete process.env.DEEPSEEK_MODEL;
 
   const { getProviderConfig } = await import(
     `./provider.ts?config-test=${Date.now()}`
@@ -143,6 +147,43 @@ test("provider config prefers generic OpenAI-compatible environment variables", 
   assert.equal(config.apiKey, "sk-compatible");
   assert.equal(config.baseUrl, "https://compatible.example.com/v1");
   assert.equal(config.model, "compatible-chat");
+
+  for (const [key, value] of Object.entries(previous)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+});
+
+test("provider config lets dedicated DeepSeek env override legacy compatible defaults", async () => {
+  const previous = {
+    OPENAI_COMPATIBLE_API_KEY: process.env.OPENAI_COMPATIBLE_API_KEY,
+    OPENAI_COMPATIBLE_BASE_URL: process.env.OPENAI_COMPATIBLE_BASE_URL,
+    OPENAI_COMPATIBLE_MODEL: process.env.OPENAI_COMPATIBLE_MODEL,
+    DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+    DEEPSEEK_BASE_URL: process.env.DEEPSEEK_BASE_URL,
+    DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
+  };
+
+  process.env.OPENAI_COMPATIBLE_API_KEY = "sk-legacy-compatible";
+  process.env.OPENAI_COMPATIBLE_BASE_URL = "https://api.xiaomimimo.com/v1";
+  process.env.OPENAI_COMPATIBLE_MODEL = "mimo-v2.5-pro";
+  process.env.DEEPSEEK_API_KEY = "sk-deepseek";
+  process.env.DEEPSEEK_BASE_URL = "https://api.deepseek.com";
+  process.env.DEEPSEEK_MODEL = "deepseek-v4-flash";
+
+  const { getProviderConfig } = await import(
+    `./provider.ts?deepseek-over-compatible-test=${Date.now()}`
+  );
+  const config = getProviderConfig();
+
+  assert.deepEqual(config, {
+    apiKey: "sk-deepseek",
+    baseUrl: "https://api.deepseek.com",
+    model: "deepseek-v4-flash",
+  });
 
   for (const [key, value] of Object.entries(previous)) {
     if (value === undefined) {

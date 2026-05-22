@@ -481,8 +481,8 @@ function createSellerMultihomingSymbols(): SymbolDefinition[] {
       baseSymbol: "m",
       subscript: "B",
       codeName: "m_B",
-      name: "B-only seller mass",
-      meaning: "Mass of sellers who join only platform B.",
+      name: "只入驻 B 的卖家规模",
+      meaning: "只入驻平台 B 的卖家质量或规模。",
       role: "demand",
       side: "merchant",
       assumption: "in_[0,1]",
@@ -493,8 +493,8 @@ function createSellerMultihomingSymbols(): SymbolDefinition[] {
       baseSymbol: "m",
       subscript: "AB",
       codeName: "m_AB",
-      name: "multihoming seller mass",
-      meaning: "Mass of sellers who join both platforms A and B.",
+      name: "多归属卖家规模",
+      meaning: "同时入驻平台 A 和平台 B 的卖家规模。",
       role: "demand",
       side: "merchant",
       assumption: "in_[0,1]",
@@ -505,8 +505,8 @@ function createSellerMultihomingSymbols(): SymbolDefinition[] {
       baseSymbol: "m",
       subscript: "i",
       codeName: "m_i",
-      name: "platform-visible seller mass",
-      meaning: "Seller mass visible on platform i, including multihoming sellers.",
+      name: "平台可见卖家规模",
+      meaning: "平台 i 上可见的卖家规模，包括多归属卖家。",
       role: "derived",
       side: "merchant",
       assumption: "nonnegative",
@@ -516,8 +516,8 @@ function createSellerMultihomingSymbols(): SymbolDefinition[] {
       symbol: "\\kappa",
       baseSymbol: "kappa",
       codeName: "kappa",
-      name: "seller multihoming cost",
-      meaning: "Fixed cost paid by a seller to maintain presence on both platforms.",
+      name: "卖家多归属成本",
+      meaning: "卖家同时维持两个平台入驻时支付的固定成本。",
       role: "cost",
       side: "merchant",
       assumption: "nonnegative",
@@ -527,8 +527,8 @@ function createSellerMultihomingSymbols(): SymbolDefinition[] {
       symbol: "\\rho",
       baseSymbol: "rho",
       codeName: "rho",
-      name: "shared seller visibility effect",
-      meaning: "Extra buyer-side value created by sellers available on both platforms.",
+      name: "共享卖家可见性效应",
+      meaning: "同时出现在两个平台上的卖家给买家侧带来的额外价值。",
       role: "parameter",
       side: "consumer",
       assumption: "real",
@@ -539,8 +539,8 @@ function createSellerMultihomingSymbols(): SymbolDefinition[] {
       baseSymbol: "C",
       subscript: "A",
       codeName: "C_A",
-      name: "A-side governance cost",
-      meaning: "Symbolic platform cost from onboarding, governing, or serving sellers on A.",
+      name: "平台 A 治理成本",
+      meaning: "平台 A 入驻、治理或服务卖家产生的符号化成本。",
       role: "cost",
       side: "platform",
       assumption: "nonnegative",
@@ -551,8 +551,8 @@ function createSellerMultihomingSymbols(): SymbolDefinition[] {
       baseSymbol: "C",
       subscript: "B",
       codeName: "C_B",
-      name: "B-side governance cost",
-      meaning: "Symbolic platform cost from onboarding, governing, or serving sellers on B.",
+      name: "平台 B 治理成本",
+      meaning: "平台 B 入驻、治理或服务卖家产生的符号化成本。",
       role: "cost",
       side: "platform",
       assumption: "nonnegative",
@@ -572,8 +572,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "mu",
       subscript: safeDirectionId,
       codeName: `mu_${safeDirectionId}`,
-      name: "direction-specific mechanism state",
-      meaning: `Symbolic state variable for the ${direction.id} mechanism.`,
+      name: "机制状态",
+      meaning: `${direction.title} 的符号机制状态变量。`,
       role: "parameter",
       side: "global",
       assumption: "real",
@@ -584,8 +584,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "a",
       subscript: safeDirectionId,
       codeName: `a_${safeDirectionId}`,
-      name: "direction-specific mechanism effort",
-      meaning: `Platform choice or effort variable for the ${direction.id} mechanism.`,
+      name: "机制努力",
+      meaning: `${direction.title} 中由平台选择的机制努力或机制强度变量。`,
       role: "decision",
       side: "platform",
       assumption: "real",
@@ -596,8 +596,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "p",
       subscript: "A",
       codeName: "p_A",
-      name: "A-side price",
-      meaning: `Buyer-side generalized price or payment on platform A in the ${direction.id} direction.`,
+      name: "平台 A 买家侧价格",
+      meaning: `${direction.title} 中平台 A 的买家侧广义价格或支付。`,
       role: "parameter",
       side: "platform",
       assumption: "positive",
@@ -608,8 +608,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "p",
       subscript: "B",
       codeName: "p_B",
-      name: "B-side price",
-      meaning: `Buyer-side generalized price or payment on platform B in the ${direction.id} direction.`,
+      name: "平台 B 买家侧价格",
+      meaning: `${direction.title} 中平台 B 的买家侧广义价格或支付。`,
       role: "parameter",
       side: "platform",
       assumption: "positive",
@@ -620,8 +620,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "psi",
       subscript: "A",
       codeName: "psi_A",
-      name: "A-side mechanism utility",
-      meaning: `Direction-specific buyer-side mechanism utility on platform A for ${direction.id}.`,
+      name: "平台 A 买家侧机制效用",
+      meaning: `${direction.title} 在平台 A 买家侧效用中的机制项。`,
       role: "utility",
       side: "consumer",
       assumption: "real",
@@ -632,8 +632,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "psi",
       subscript: "B",
       codeName: "psi_B",
-      name: "B-side mechanism utility",
-      meaning: `Direction-specific buyer-side mechanism utility on platform B for ${direction.id}.`,
+      name: "平台 B 买家侧机制效用",
+      meaning: `${direction.title} 在平台 B 买家侧效用中的机制项。`,
       role: "utility",
       side: "consumer",
       assumption: "real",
@@ -644,8 +644,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "phi",
       subscript: "A",
       codeName: "phi_A",
-      name: "A-side seller mechanism utility",
-      meaning: `Direction-specific seller-side mechanism utility on platform A for ${direction.id}.`,
+      name: "平台 A 卖家侧机制效用",
+      meaning: `${direction.title} 在平台 A 卖家侧效用中的机制项。`,
       role: "utility",
       side: "merchant",
       assumption: "real",
@@ -656,8 +656,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "phi",
       subscript: "B",
       codeName: "phi_B",
-      name: "B-side seller mechanism utility",
-      meaning: `Direction-specific seller-side mechanism utility on platform B for ${direction.id}.`,
+      name: "平台 B 卖家侧机制效用",
+      meaning: `${direction.title} 在平台 B 卖家侧效用中的机制项。`,
       role: "utility",
       side: "merchant",
       assumption: "real",
@@ -668,8 +668,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "R",
       subscript: "A",
       codeName: "R_A",
-      name: "A-side mechanism revenue",
-      meaning: `Symbolic platform revenue term created by the ${direction.id} mechanism on platform A.`,
+      name: "平台 A 机制收益",
+      meaning: `${direction.title} 在平台 A 产生的符号化收益项。`,
       role: "derived",
       side: "platform",
       assumption: "real",
@@ -680,8 +680,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "R",
       subscript: "B",
       codeName: "R_B",
-      name: "B-side mechanism revenue",
-      meaning: `Symbolic platform revenue term created by the ${direction.id} mechanism on platform B.`,
+      name: "平台 B 机制收益",
+      meaning: `${direction.title} 在平台 B 产生的符号化收益项。`,
       role: "derived",
       side: "platform",
       assumption: "real",
@@ -692,8 +692,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "C",
       subscript: "A",
       codeName: "C_A",
-      name: "A-side mechanism cost",
-      meaning: `Symbolic platform cost term created by the ${direction.id} mechanism on platform A.`,
+      name: "平台 A 机制成本",
+      meaning: `${direction.title} 在平台 A 产生的符号化成本项。`,
       role: "cost",
       side: "platform",
       assumption: "nonnegative",
@@ -704,8 +704,8 @@ function createGenericDirectionSpecificSymbols(
       baseSymbol: "C",
       subscript: "B",
       codeName: "C_B",
-      name: "B-side mechanism cost",
-      meaning: `Symbolic platform cost term created by the ${direction.id} mechanism on platform B.`,
+      name: "平台 B 机制成本",
+      meaning: `${direction.title} 在平台 B 产生的符号化成本项。`,
       role: "cost",
       side: "platform",
       assumption: "nonnegative",
@@ -761,10 +761,10 @@ function createSecondhandCommissionSubsidyModel(
   direction?: ResearchDirection
 ): HotellingModel {
   const selectedDirectionAssumption = direction && !direction.recommended
-    ? `Selected research direction: ${direction.title}.`
+    ? `当前采用的研究方向：${direction.title}。`
     : null;
   const selectedDirectionDraft = direction
-    ? `Selected direction: ${direction.title}. ${direction.summary} Model route: ${direction.model}. Contribution target: ${direction.contribution}. The local fallback keeps this direction inside a symbolic two-sided Hotelling scaffold so the user can refine the direction-specific mechanism before equilibrium solving.`
+    ? `当前采用的研究方向：${direction.title}。\n\n${direction.summary}\n\n模型路线：${direction.model}。\n\n预期贡献：${direction.contribution}。\n\n本地草稿会先把它放进可符号求解的双边 Hotelling 框架，方便继续细化机制变量，再进入均衡推导。`
     : null;
   const utilityFunctions: UtilityFunction[] = [
     {
@@ -864,7 +864,7 @@ function createSellerMultihomingModel(direction?: ResearchDirection): HotellingM
       expression:
         "U_A^B = v_B + \\alpha_B(m_A+m_{AB}) + \\rho m_{AB} - p_A - t_B x",
       notes:
-        "Buyer utility on platform A depends on A-exclusive sellers m_A and shared multihoming sellers m_{AB}.",
+        "平台 A 的买家效用取决于 A 独占卖家 m_A 和多归属卖家 m_{AB}。",
     },
     {
       id: "u-buyer-b-multihoming",
@@ -873,7 +873,7 @@ function createSellerMultihomingModel(direction?: ResearchDirection): HotellingM
       expression:
         "U_B^B = v_B + \\alpha_B(m_B+m_{AB}) + \\rho m_{AB} - p_B - t_B(1-x)",
       notes:
-        "Buyer utility on platform B uses the same seller multihoming stock, keeping the buyer side single-homing.",
+        "平台 B 的买家效用同样使用多归属卖家存量，同时保持买家侧单归属。",
     },
     {
       id: "u-seller-a-membership",
@@ -882,7 +882,7 @@ function createSellerMultihomingModel(direction?: ResearchDirection): HotellingM
       expression:
         "U_A^S = v_S + \\alpha_S n_A^B - \\tau_A q n_A^B - t_S y",
       notes:
-        "A-only seller surplus uses the platform A buyer mass and the transaction commission paid on expected matches.",
+        "只入驻 A 的卖家剩余取决于平台 A 买家规模，以及预期匹配中支付的交易佣金。",
     },
     {
       id: "u-seller-b-membership",
@@ -891,7 +891,7 @@ function createSellerMultihomingModel(direction?: ResearchDirection): HotellingM
       expression:
         "U_B^S = v_S + \\alpha_S n_B^B - \\tau_B q n_B^B - t_S(1-y)",
       notes:
-        "B-only seller surplus mirrors the A-only membership equation.",
+        "只入驻 B 的卖家剩余与 A 侧入驻方程对称。",
     },
     {
       id: "u-seller-ab-membership",
@@ -899,40 +899,40 @@ function createSellerMultihomingModel(direction?: ResearchDirection): HotellingM
       platform: "AB",
       expression: "U_{AB}^S = U_A^S + U_B^S - \\kappa",
       notes:
-        "The multihoming option combines platform surplus and subtracts the symbolic multihoming fixed cost kappa.",
+        "多归属选项把两个平台的入驻剩余相加，并扣除符号化多归属固定成本 \\kappa。",
     },
   ];
 
   return {
     symbols: createResearchSymbolRegistryForDirection(direction),
     sides: {
-      consumerSideName: "buyers",
-      merchantSideName: "sellers",
+      consumerSideName: "买家",
+      merchantSideName: "卖家",
     },
     platforms: ["A", "B"],
     timing: [
       {
         id: "stage-platform-pricing",
         order: 1,
-        name: "Platforms choose symbolic commissions",
+        name: "平台选择符号化佣金",
         decisions: ["\\tau_A", "\\tau_B"],
       },
       {
         id: "stage-seller-membership",
         order: 2,
-        name: "Sellers choose A-only, B-only, or multihoming",
+        name: "卖家选择只入驻 A、只入驻 B 或多归属",
         decisions: ["m_A", "m_B", "m_{AB}", "m_i", "\\kappa"],
       },
       {
         id: "stage-buyer-choice",
         order: 3,
-        name: "Buyers single-home after observing seller availability",
+        name: "买家观察卖家可见规模后单归属选择平台",
         decisions: ["n_A^B", "n_B^B", "x"],
       },
     ],
     utilityFunctions,
     demandDerivation:
-      "Buyer demand follows U_A^B=U_B^B. Seller membership is pinned down by symbolic cutoff or complementarity equations U_A^S,U_B^S,U_{AB}^S with multihoming cost \\kappa; the system is kept symbolic.",
+      "买家需求由 U_A^B=U_B^B 推出；卖家入驻由包含多归属成本 \\kappa 的 U_A^S、U_B^S、U_{AB}^S 截止或互补条件刻画，整个系统保持符号形式。",
     profitFunctions: [
       {
         id: "profit-a-multihoming",
@@ -940,7 +940,7 @@ function createSellerMultihomingModel(direction?: ResearchDirection): HotellingM
         expression:
           "Pi_A = \\tau_A q n_A^B(m_A+m_{AB}) - C_A(m_A,m_{AB})",
         notes:
-          "Platform A earns commission revenue from A-visible sellers, including multihoming sellers, net of symbolic onboarding or governance costs.",
+          "平台 A 从可见卖家规模中获得佣金收入，并扣除符号化的入驻或治理成本。",
       },
       {
         id: "profit-b-multihoming",
@@ -948,21 +948,20 @@ function createSellerMultihomingModel(direction?: ResearchDirection): HotellingM
         expression:
           "Pi_B = \\tau_B q n_B^B(m_B+m_{AB}) - C_B(m_B,m_{AB})",
         notes:
-          "Platform B mirrors A but keeps seller multihoming mass explicit rather than collapsing to the commission-subsidy model.",
+          "平台 B 与 A 对称，但显式保留多归属卖家规模，而不退化成默认佣金-补贴模型。",
       },
     ],
     assumptions: [
-      "Buyers single-home between platforms A and B, while sellers may choose A-only, B-only, or multihoming.",
-      "m_A, m_B, and m_{AB} are symbolic seller membership masses; m_i denotes the seller mass visible on platform i.",
-      "The multihoming cost \\kappa is kept symbolic and enters seller participation before platform FOCs are solved.",
-      "Platform profits are written with seller availability masses rather than the commission-subsidy term tau_i q n_i^S n_i^B - s_i n_i^B.",
-      "Equilibrium and property analysis must use symbolic FOCs, reaction functions, or implicit-function comparative statics, not numerical simulation.",
+      "买家在平台 A 和 B 之间单归属，卖家可以选择只入驻 A、只入驻 B 或同时多归属。",
+      "m_A、m_B 和 m_{AB} 表示符号化的卖家入驻规模，m_i 表示平台 i 可见的卖家规模。",
+      "多归属成本 \\kappa 保持符号形式，并在平台一阶条件求解之前进入卖家参与条件。",
+      "平台利润用卖家可见规模来写，而不是套用默认佣金-补贴项 tau_i q n_i^S n_i^B - s_i n_i^B。",
+      "均衡和性质分析必须使用符号一阶条件、反应函数或隐函数比较静态，不用数值模拟替代理论推导。",
     ],
     modelSetupDraft:
-      `Selected direction: ${direction?.title ?? "seller multihoming pricing"}. ` +
-      "This direction-specific fallback models seller multihoming with membership masses m_A, m_B, m_{AB}, platform-visible seller mass m_i, and symbolic multihoming cost \\kappa. " +
-      "Platforms choose commissions \\tau_A and \\tau_B; sellers then decide whether to join A, B, or both platforms. " +
-      "The fallback intentionally avoids reusing the commission-subsidy Hotelling profit system so the later symbolic solve can focus on seller-multihoming-pricing.",
+      `当前采用的研究方向：${direction?.title ?? "卖家多归属与平台定价"}。\n\n` +
+      "这版本地草稿把卖家多归属写成可检查的符号系统：$m_A$、$m_B$、$m_{AB}$ 分别表示只入驻 A、只入驻 B 和多归属卖家规模，$m_i$ 表示平台 $i$ 可见的卖家规模，$\\kappa$ 表示多归属成本。\n\n" +
+      "平台先选择佣金 $\\tau_A$ 与 $\\tau_B$，随后卖家决定入驻 A、B 或两者。这里刻意不复用默认佣金-补贴闭式解，而是为后续 seller-multihoming-pricing 机制保留独立的符号求解入口。",
   };
 }
 
@@ -978,7 +977,7 @@ function createGenericDirectionSpecificModel(direction: ResearchDirection): Hote
       expression:
         `U_A^B = v_B + \\alpha_B n_A^S + \\psi_A(${mechanismState}) - p_A - t_B x`,
       notes:
-        `Buyer utility on platform A keeps the ${directionSlug} mechanism as a symbolic quality or policy state.`,
+        `平台 A 的买家效用保留 ${direction.title} 机制状态，不先做数值化。`,
     },
     {
       id: `u-buyer-b-${directionSlug}`,
@@ -987,7 +986,7 @@ function createGenericDirectionSpecificModel(direction: ResearchDirection): Hote
       expression:
         `U_B^B = v_B + \\alpha_B n_B^S + \\psi_B(${mechanismState}) - p_B - t_B(1-x)`,
       notes:
-        `Buyer utility on platform B mirrors the same direction-specific symbolic mechanism.`,
+        "平台 B 的买家效用与 A 对称，并保留同一个机制状态变量。",
     },
     {
       id: `u-seller-a-${directionSlug}`,
@@ -996,7 +995,7 @@ function createGenericDirectionSpecificModel(direction: ResearchDirection): Hote
       expression:
         `U_A^S = v_S + \\alpha_S n_A^B + \\phi_A(${mechanismState}) - \\tau_A q - t_S y`,
       notes:
-        "Seller utility keeps the mechanism payoff symbolic so the direction can be solved without numerical substitution.",
+        "卖家效用把机制收益保持为符号项，避免用数值代入替代理论求解。",
     },
     {
       id: `u-seller-b-${directionSlug}`,
@@ -1005,34 +1004,34 @@ function createGenericDirectionSpecificModel(direction: ResearchDirection): Hote
       expression:
         `U_B^S = v_S + \\alpha_S n_B^B + \\phi_B(${mechanismState}) - \\tau_B q - t_S(1-y)`,
       notes:
-        "The B-side seller utility mirrors A and leaves the direction-specific channel explicit.",
+        "平台 B 的卖家效用与 A 对称，并显式保留该研究方向的机制通道。",
     },
   ];
 
   return {
     symbols: createResearchSymbolRegistryForDirection(direction),
     sides: {
-      consumerSideName: "buyers",
-      merchantSideName: "sellers",
+      consumerSideName: "买家",
+      merchantSideName: "卖家",
     },
     platforms: ["A", "B"],
     timing: [
       {
         id: `stage-mechanism-${directionSlug}`,
         order: 1,
-        name: "Platforms choose direction-specific mechanism variables",
+        name: "平台选择该方向的机制变量",
         decisions: ["\\tau_A", "\\tau_B", mechanismEffort, mechanismState],
       },
       {
         id: `stage-participation-${directionSlug}`,
         order: 2,
-        name: "Buyers and sellers choose platforms after observing the mechanism",
+        name: "买家和卖家观察机制后选择平台",
         decisions: ["n_A^B", "n_B^B", "n_A^S", "n_B^S", "x", "y"],
       },
     ],
     utilityFunctions,
     demandDerivation:
-      `Demand is derived from U_A^B=U_B^B and U_A^S=U_B^S while keeping the ${directionSlug} mechanism state symbolic. The local fallback does not collapse this direction to the commission-subsidy Hotelling closed form.`,
+      `需求由 U_A^B=U_B^B 与 U_A^S=U_B^S 推出，同时保留 ${direction.title} 的机制状态。这个本地草稿不把该方向折叠成默认佣金-补贴 Hotelling 闭式解。`,
     profitFunctions: [
       {
         id: `profit-a-${directionSlug}`,
@@ -1040,7 +1039,7 @@ function createGenericDirectionSpecificModel(direction: ResearchDirection): Hote
         expression:
           `Pi_A = \\tau_A q n_A^S n_A^B + R_A(${mechanismState},n_A^B,n_A^S) - C_A(${mechanismEffort})`,
         notes:
-          "Platform A profit keeps mechanism revenue and cost channels symbolic for later closed-form or implicit solving.",
+          "平台 A 的利润把机制收益与机制成本保留为符号项，供后续闭式求解或隐函数求解使用。",
       },
       {
         id: `profit-b-${directionSlug}`,
@@ -1048,19 +1047,18 @@ function createGenericDirectionSpecificModel(direction: ResearchDirection): Hote
         expression:
           `Pi_B = \\tau_B q n_B^S n_B^B + R_B(${mechanismState},n_B^B,n_B^S) - C_B(${mechanismEffort})`,
         notes:
-          "Platform B mirrors A, preserving the direction-specific mechanism rather than importing the default subsidy term.",
+          "平台 B 与 A 对称，保留该研究方向的机制项，而不是导入默认补贴成本项。",
       },
     ],
     assumptions: [
-      `Selected research direction: ${direction.title}.`,
-      `Direction id ${direction.id} is handled by a direction-specific symbolic fallback.`,
-      "Mechanism variables remain symbolic until the user or model generation step confirms the exact economic channel.",
-      "Equilibrium analysis must use symbolic FOCs, reaction functions, or implicit-function comparative statics.",
-      "Numerical substitution or simulation is not used as a substitute for theoretical analysis.",
+      `当前采用的研究方向：${direction.title}。`,
+      `方向标识 ${direction.id} 会使用独立机制变量进入符号系统。`,
+      "机制变量在用户或模型生成步骤确认具体经济通道前保持符号形式。",
+      "均衡分析必须使用符号一阶条件、反应函数或隐函数比较静态。",
+      "不使用数值代入或仿真替代理论分析。",
     ],
     modelSetupDraft:
-      `Selected direction: ${direction.title}. ${direction.summary} Model route: ${direction.model}. Contribution target: ${direction.contribution}. ` +
-      `This direction-specific fallback introduces symbolic mechanism variables ${mechanismState} and ${mechanismEffort}, then keeps demand, profit, FOCs, and property analysis tied to ${direction.id} instead of reusing the commission-subsidy closed form.`,
+      `当前采用的研究方向：${direction.title}。\n\n${direction.summary}\n\n模型路线：${direction.model}。\n\n预期贡献：${direction.contribution}。\n\n这版本地草稿引入机制状态 ${mechanismState} 和机制努力 ${mechanismEffort}，并把需求、利润、一阶条件和性质分析都绑定到 ${direction.id}，避免复用默认佣金-补贴闭式解。`,
   };
 }
 
@@ -1070,12 +1068,12 @@ function createSymbolicEquilibriumScaffold(
   if (isSellerMultihomingDirection(direction)) {
     return {
       ...createSymbolicEquilibriumScaffoldResult(),
-      concept: "seller-multihoming-pricing direction-specific symbolic scaffold",
+      concept: "卖家多归属定价方向的符号求解草稿",
       solvingSteps: [
-        "Define buyer single-homing shares n_A^B,n_B^B and seller membership masses m_A,m_B,m_{AB}.",
-        "Write seller membership surplus for A-only, B-only, and multihoming choices with multihoming cost \\kappa.",
-        "Substitute seller masses into platform profits before writing FOCs in \\tau_A and \\tau_B.",
-        "Keep this as a symbolic system until the multihoming participation rule is confirmed.",
+        "定义买家单归属份额 n_A^B、n_B^B，以及卖家入驻规模 m_A、m_B、m_{AB}。",
+        "写出只入驻 A、只入驻 B 和多归属三类卖家的参与剩余，并纳入多归属成本 \\kappa。",
+        "先把卖家规模代入平台利润，再对 \\tau_A 和 \\tau_B 写出一阶条件。",
+        "在多归属参与规则确认之前，先保持为符号系统。",
       ],
       focs: [
         "\\frac{\\partial \\Pi_A}{\\partial \\tau_A}=0",
@@ -1088,9 +1086,9 @@ function createSymbolicEquilibriumScaffold(
         "n_A^B+n_B^B=1",
       ],
       derivation:
-        "This scaffold is direction-specific for seller-multihoming-pricing and does not reuse the commission-subsidy Hotelling closed form.",
+        "这版草稿服务于卖家多归属定价方向，不复用佣金-补贴 Hotelling 闭式解。",
       warnings: [
-        "Direction-specific seller multihoming scaffold only; no numerical substitution or simulation is used.",
+        "当前只是卖家多归属的符号草稿；不使用数值代入或仿真替代理论推导。",
       ],
     };
   }
@@ -1127,7 +1125,7 @@ export function createSymbolicEquilibriumScaffoldResult(): EquilibriumResult {
 function createSymbolicHotellingFallbackResult(): EquilibriumResult {
   return {
     status: "solved",
-    concept: "对称内部纳什均衡（符号闭式 fallback）",
+    concept: "对称内部纳什均衡（本地符号闭式解）",
     solvingSteps: [
       "由买家无差异条件 U_A^B=U_B^B 得到买家侧平台 A 份额 n_A^B。",
       "由卖家无差异条件 U_A^S=U_B^S 得到卖家侧平台 A 份额 n_A^S。",
@@ -1150,7 +1148,7 @@ function createSymbolicHotellingFallbackResult(): EquilibriumResult {
     closedForm:
       "在对称内部均衡中：$\\tau_A^*=\\tau_B^*=\\frac{t_S-2\\alpha_B}{q}$，$s_A^*=s_B^*=\\frac{t_S+\\alpha_S-2t_B-2\\alpha_B}{2}$，且 $n_A^{B*}=n_B^{B*}=n_A^{S*}=n_B^{S*}=\\frac{1}{2}$。",
     derivation:
-      "由买家无差异条件和卖家无差异条件可得 $n_A^B=\\frac{1}{2}+\\frac{t_S\\Delta s-\\alpha_B q\\Delta\\tau}{2D}$，$n_A^S=\\frac{1}{2}+\\frac{\\alpha_S\\Delta s-qt_B\\Delta\\tau}{2D}$，其中 $\\Delta s=s_A-s_B$，$\\Delta\\tau=\\tau_A-\\tau_B$，$D=t_Bt_S-\\alpha_B\\alpha_S$。代入 $\\Pi_A=\\tau_A q n_A^Sn_A^B-s_A n_A^B$ 后，在对称候选 $\\tau_A=\\tau_B=\\tau$、$s_A=s_B=s$ 处，一阶条件化为 $D-q\\tau(t_B+\\alpha_B)+2\\alpha_Bs=0$ 和 $q\\tau(t_S+\\alpha_S)-2D-2t_Ss=0$。联立解得 $\\tau^*=(t_S-2\\alpha_B)/q$，$s^*=(t_S+\\alpha_S-2t_B-2\\alpha_B)/2$。该 fallback 只声明对称内部闭式解；若研究方向需要非对称或多机制扩展，应继续调用模型生成链路做一般符号求解。",
+      "由买家无差异条件和卖家无差异条件可得 $n_A^B=\\frac{1}{2}+\\frac{t_S\\Delta s-\\alpha_B q\\Delta\\tau}{2D}$，$n_A^S=\\frac{1}{2}+\\frac{\\alpha_S\\Delta s-qt_B\\Delta\\tau}{2D}$，其中 $\\Delta s=s_A-s_B$，$\\Delta\\tau=\\tau_A-\\tau_B$，$D=t_Bt_S-\\alpha_B\\alpha_S$。代入 $\\Pi_A=\\tau_A q n_A^Sn_A^B-s_A n_A^B$ 后，在对称候选 $\\tau_A=\\tau_B=\\tau$、$s_A=s_B=s$ 处，一阶条件化为 $D-q\\tau(t_B+\\alpha_B)+2\\alpha_Bs=0$ 和 $q\\tau(t_S+\\alpha_S)-2D-2t_Ss=0$。联立解得 $\\tau^*=(t_S-2\\alpha_B)/q$，$s^*=(t_S+\\alpha_S-2t_B-2\\alpha_B)/2$。该本地结果只声明对称内部闭式解；若研究方向需要非对称或多机制扩展，应继续调用模型生成链路做一般符号求解。",
     code: `# sympy symbolic symmetric equilibrium
 import sympy as sp
 
@@ -1203,7 +1201,7 @@ print("symmetric FOC_tau =", foc_tau_sym)
 print("symmetric FOC_s =", foc_s_sym)
 print("symmetric solution =", symmetric_solution)`,
     warnings: [
-      "当前 fallback 给出的是对称内部闭式解，不声称覆盖一般非对称均衡。",
+      "当前本地结果给出的是对称内部闭式解，不声称覆盖一般非对称均衡。",
       "均衡求解阶段不使用数值模拟；数值代入只应出现在后续仿真模块。",
       "如果继续加入非对称平台、质量验证努力或多期状态变量，应重新做一般符号求解。",
     ],
@@ -1214,13 +1212,13 @@ function createSellerMultihomingEquilibriumFallback(): EquilibriumResult {
   return {
     status: "symbolic_failure",
     concept:
-      "seller-multihoming-pricing direction-specific symbolic equilibrium scaffold",
+      "卖家多归属定价的隐函数均衡草稿",
     solvingSteps: [
-      "Start from buyer indifference U_A^B=U_B^B to obtain n_A^B as a symbolic function of m_A,m_B,m_{AB}.",
-      "Represent seller membership with cutoff or complementarity equations G_A=0,G_B=0,G_{AB}=0, where \\kappa shifts the multihoming equation.",
-      "Substitute n_i^B and m_i=m_i^{only}+m_{AB} into \\Pi_i=\\tau_i q n_i^B m_i-C_i(m_i,m_{AB}).",
-      "Write platform FOCs \\partial \\Pi_A/\\partial \\tau_A=0 and \\partial \\Pi_B/\\partial \\tau_B=0 without imposing the commission-subsidy closed form.",
-      "Use the implicit system F(z,\\theta)=0 for z=(\\tau_A,\\tau_B,m_A,m_B,m_{AB}) when a compact closed form is algebraically unavailable.",
+      "从买家无差异条件 U_A^B=U_B^B 出发，把 n_A^B 写成 m_A、m_B、m_{AB} 的符号函数。",
+      "用截止条件或互补条件 G_A=0、G_B=0、G_{AB}=0 表示卖家入驻选择，其中 \\kappa 会移动多归属方程。",
+      "把 n_i^B 与 m_i=m_i^{only}+m_{AB} 代入 \\Pi_i=\\tau_i q n_i^B m_i-C_i(m_i,m_{AB})。",
+      "分别写出平台一阶条件 \\partial \\Pi_A/\\partial \\tau_A=0 和 \\partial \\Pi_B/\\partial \\tau_B=0，不套用佣金-补贴闭式解。",
+      "如果紧凑闭式解暂时不可得，就使用隐式系统 F(z,\\theta)=0，其中 z=(\\tau_A,\\tau_B,m_A,m_B,m_{AB})。",
     ],
     focs: [
       "F_A=\\frac{\\partial}{\\partial \\tau_A}[\\tau_A q n_A^B(m_A+m_{AB})-C_A(m_A,m_{AB})]=0",
@@ -1232,13 +1230,13 @@ function createSellerMultihomingEquilibriumFallback(): EquilibriumResult {
       "\\kappa\\ge 0",
       "m_A,m_B,m_{AB}\\in[0,1]",
       "n_A^B+n_B^B=1",
-      "\\det J_zF \\ne 0 \\quad \\text{for implicit symbolic comparative statics}",
-      "Second-order conditions use the symbolic Hessian of \\Pi_i after seller membership is substituted.",
+      "\\det J_zF \\ne 0 \\quad \\text{用于隐函数比较静态}",
+      "二阶条件使用代入卖家入驻规模后的平台利润 Hessian。",
     ],
     closedForm:
-      "Closed form is not asserted for seller-multihoming-pricing fallback. Use the symbolic reaction system F_A=F_B=G_A=G_B=G_{AB}=0 and solve under stated parameter restrictions.",
+      "当前草稿不声称已经得到卖家多归属模型的完整闭式解。应在参数限制明确后，从符号反应系统 F_A=F_B=G_A=G_B=G_{AB}=0 继续求解。",
     derivation:
-      "This direction-specific seller multihoming fallback keeps m_A,m_B,m_{AB},m_i and \\kappa inside the symbolic system. Because seller membership creates complementarity and cutoff equations, the local fallback returns a symbolic_failure asset with FOCs, conditions, and reusable SymPy structure instead of reusing the commission-subsidy closed form. The result is still theoretical: all comparative statics should come from the implicit system F(z,\\theta)=0, not from numerical substitution.",
+      "这版卖家多归属草稿把 m_A、m_B、m_{AB}、m_i 和 \\kappa 保留在符号系统内。卖家入驻会带来互补条件和截止方程，因此当前结果先给出一阶条件、存在条件和可复用的 SymPy 结构，而不是复用佣金-补贴闭式解。后续比较静态应来自隐式系统 F(z,\\theta)=0，而不是数值代入。",
     code: `# sympy scaffold for seller-multihoming-pricing
 import sympy as sp
 
@@ -1273,9 +1271,9 @@ print("F_tau_B =", sp.factor(F_tau_B))
 print("G_AB =", sp.factor(G_AB))
 print("Jacobian block =", implicit_jacobian)`,
     warnings: [
-      "Direction-specific symbolic_failure: seller-multihoming-pricing has an implicit symbolic system, not the commission-subsidy closed form.",
-      "Do not report numerical equilibrium values for this fallback; complete the symbolic cutoff/complementarity solve first.",
-      "Comparative statics must use F_z^{-1}F_\\theta or closed-form reaction functions derived from this direction-specific system.",
+      "当前是隐函数符号系统，不是佣金-补贴模型的闭式解。",
+      "不要把数值均衡当成理论结果；应先完成符号截止或互补条件求解。",
+      "比较静态必须使用 F_z^{-1}F_\\theta 或从该系统推出的闭式反应函数。",
     ],
   };
 }
@@ -1289,13 +1287,13 @@ function createGenericDirectionSpecificEquilibriumFallback(
 
   return {
     status: "symbolic_failure",
-    concept: `${directionId} direction-specific symbolic equilibrium scaffold`,
+    concept: `${direction?.title ?? directionId} 的符号均衡草稿`,
     solvingSteps: [
-      `Keep ${mechanismState} and ${mechanismEffort} in the buyer and seller utility functions rather than replacing them with the default commission-subsidy channel.`,
-      "Derive n_A^B and n_A^S from symbolic indifference equations U_A^B=U_B^B and U_A^S=U_B^S.",
-      "Substitute the symbolic demand system into Pi_A and Pi_B, including mechanism revenue R_i and cost C_i terms.",
-      "Write platform FOCs with respect to commissions and the direction-specific mechanism variable.",
-      "Use implicit equations F(z,theta)=0 when a compact closed form is not available.",
+      `在买家和卖家效用函数中保留 ${mechanismState} 与 ${mechanismEffort}，不替换成默认佣金-补贴通道。`,
+      "由符号无差异条件 U_A^B=U_B^B 与 U_A^S=U_B^S 推出 n_A^B 和 n_A^S。",
+      "把符号需求系统代入 Pi_A 和 Pi_B，并保留机制收益 R_i 与机制成本 C_i。",
+      "分别对佣金变量和机制变量写出平台一阶条件。",
+      "当紧凑闭式解不可得时，使用隐式方程 F(z,theta)=0 继续做比较静态。",
     ],
     focs: [
       "\\frac{\\partial \\Pi_i}{\\partial \\tau_i}=0",
@@ -1305,12 +1303,12 @@ function createGenericDirectionSpecificEquilibriumFallback(
     conditions: [
       "n_i^B,n_i^S\\in[0,1]",
       "\\det J_zF\\ne0 \\quad \\text{for implicit comparative statics}",
-      `The ${directionId} mechanism constraints must define the active symbolic regime before claiming a closed form.`,
+      "在声称闭式解之前，需要先明确该机制约束对应的活跃符号区域。",
     ],
     closedForm:
-      `Closed form is not asserted for ${directionId}. Use the direction-specific symbolic reaction system F(z,\\theta)=0 and solve after the mechanism equations are confirmed.`,
+      `当前草稿不声称已经得到 ${direction?.title ?? directionId} 的完整闭式解。请先确认机制方程，再从符号反应系统 F(z,\\theta)=0 继续求解。`,
     derivation:
-      `This direction-specific fallback for ${directionId} returns symbolic_failure because the local deterministic engine cannot honestly derive a complete closed-form equilibrium for this mechanism yet. It preserves symbolic FOCs, mechanism variables, and implicit-function structure instead of reusing the commission-subsidy Hotelling closed form. No numerical substitution or simulation is used.`,
+      `当前本地推导无法诚实地给出 ${direction?.title ?? directionId} 的完整闭式均衡，因此只保留符号一阶条件、机制变量和隐函数结构。这样可以避免把默认佣金-补贴 Hotelling 闭式解误套到这个机制上；这里不使用数值代入或仿真替代理论分析。`,
     code: `# sympy scaffold for ${directionId}
 import sympy as sp
 
@@ -1346,9 +1344,9 @@ print("F_tau_A =", F_tau_A)
 print("F_a =", F_a)
 print("mechanism constraint =", mechanism_constraint)`,
     warnings: [
-      `Direction-specific symbolic_failure: ${directionId} needs its own mechanism equations before a closed-form equilibrium can be claimed.`,
-      "The deterministic fallback deliberately avoids the default commission-subsidy closed form for this non-default direction.",
-      "Continue with symbolic reaction functions or implicit differentiation; do not use numerical substitution as theory.",
+      `${direction?.title ?? directionId} 需要先确认专属机制方程，之后才能声称闭式均衡。`,
+      "当前草稿刻意避开默认佣金-补贴闭式解，避免错误复用。",
+      "请继续使用符号反应函数或隐式求导；不要用数值代入替代理论命题。",
     ],
   };
 }
@@ -1357,9 +1355,9 @@ function createSellerMultihomingPropertyAnalyses(
   equilibrium: EquilibriumResult
 ): PropertyAnalysis[] {
   const sharedWarnings = [
-    "Direction-specific seller multihoming property analysis uses symbolic implicit differentiation only.",
-    "No numerical substitution, simulation, calibration, or parameter assignment is used as theory.",
-    "Signs require the stated Jacobian and second-order conditions from the seller-multihoming-pricing system.",
+    "卖家多归属性质分析只使用符号隐式求导。",
+    "不使用数值代入、仿真、校准或参数赋值替代理论分析。",
+    "符号方向需要依赖卖家多归属系统中的雅可比条件和二阶条件。",
   ];
 
   return [
@@ -1371,13 +1369,13 @@ function createSellerMultihomingPropertyAnalyses(
       symbolicResult:
         "\\frac{\\partial z^*}{\\partial \\kappa}=-J_zF(z^*,\\theta)^{-1}F_{\\kappa}(z^*,\\theta),\\quad z=(\\tau_A,\\tau_B,m_A,m_B,m_{AB})",
       signCondition:
-        "If the active seller multihoming equation satisfies G_{AB,\\kappa}<0 and the reduced seller membership block is stable, then \\partial m_{AB}^*/\\partial \\kappa<0.",
+        "如果活跃的卖家多归属方程满足 G_{AB,\\kappa}<0，且约化后的卖家入驻模块稳定，则 \\partial m_{AB}^*/\\partial \\kappa<0。",
       propositionDraft:
-        "Proposition 1: A higher seller multihoming cost kappa weakly reduces the equilibrium multihoming mass m_{AB}^* in the active interior multihoming region.",
+        "命题 1：在活跃的内部多归属区域内，更高的卖家多归属成本 \\kappa 会弱化均衡多归属规模 m_{AB}^*。",
       proofSketch:
-        `Use ${equilibrium.concept} and write the active symbolic system as F(z,\\theta)=0. Differentiating with respect to kappa gives J_zF dz^*/d\\kappa + F_\\kappa=0, hence dz^*/d\\kappa=-J_zF^{-1}F_\\kappa. The sign of the m_AB component follows from the seller membership block and the maintained stability condition; no numeric parameter values are introduced.`,
+        `使用 ${equilibrium.concept}，把活跃符号系统写成 F(z,\\theta)=0。对 \\kappa 求导得到 J_zF dz^*/d\\kappa + F_\\kappa=0，因此 dz^*/d\\kappa=-J_zF^{-1}F_\\kappa。m_AB 分量的符号由卖家入驻模块和维持的稳定条件决定，不引入任何数值参数。`,
       intuition:
-        "A larger kappa makes the both-platform seller option less attractive, so seller multihoming falls unless platform commission reactions fully offset the extra membership cost.",
+        "更大的 \\kappa 会降低卖家同时入驻两个平台的吸引力；除非平台佣金反应完全抵消额外成本，否则多归属规模会下降。",
       warnings: sharedWarnings,
     },
     {
@@ -1388,30 +1386,30 @@ function createSellerMultihomingPropertyAnalyses(
       symbolicResult:
         "\\frac{\\partial \\tau_i^*}{\\partial m_i}=-\\frac{F_{i,m_i}}{F_{i,\\tau_i}}\\quad \\text{on the reduced reaction equation }F_i(\\tau_i,m_i;\\theta)=0",
       signCondition:
-        "When F_{i,\\tau_i}<0 and seller availability raises buyer demand but lowers seller lock-in, the sign is governed by the symbolic cross-partial F_{i,m_i}.",
+        "当 F_{i,\\tau_i}<0，且卖家可见规模既提高买家需求又削弱卖家锁定时，符号由交叉偏导 F_{i,m_i} 决定。",
       propositionDraft:
-        "Proposition 2: Seller multihoming changes commission pressure through the reaction-function cross-partial between visible seller mass m_i and platform commission \\tau_i.",
+        "命题 2：卖家多归属通过可见卖家规模 m_i 与平台佣金 \\tau_i 之间的反应函数交叉偏导改变佣金压力。",
       proofSketch:
-        "After substituting the seller membership equations, reduce platform i's FOC to F_i=0. Symbolically differentiating F_i with respect to m_i yields d\\tau_i^*/dm_i=-F_{i,m_i}/F_{i,\\tau_i}. This is a theoretical comparative static expressed by derivatives of the symbolic FOC, not by a numerical experiment.",
+        "代入卖家入驻方程后，把平台 i 的一阶条件约化为 F_i=0。对 m_i 做符号求导得到 d\\tau_i^*/dm_i=-F_{i,m_i}/F_{i,\\tau_i}。这是由符号一阶条件导出的理论比较静态，不是数值实验。",
       intuition:
-        "More visible sellers increase buyer-side value, but multihoming also makes sellers less captive. The commission response therefore depends on which symbolic channel dominates in the reduced FOC.",
+        "更多可见卖家会提高买家侧价值，但多归属也让卖家不那么被单个平台锁定。因此佣金反应取决于约化一阶条件中哪个符号通道占优。",
       warnings: sharedWarnings,
     },
     {
       id: "analysis-multihoming-existence-region",
-      target: "seller multihoming interior equilibrium",
+      target: "卖家多归属内部均衡",
       parameter: "J_zF, \\kappa",
       operation: "threshold",
       symbolicResult:
         "\\det J_zF\\ne0,\\quad 0<m_A^*,m_B^*,m_{AB}^*<1,\\quad U_{AB}^S-U_A^S\\ge0,\\quad U_{AB}^S-U_B^S\\ge0",
       signCondition:
-        "The symbolic interior region requires nonzero Jacobian determinant, feasible seller masses, and multihoming surplus inequalities that include kappa.",
+        "符号内部区域需要非零雅可比行列式、可行的卖家规模，以及包含 \\kappa 的多归属剩余不等式。",
       propositionDraft:
-        "Proposition 3: The seller-multihoming-pricing fallback is valid only on the symbolic parameter region where the active multihoming constraints and local second-order conditions hold.",
+        "命题 3：卖家多归属定价草稿只在活跃多归属约束和局部二阶条件成立的符号参数区域内有效。",
       proofSketch:
-        "List the feasibility inequalities for seller membership masses and the active multihoming surplus comparisons. Then combine them with \\det J_zF\\ne0 and the platform Hessian conditions. These symbolic restrictions define the theoretical region for property analysis before any numerical calibration is considered.",
+        "先列出卖家入驻规模的可行性不等式和活跃多归属剩余比较，再与 \\det J_zF\\ne0 和平台 Hessian 条件结合。这些符号限制先定义性质分析的理论区域，再考虑任何数值校准。",
       intuition:
-        "The analysis should state where seller multihoming is actually active. Outside that region, the model switches to A-only or B-only seller membership and must be solved as a different symbolic regime.",
+        "分析必须说明多归属在什么区域内真正活跃。离开该区域后，模型会切换到只入驻 A 或只入驻 B 的 regime，需要作为另一个符号区域重新求解。",
       warnings: sharedWarnings,
     },
   ];
@@ -1423,9 +1421,9 @@ function createGenericDirectionSpecificPropertyAnalyses(
 ): PropertyAnalysis[] {
   const directionId = direction?.id ?? "custom-direction";
   const sharedWarnings = [
-    `Direction-specific property analysis for ${directionId} uses symbolic implicit differentiation only.`,
-    "No numerical substitution, simulation, calibration, or parameter assignment is used as theory.",
-    "Signs are conditional on the mechanism equations, Jacobian rank, and second-order conditions.",
+    `${direction?.title ?? directionId} 的性质分析只使用符号隐式求导。`,
+    "不使用数值代入、仿真、校准或参数赋值替代理论分析。",
+    "符号方向取决于机制方程、雅可比秩和二阶条件。",
   ];
 
   return [
@@ -1437,30 +1435,30 @@ function createGenericDirectionSpecificPropertyAnalyses(
       symbolicResult:
         "\\frac{\\partial z^*}{\\partial a}=-J_zF(z^*,\\theta)^{-1}F_a(z^*,\\theta)",
       signCondition:
-        `The sign depends on the ${directionId} mechanism cross-partials in F_a and the inverse symbolic Jacobian J_zF^{-1}.`,
+        `符号方向取决于 ${direction?.title ?? directionId} 机制在 F_a 中的交叉偏导，以及符号雅可比逆 J_zF^{-1}。`,
       propositionDraft:
-        `Proposition 1: In the ${directionId} regime, the mechanism variable changes equilibrium outcomes through the symbolic reaction system rather than the default commission-subsidy closed form.`,
+        `命题 1：在 ${direction?.title ?? directionId} 机制区域内，机制变量通过符号反应系统改变均衡结果，而不是通过默认佣金-补贴闭式解起作用。`,
       proofSketch:
-        `Use ${equilibrium.concept}. Write the active equations as F(z,\\theta)=0 with z collecting commissions, demand shares, and the ${directionId} mechanism state. Differentiating with respect to the mechanism variable gives dz^*/da=-J_zF^{-1}F_a. This is symbolic comparative statics and does not assign parameter values.`,
+        `使用 ${equilibrium.concept}。把活跃方程写为 F(z,\\theta)=0，其中 z 收集佣金、需求份额和 ${direction?.title ?? directionId} 的机制状态。对机制变量求导得到 dz^*/da=-J_zF^{-1}F_a。这是符号比较静态，不给定参数值。`,
       intuition:
-        `The ${directionId} mechanism changes participation incentives directly, so its theoretical effect must be read from FOCs and mechanism constraints.`,
+        `${direction?.title ?? directionId} 机制会直接改变参与激励，因此理论效应必须从一阶条件和机制约束中读取。`,
       warnings: sharedWarnings,
     },
     {
       id: `analysis-${directionId}-existence`,
-      target: `${directionId} symbolic equilibrium regime`,
+      target: `${direction?.title ?? directionId} 的符号均衡区域`,
       parameter: "J_zF",
       operation: "threshold",
       symbolicResult:
         "\\det J_zF\\ne0,\\quad n_i^B,n_i^S\\in[0,1],\\quad \\text{active mechanism constraints hold}",
       signCondition:
-        "The fallback is valid only inside the symbolic region where feasibility and active-regime constraints are satisfied.",
+        "该草稿只在可行性约束和活跃机制约束同时满足的符号区域内有效。",
       propositionDraft:
-        `Proposition 2: The ${directionId} fallback defines a symbolic regime; closed-form claims require first proving feasibility, active constraints, and local optimality.`,
+        `命题 2：${direction?.title ?? directionId} 先定义一个符号区域；若要声称闭式解，需要先证明可行性、活跃约束和局部最优性。`,
       proofSketch:
-        "Collect feasibility inequalities, active mechanism constraints, nonzero Jacobian determinant, and Hessian or bordered-Hessian conditions. These symbolic restrictions delimit the theorem region before any simulation module is considered.",
+        "收集可行性不等式、活跃机制约束、非零雅可比行列式，以及 Hessian 或 bordered-Hessian 条件。这些符号限制先界定定理区域，再考虑任何仿真模块。",
       intuition:
-        "A mechanism-specific direction can switch regimes when constraints bind, so property analysis must state the symbolic region before reporting signs.",
+        "机制约束一旦绑定，模型可能切换区域。因此性质分析必须先说明符号区域，再报告符号方向。",
       warnings: sharedWarnings,
     },
   ];
