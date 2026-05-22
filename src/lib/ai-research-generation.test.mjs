@@ -7,7 +7,10 @@ import {
   parseDirections,
   generateResearchProject,
 } from "./ai-research-generation.ts";
-import { createExplorationProject } from "./research-session.ts";
+import {
+  adoptResearchDirection,
+  createExplorationProject,
+} from "./research-session.ts";
 
 test("direction discovery prompt excludes empirical and simulation-only directions", () => {
   const messages = createDiscoverPrompt("研究二手交易平台佣金与补贴策略");
@@ -735,6 +738,33 @@ test("build fallback preserves userMessage before entering model phase", async (
   assert.notEqual(userMessageIndex, -1);
   assert.equal(messages.at(-1)?.role, "assistant");
   assert.ok(result.project.hotellingModel);
+});
+
+test("conversation fallback returns a direct model patch for explicit symbol edits", async () => {
+  const project = adoptResearchDirection(
+    createExplorationProject({
+      id: "11111111-1111-4111-8111-111111111111",
+      rawIdea: "Research secondhand platform pricing",
+      now: 1710000000000,
+    }),
+    "secondhand-commission-subsidy-hotelling"
+  );
+
+  const result = await generateResearchProject(
+    {
+      action: "continue_conversation",
+      rawIdea: project.rawIdea,
+      userMessage: "Change tau_A to f_A.",
+      project,
+    },
+    {}
+  );
+
+  assert.equal(result.assetPatch?.kind, "update_model");
+  assert.equal(result.assetPatch?.changes[0].target, "hotellingModel.symbols[tau_A].symbol");
+  assert.equal(result.assetPatch?.changes[0].op, "set");
+  assert.equal(result.assetPatch?.changes[0].value, "f_A");
+  assert.match(result.assistantMessage, /pending model change/i);
 });
 
 test("build fallback can recover model phase from a project without directions", async () => {

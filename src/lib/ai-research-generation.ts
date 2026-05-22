@@ -1265,6 +1265,10 @@ function createConversationFallbackMessage(
   project: ResearchProject,
   userMessage: string
 ) {
+  if (createConversationFallbackAssetPatch(project, userMessage)) {
+    return "I created a pending model change for the right-side review panel. Apply it there when the edit looks correct.";
+  }
+
   const symbolHighlights = resolvePromptSymbols(project)
     .filter((symbol) => symbol.recommended)
     .slice(0, 4)
@@ -1300,6 +1304,31 @@ function createConversationFallbackAssetPatch(
   userMessage: string
 ): ResearchAssetPatch | null {
   if (!project.hotellingModel) return null;
+
+  const englishRenameMatch = userMessage.match(
+    /(?:change|rename|replace)\s+([\\A-Za-z][\\A-Za-z0-9_{}^]*)\s+(?:to|as|with)\s+([\\A-Za-z][\\A-Za-z0-9_{}^]*)/i
+  );
+  if (englishRenameMatch) {
+    const currentSymbol = findSymbolByNotation(
+      project.hotellingModel.symbols,
+      englishRenameMatch[1]
+    );
+    const nextNotation = englishRenameMatch[2];
+    if (!currentSymbol) return null;
+
+    return {
+      kind: "update_model",
+      summary: `Rename symbol ${currentSymbol.symbol} to ${nextNotation}`,
+      changes: [
+        {
+          target: `hotellingModel.symbols[${currentSymbol.codeName}].symbol`,
+          op: "set",
+          value: nextNotation,
+          reason: "User requested a symbol notation change.",
+        },
+      ],
+    };
+  }
 
   const renameMatch = userMessage.match(
     /把\s*([\\A-Za-z][\\A-Za-z0-9_{}^]*)\s*(?:这个)?(?:符号|记号|变量)?\s*(?:改成|改为|换成)\s*([\\A-Za-z][\\A-Za-z0-9_{}^]*)/i

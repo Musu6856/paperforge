@@ -172,13 +172,19 @@ function resolveSymbolIndex(
     return selector >= 0 && selector < symbols.length ? selector : -1;
   }
 
-  const needle = selector.trim();
+  const needle = normalizeSymbolSelector(selector);
   return symbols.findIndex(
-    (symbol) =>
-      symbol.id === needle ||
-      symbol.codeName === needle ||
-      symbol.symbol === needle ||
-      symbol.baseSymbol === needle
+    (symbol) => {
+      const keys = [
+        symbol.id,
+        symbol.codeName,
+        symbol.symbol,
+        symbol.baseSymbol,
+        formatSymbolNotation(symbol),
+      ].map(normalizeSymbolSelector);
+
+      return keys.includes(needle);
+    }
   );
 }
 
@@ -342,6 +348,17 @@ function toCodeName({
     .replace(/[^A-Za-z0-9_]/g, "_")
     .replace(/_+/g, "_")
     .replace(/^_+|_+$/g, "");
+}
+
+function normalizeSymbolSelector(value: string) {
+  return value
+    .trim()
+    .replace(/^\$|\$$/g, "")
+    .replace(/^\\\(|\\\)$/g, "")
+    .replace(/^\\\[|\\\]$/g, "")
+    .replace(/^\\+/, "")
+    .replace(/[{}]/g, "")
+    .toLowerCase();
 }
 
 function emptySymbolField(field: keyof SymbolDefinition) {

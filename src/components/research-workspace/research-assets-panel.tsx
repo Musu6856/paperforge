@@ -60,11 +60,19 @@ type ResearchAssetsPanelProps = {
 };
 
 export function ResearchAssetsPanel(props: ResearchAssetsPanelProps) {
-  const initialActiveTab = getResearchAssetsTabForPhase(props.session.phase);
+  const latestProposedPatch = props.session.assetPatches
+    ?.filter((patch) => patch.status === "proposed")
+    .at(-1);
+  const initialActiveTab = latestProposedPatch
+    ? getResearchAssetsTabForPatchKind(latestProposedPatch.kind)
+    : getResearchAssetsTabForPhase(props.session.phase);
+  const patchKey = latestProposedPatch
+    ? `${latestProposedPatch.id}:${latestProposedPatch.kind}`
+    : "none";
 
   return (
     <ResearchAssetsPanelContent
-      key={`${props.project?.id ?? "new"}:${props.session.phase}`}
+      key={`${props.project?.id ?? "new"}:${props.session.phase}:${patchKey}`}
       {...props}
       initialActiveTab={initialActiveTab}
     />

@@ -335,12 +335,12 @@ export function ResearchWorkspace({
         project: activeProject,
         runtimeModelSource: readRuntimeModelSourceSettings(),
       });
-      const nextProject = result.usedFallback
-        ? result.project
-        : attachConversationPatch(result);
+      const nextProject = result.assetPatch
+        ? attachConversationPatch(result)
+        : result.project;
       await persistGeneratedProject(nextProject);
 
-      if (result.assetPatch && !result.usedFallback) {
+      if (result.assetPatch) {
         toast.success("已生成修改建议", {
           description: "右侧会显示待应用修改，确认后才会改动结构化资产。",
         });
