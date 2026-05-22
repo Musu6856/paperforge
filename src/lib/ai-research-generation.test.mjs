@@ -1066,7 +1066,8 @@ test("successful property analysis generation uses symbolic provider result", as
       complete: async () =>
         JSON.stringify({
           assistantMessage: "已生成符号性质分析。",
-          propertyAnalysis: {
+          propertyAnalyses: [
+            {
             id: "provider-analysis",
             target: "\\tau_A^*",
             parameter: "\\alpha_B",
@@ -1077,7 +1078,32 @@ test("successful property analysis generation uses symbolic provider result", as
             proofSketch: "使用隐函数定理对符号 FOC 求导。",
             intuition: "需求反馈改变佣金边际收益。",
             warnings: ["不使用数值模拟。"],
-          },
+            },
+            {
+              id: "provider-analysis-fee",
+              target: "s_A^*",
+              parameter: "t_B",
+              operation: "compare",
+              symbolicResult: "\\frac{\\partial s_A^*}{\\partial t_B}>0",
+              signCondition: "Symbolic sign follows from t_B>0.",
+              propositionDraft: "Higher horizontal differentiation changes subsidy response.",
+              proofSketch: "Differentiate the symbolic equilibrium expression with respect to t_B.",
+              intuition: "Softer rivalry changes the platform subsidy margin.",
+              warnings: ["Symbolic-only comparative statics."],
+            },
+            {
+              id: "provider-analysis-threshold",
+              target: "q^*",
+              parameter: "\\alpha_S",
+              operation: "threshold",
+              symbolicResult: "\\frac{\\partial q^*}{\\partial \\alpha_S}>0",
+              signCondition: "Positive under the maintained symbolic restrictions.",
+              propositionDraft: "Seller-side network strength expands equilibrium volume.",
+              proofSketch: "Substitute the equilibrium into demand and differentiate symbolically.",
+              intuition: "More seller-side utility raises platform matching value.",
+              warnings: ["Symbolic-only comparative statics."],
+            },
+          ],
         }),
     }
   );
@@ -1085,7 +1111,7 @@ test("successful property analysis generation uses symbolic provider result", as
   assert.equal(result.usedFallback, false);
   assert.equal(result.assistantMessage, "已生成符号性质分析。");
   assert.equal(result.project.researchSession?.phase, "analysis");
-  assert.equal(result.project.propertyAnalyses?.length, 1);
+  assert.equal(result.project.propertyAnalyses?.length, 3);
   assert.equal(result.project.propertyAnalyses?.[0].id, "provider-analysis");
   assert.equal(
     result.project.researchSession?.messages.at(-2)?.content,
@@ -1129,7 +1155,8 @@ test("successful property analysis accepts unicode symbolic derivatives", async 
       complete: async () =>
         JSON.stringify({
           assistantMessage: "已生成符号性质分析。",
-          propertyAnalysis: {
+          propertyAnalyses: [
+            {
             id: "provider-unicode-analysis",
             target: "f^B",
             parameter: "α_B",
@@ -1139,8 +1166,33 @@ test("successful property analysis accepts unicode symbolic derivatives", async 
             propositionDraft: "命题：买家网络外部性增强会降低买家收费。",
             proofSketch: "由对称均衡解对 α_B 求偏导即可得到该符号结果。",
             intuition: "平台通过降低买家费用吸引买家，再经跨边网络效应吸引卖家。",
-            warnings: ["不使用数值模拟。"],
-          },
+              warnings: ["Symbolic-only comparative statics."],
+            },
+            {
+              id: "provider-unicode-transport",
+              target: "s_A^*",
+              parameter: "t_B",
+              operation: "differentiate",
+              symbolicResult: "\\frac{\\partial s_A^*}{\\partial t_B}>0",
+              signCondition: "Positive under the symbolic restrictions.",
+              propositionDraft: "Horizontal differentiation changes the subsidy margin.",
+              proofSketch: "Differentiate the symbolic equilibrium expression with respect to t_B.",
+              intuition: "A wider horizontal gap softens rivalry and changes platform subsidies.",
+              warnings: ["Symbolic-only comparative statics."],
+            },
+            {
+              id: "provider-unicode-network",
+              target: "q^*",
+              parameter: "\\alpha_S",
+              operation: "differentiate",
+              symbolicResult: "\\frac{\\partial q^*}{\\partial \\alpha_S}>0",
+              signCondition: "Positive under the symbolic restrictions.",
+              propositionDraft: "Seller-side network strength raises equilibrium volume.",
+              proofSketch: "Substitute the symbolic equilibrium into demand and differentiate.",
+              intuition: "Seller-side value raises matching volume through cross-side utility.",
+              warnings: ["Symbolic-only comparative statics."],
+            },
+          ],
         }),
     }
   );

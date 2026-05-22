@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { fetchProject } from "@/lib/api";
 import { useStore } from "@/lib/store";
 
+const DELETING_PROJECT_SESSION_KEY = "paperforge-deleting-project-id";
+
 export default function ResearchProjectPage() {
   const params = useParams();
   const router = useRouter();
@@ -29,6 +31,10 @@ export default function ResearchProjectPage() {
 
   useEffect(() => {
     if (project || state.isLoading) return;
+
+    const deletingProjectId =
+      window.sessionStorage.getItem(DELETING_PROJECT_SESSION_KEY);
+    if (composeNew || deletingProjectId === id) return;
 
     if (fallbackProject) {
       router.replace(`/research/${fallbackProject.id}`);
@@ -56,7 +62,7 @@ export default function ResearchProjectPage() {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, fallbackProject, id, project, router, state.isLoading]);
+  }, [composeNew, dispatch, fallbackProject, id, project, router, state.isLoading]);
 
   if (loadError) {
     if (fallbackProject) {

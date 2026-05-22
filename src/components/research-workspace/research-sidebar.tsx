@@ -46,6 +46,8 @@ const projectDateFormatter = new Intl.DateTimeFormat("zh-CN", {
   weekday: "short",
 });
 
+const DELETING_PROJECT_SESSION_KEY = "paperforge-deleting-project-id";
+
 export function ResearchSidebar({
   project,
   onStartNewConversation,
@@ -135,16 +137,18 @@ export function ResearchSidebar({
 
     try {
       await deleteProject(targetProject.id);
-      const remainingProjects = state.projects.filter(
-        (item) => item.id !== targetProject.id
-      );
-      dispatch({ type: "DELETE_PROJECT", payload: targetProject.id });
-      toast.success("记录已删除");
-
       if (targetProject.id === project.id) {
-        onStartNewConversation();
-        router.push(remainingProjects.length > 0 ? "/research?new=1" : "/research");
+        window.sessionStorage.setItem(
+          DELETING_PROJECT_SESSION_KEY,
+          targetProject.id
+        );
+        router.replace("/research?new=1", { scroll: false });
+        window.setTimeout(() => {
+          window.sessionStorage.removeItem(DELETING_PROJECT_SESSION_KEY);
+        }, 0);
       }
+      dispatch({ type: "DELETE_PROJECT", payload: targetProject.id });
+      toast.success("Record deleted");
     } catch (error) {
       console.error("Failed to delete project", error);
       toast.error("删除失败");

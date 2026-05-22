@@ -110,6 +110,54 @@ type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
+type StructuredValidationResult<T> =
+  | {
+      ok: true;
+      value: T;
+    }
+  | {
+      ok: false;
+      reason: string;
+    };
+
+type StructuredCompletionResult<T> = {
+  value: T | null;
+  content: string | null;
+  initialContent: string | null;
+  repairAttempted: boolean;
+  failureReason?: string;
+};
+
+type BuildModelCompletion = {
+  payload: BuildModelPayload;
+  hotellingModel: HotellingModel;
+  assistantMessage: string;
+  selectedDirectionId?: string;
+  refinedIdea?: string;
+  assetSummary?: ResearchSessionAssetSummary | null;
+};
+
+type EquilibriumCompletion = {
+  payload: EquilibriumPayload;
+  equilibriumResult: EquilibriumResult;
+  assistantMessage: string;
+};
+
+type PropertyAnalysisCompletion = {
+  payload: PropertyAnalysisPayload;
+  analyses: PropertyAnalysis[];
+  assistantMessage: string;
+};
+
+const BUILD_MODEL_REPAIR_SHAPE =
+  "{ assistantMessage: string, hotellingModel: { symbols, sides, platforms, timing, utilityFunctions, demandDerivation, profitFunctions, assumptions, modelSetupDraft }, optional selectedDirectionId, refinedIdea, assetSummary }";
+
+const EQUILIBRIUM_REPAIR_SHAPE =
+  "{ assistantMessage: string, equilibriumResult: { status, concept, solvingSteps, focs, conditions, closedForm, derivation, code, warnings } }";
+
+const PROPERTY_ANALYSIS_REPAIR_SHAPE =
+  "{ assistantMessage: string, propertyAnalyses: Array<3 to 5 symbolic analyses with id,target,parameter,operation,symbolicResult,signCondition,propositionDraft,proofSketch,intuition,warnings> }";
+
 export async function generateResearchProject(
   request: ResearchGenerationRequest,
   client: ResearchCompletionClient = {}
@@ -312,6 +360,227 @@ export function extractFirstJsonObject(text: string): Record<string, unknown> | 
   return null;
 }
 
+async function completeWithRepair<T>(
+  client: ResearchCompletionClient,
+  prompt: LlmMessage[],
+  validate: (content: string) => StructuredValidationResult<T>,
+  repair: {
+    actionLabel: string;
+    requiredShape: string;
+  }
+): Promise<StructuredCompletionResult<T>> {
+  const initialContent = await tryComplete(client, prompt);
+  if (!initialContent) {
+    return {
+      value: null,
+      content: null,
+      initialContent: null,
+      repairAttempted: false,
+    };
+  }
+
+  const initialValidation = validate(initialContent);
+  if (initialValidation.ok) {
+    return {
+      value: initialValidation.value,
+      content: initialContent,
+      initialContent,
+      repairAttempted: false,
+    };
+  }
+
+  const repairContent = await tryComplete(
+    client,
+    createRepairPrompt({
+      actionLabel: repair.actionLabel,
+      originalPrompt: prompt,
+      originalContent: initialContent,
+      failureReason: initialValidation.reason,
+      requiredShape: repair.requiredShape,
+    })
+  );
+
+  if (!repairContent) {
+    return {
+      value: null,
+      content: initialContent,
+      initialContent,
+      repairAttempted: true,
+      failureReason: initialValidation.reason,
+    };
+  }
+
+  const repairValidation = validate(repairContent);
+  if (repairValidation.ok) {
+    return {
+      value: repairValidation.value,
+      content: repairContent,
+      initialContent,
+      repairAttempted: true,
+    };
+  }
+
+  return {
+    value: null,
+    content: repairContent,
+    initialContent,
+    repairAttempted: true,
+    failureReason: repairValidation.reason,
+  };
+}
+
+function validateBuildModelCompletion(
+  content: string,
+  fallbackSymbols: SymbolDefinition[]
+): StructuredValidationResult<BuildModelCompletion> {
+  const payload = extractFirstJsonObject(content) as BuildModelPayload | null;
+  if (!payload) {
+    return {
+      ok: false,
+      reason: "response did not contain a parseable JSON object",
+    };
+  }
+
+  const hotellingModel = parseHotellingModel(payload.hotellingModel, fallbackSymbols);
+  const assistantMessage = parseText(payload.assistantMessage);
+  if (!hotellingModel || !assistantMessage) {
+    return {
+      ok: false,
+      reason:
+        "response must include assistantMessage and a complete hotellingModel with all required fields",
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      payload,
+      hotellingModel,
+      assistantMessage,
+      selectedDirectionId: parseText(payload.selectedDirectionId) ?? undefined,
+      refinedIdea: parseText(payload.refinedIdea) ?? undefined,
+      assetSummary: parseAssetSummary(payload.assetSummary, hotellingModel),
+    },
+  };
+}
+
+function validateEquilibriumCompletion(
+  content: string
+): StructuredValidationResult<EquilibriumCompletion> {
+  const payload = extractFirstJsonObject(content) as EquilibriumPayload | null;
+  if (!payload) {
+    return {
+      ok: false,
+      reason: "response did not contain a parseable JSON object",
+    };
+  }
+
+  const equilibriumResult = parseEquilibriumResult(payload.equilibriumResult);
+  const assistantMessage = parseText(payload.assistantMessage);
+  if (!equilibriumResult || !assistantMessage) {
+    return {
+      ok: false,
+      reason:
+        "response must include assistantMessage and a symbolic equilibriumResult, not numeric or simulation output",
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      payload,
+      equilibriumResult,
+      assistantMessage,
+    },
+  };
+}
+
+function validatePropertyAnalysisCompletion(
+  content: string
+): StructuredValidationResult<PropertyAnalysisCompletion> {
+  const payload = extractFirstJsonObject(content) as PropertyAnalysisPayload | null;
+  if (!payload) {
+    return {
+      ok: false,
+      reason: "response did not contain a parseable JSON object",
+    };
+  }
+
+  const analyses = parsePropertyAnalyses(payload.propertyAnalyses);
+  const assistantMessage = parseText(payload.assistantMessage);
+  if (!analyses || !assistantMessage) {
+    const propertyAnalysesValue = payload.propertyAnalyses;
+    const analysisCount = Array.isArray(propertyAnalysesValue)
+      ? propertyAnalysesValue.length
+      : typeof propertyAnalysesValue;
+    const invalidIndexes = Array.isArray(propertyAnalysesValue)
+      ? propertyAnalysesValue
+          .map((entry, index) => (parsePropertyAnalysis(entry) ? null : index))
+          .filter((index) => index !== null)
+      : [];
+
+    return {
+      ok: false,
+      reason:
+        `response must include assistantMessage and propertyAnalyses as 3 to 5 useful symbolic analyses; got count/type ${analysisCount}; invalid indexes ${invalidIndexes.join(",") || "none"}`,
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      payload,
+      analyses,
+      assistantMessage,
+    },
+  };
+}
+
+function createRepairPrompt({
+  actionLabel,
+  originalPrompt,
+  originalContent,
+  failureReason,
+  requiredShape,
+}: {
+  actionLabel: string;
+  originalPrompt: LlmMessage[];
+  originalContent: string;
+  failureReason: string;
+  requiredShape: string;
+}): LlmMessage[] {
+  return [
+    {
+      role: "developer",
+      content:
+        `Repair the previous ${actionLabel} response. The previous output failed validation: ${failureReason}. ` +
+        "Return strict JSON only. Do not include markdown fences, comments, or prose outside JSON. Keep assistantMessage as Chinese Markdown text and repair the structured payload to match the required schema.",
+    },
+    {
+      role: "user",
+      content:
+        "Original prompt:\n" +
+        truncateRepairText(formatPromptMessagesForRepair(originalPrompt), 10000) +
+        "\n\nPrevious output:\n" +
+        truncateRepairText(originalContent, 8000) +
+        "\n\nRequired JSON shape:\n" +
+        requiredShape +
+        "\n\nReturn the corrected JSON object only.",
+    },
+  ];
+}
+
+function formatPromptMessagesForRepair(messages: LlmMessage[]) {
+  return messages
+    .map((message) => `${message.role.toUpperCase()}:\n${message.content}`)
+    .join("\n\n");
+}
+
+function truncateRepairText(text: string, maxLength: number) {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}\n...[truncated]`;
+}
+
 async function discoverDirections(
   request: ResearchGenerationRequest,
   client: ResearchCompletionClient
@@ -413,32 +682,46 @@ async function buildModel(
     request.selectedDirectionId,
     request.userMessage
   );
+  const fallbackSymbols = fallback.project.hotellingModel?.symbols ?? [];
+  const prompt = createBuildPrompt(request, fallbackSymbols);
 
-  const content = await tryComplete(
+  const completion = await completeWithRepair(
     client,
-    createBuildPrompt(request, fallback.project.hotellingModel?.symbols ?? [])
+    prompt,
+    (content) => validateBuildModelCompletion(content, fallbackSymbols),
+    {
+      actionLabel: "build_model",
+      requiredShape: BUILD_MODEL_REPAIR_SHAPE,
+    }
   );
-  const payload = content ? (extractFirstJsonObject(content) as BuildModelPayload | null) : null;
-  const hotellingModel = parseHotellingModel(
-    payload?.hotellingModel,
-    fallback.project.hotellingModel?.symbols ?? []
-  );
-  const assistantMessage = parseText(payload?.assistantMessage);
 
-  if (!hotellingModel || !assistantMessage) {
+  if (!completion.value) {
+    const logContent = completion.content ?? completion.initialContent ?? undefined;
+    const payload = logContent
+      ? (extractFirstJsonObject(logContent) as BuildModelPayload | null)
+      : null;
     logGenerationFallback("build_model", {
-      hasContent: Boolean(content),
+      hasContent: Boolean(logContent),
+      repairAttempted: completion.repairAttempted,
+      failureReason: completion.failureReason,
       payloadKeys: payload ? Object.keys(payload) : [],
       hotellingModelType: typeof payload?.hotellingModel,
       assistantMessageType: typeof payload?.assistantMessage,
-      contentPreview: content?.slice(0, 500),
+      contentPreview: logContent?.slice(0, 500),
     });
 
     return fallback;
   }
 
+  const {
+    hotellingModel,
+    assistantMessage,
+    selectedDirectionId,
+    refinedIdea,
+    assetSummary: parsedAssetSummary,
+  } = completion.value;
   const selectedDirection =
-    findDirection(baseProject, parseText(payload?.selectedDirectionId) ?? request.selectedDirectionId) ??
+    findDirection(baseProject, selectedDirectionId ?? request.selectedDirectionId) ??
     findDirection(baseProject, request.selectedDirectionId) ??
     baseProject.researchSession?.directions.find((direction) => direction.recommended) ??
     baseProject.researchSession?.directions[0];
@@ -464,14 +747,14 @@ async function buildModel(
     },
   ];
   const assetSummary =
-    parseAssetSummary(payload?.assetSummary, hotellingModel) ??
+    parsedAssetSummary ??
     createModelAssetSummary(selectedDirection, hotellingModel);
 
   return {
     project: {
       ...baseProject,
       projectType: "formal",
-      refinedIdea: parseText(payload?.refinedIdea) ?? selectedDirection?.title ?? baseProject.refinedIdea,
+      refinedIdea: refinedIdea ?? selectedDirection?.title ?? baseProject.refinedIdea,
       researchSession: {
         phase: "model",
         directions: previousSession?.directions ?? [],
@@ -495,26 +778,40 @@ async function solveEquilibrium(
   }
 
   const fallbackProject = generateSymbolicEquilibrium(request.project);
-  const content = await tryComplete(client, createEquilibriumPrompt(request.project));
-  const payload = content ? (extractFirstJsonObject(content) as EquilibriumPayload | null) : null;
-  const equilibriumResult = parseEquilibriumResult(payload?.equilibriumResult);
-  const assistantMessage = parseText(payload?.assistantMessage);
+  const prompt = createEquilibriumPrompt(request.project);
+  const completion = await completeWithRepair(
+    client,
+    prompt,
+    validateEquilibriumCompletion,
+    {
+      actionLabel: "solve_equilibrium",
+      requiredShape: EQUILIBRIUM_REPAIR_SHAPE,
+    }
+  );
 
-  if (equilibriumResult && assistantMessage) {
+  if (completion.value) {
     return {
-      project: attachEquilibriumResult(request.project, equilibriumResult, assistantMessage),
+      project: attachEquilibriumResult(
+        request.project,
+        completion.value.equilibriumResult,
+        completion.value.assistantMessage
+      ),
       usedFallback: false,
-      assistantMessage,
+      assistantMessage: completion.value.assistantMessage,
     };
   }
 
-  if (content) {
+  const logContent = completion.content ?? completion.initialContent ?? undefined;
+  if (logContent) {
+    const payload = extractFirstJsonObject(logContent) as EquilibriumPayload | null;
     logGenerationFallback("solve_equilibrium", {
       hasContent: true,
+      repairAttempted: completion.repairAttempted,
+      failureReason: completion.failureReason,
       payloadKeys: payload ? Object.keys(payload) : [],
       equilibriumResultType: typeof payload?.equilibriumResult,
       assistantMessageType: typeof payload?.assistantMessage,
-      contentPreview: content.slice(0, 500),
+      contentPreview: logContent.slice(0, 500),
     });
   }
 
@@ -534,29 +831,43 @@ async function analyzeProperties(
   }
 
   const fallbackProject = generatePropertyAnalysis(request.project);
-  const content = await tryComplete(client, createPropertyAnalysisPrompt(request.project));
-  const payload = content ? (extractFirstJsonObject(content) as PropertyAnalysisPayload | null) : null;
-  const analyses = parsePropertyAnalyses(payload?.propertyAnalyses);
-  const assistantMessage = parseText(payload?.assistantMessage);
+  const prompt = createPropertyAnalysisPrompt(request.project);
+  const completion = await completeWithRepair(
+    client,
+    prompt,
+    validatePropertyAnalysisCompletion,
+    {
+      actionLabel: "analyze_properties",
+      requiredShape: PROPERTY_ANALYSIS_REPAIR_SHAPE,
+    }
+  );
 
-  if (analyses && assistantMessage) {
+  if (completion.value) {
     return {
-      project: attachPropertyAnalyses(request.project, analyses, assistantMessage),
+      project: attachPropertyAnalyses(
+        request.project,
+        completion.value.analyses,
+        completion.value.assistantMessage
+      ),
       usedFallback: false,
-      assistantMessage,
+      assistantMessage: completion.value.assistantMessage,
     };
   }
 
-  if (content) {
+  const logContent = completion.content ?? completion.initialContent ?? undefined;
+  if (logContent) {
+    const payload = extractFirstJsonObject(logContent) as PropertyAnalysisPayload | null;
     logGenerationFallback("analyze_properties", {
       hasContent: true,
+      repairAttempted: completion.repairAttempted,
+      failureReason: completion.failureReason,
       payloadKeys: payload ? Object.keys(payload) : [],
       propertyAnalysisType: typeof payload?.propertyAnalysis,
       propertyAnalysesType: Array.isArray(payload?.propertyAnalyses)
         ? "array"
         : typeof payload?.propertyAnalyses,
       assistantMessageType: typeof payload?.assistantMessage,
-      contentPreview: content.slice(0, 500),
+      contentPreview: logContent.slice(0, 500),
     });
   }
 
@@ -882,7 +1193,7 @@ function createPropertyAnalysisPrompt(project: ResearchProject): LlmMessage[] {
     {
       role: "user",
       content:
-        "Generate one symbolic property analysis from this equilibrium context. Return JSON only.\n" +
+        "Generate 3 to 5 symbolic property analyses from this equilibrium context. Return JSON only.\n" +
         JSON.stringify({
           rawIdea: project.rawIdea,
           hotellingModel: project.hotellingModel,
