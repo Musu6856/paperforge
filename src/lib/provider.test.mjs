@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   completeProviderChat,
+  createProviderRequestHeaders,
   createChatCompletionPayload,
   extractChatCompletionContent,
   getProviderConfigForModelSource,
@@ -75,6 +76,17 @@ test("completeProviderChat posts to chat completions with bearer auth for DeepSe
   assert.equal(requestedBody.max_tokens, 16);
 });
 
+test("provider request headers use api-key auth for MiMo endpoints", () => {
+  const headers = createProviderRequestHeaders({
+    apiKey: "sk-mimo",
+    baseUrl: "https://api.xiaomimimo.com/v1",
+  });
+
+  assert.equal(headers["api-key"], "sk-mimo");
+  assert.equal("Authorization" in headers, false);
+  assert.equal(headers["Content-Type"], "application/json");
+});
+
 test("provider payload can request JSON object output", () => {
   const payload = createChatCompletionPayload(provider, {
     messages: [{ role: "user", content: "return json" }],
@@ -108,12 +120,18 @@ test("provider config prefers generic OpenAI-compatible environment variables", 
     OPENAI_COMPATIBLE_API_KEY: process.env.OPENAI_COMPATIBLE_API_KEY,
     OPENAI_COMPATIBLE_BASE_URL: process.env.OPENAI_COMPATIBLE_BASE_URL,
     OPENAI_COMPATIBLE_MODEL: process.env.OPENAI_COMPATIBLE_MODEL,
+    MIMO_API_KEY: process.env.MIMO_API_KEY,
+    MIMO_BASE_URL: process.env.MIMO_BASE_URL,
+    MIMO_MODEL: process.env.MIMO_MODEL,
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
   };
 
   process.env.OPENAI_COMPATIBLE_API_KEY = "sk-compatible";
   process.env.OPENAI_COMPATIBLE_BASE_URL = "https://compatible.example.com/v1";
   process.env.OPENAI_COMPATIBLE_MODEL = "compatible-chat";
+  process.env.MIMO_API_KEY = "sk-mimo";
+  process.env.MIMO_BASE_URL = "https://api.xiaomimimo.com/v1";
+  process.env.MIMO_MODEL = "mimo-v2.5-pro";
   process.env.DEEPSEEK_API_KEY = "sk-deepseek";
 
   const { getProviderConfig } = await import(
@@ -124,6 +142,55 @@ test("provider config prefers generic OpenAI-compatible environment variables", 
   assert.equal(config.apiKey, "sk-compatible");
   assert.equal(config.baseUrl, "https://compatible.example.com/v1");
   assert.equal(config.model, "compatible-chat");
+
+  for (const [key, value] of Object.entries(previous)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+});
+
+test("provider config falls back to MiMo defaults when only MiMo env vars are set", async () => {
+  const previous = {
+    OPENAI_COMPATIBLE_API_KEY: process.env.OPENAI_COMPATIBLE_API_KEY,
+    OPENAI_COMPATIBLE_BASE_URL: process.env.OPENAI_COMPATIBLE_BASE_URL,
+    OPENAI_COMPATIBLE_MODEL: process.env.OPENAI_COMPATIBLE_MODEL,
+    MIMO_API_KEY: process.env.MIMO_API_KEY,
+    MIMO_BASE_URL: process.env.MIMO_BASE_URL,
+    MIMO_MODEL: process.env.MIMO_MODEL,
+    DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+    DEEPSEEK_BASE_URL: process.env.DEEPSEEK_BASE_URL,
+    DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    OPENAI_BASE_URL: process.env.OPENAI_BASE_URL,
+    OPENAI_MODEL: process.env.OPENAI_MODEL,
+  };
+
+  delete process.env.OPENAI_COMPATIBLE_API_KEY;
+  delete process.env.OPENAI_COMPATIBLE_BASE_URL;
+  delete process.env.OPENAI_COMPATIBLE_MODEL;
+  process.env.MIMO_API_KEY = "sk-mimo";
+  delete process.env.MIMO_BASE_URL;
+  delete process.env.MIMO_MODEL;
+  delete process.env.DEEPSEEK_API_KEY;
+  delete process.env.DEEPSEEK_BASE_URL;
+  delete process.env.DEEPSEEK_MODEL;
+  delete process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_BASE_URL;
+  delete process.env.OPENAI_MODEL;
+
+  const { getProviderConfig } = await import(
+    `./provider.ts?mimo-fallback-test=${Date.now()}`
+  );
+  const config = getProviderConfig();
+
+  assert.deepEqual(config, {
+    apiKey: "sk-mimo",
+    baseUrl: "https://api.xiaomimimo.com/v1",
+    model: "mimo-v2.5-pro",
+  });
 
   for (const [key, value] of Object.entries(previous)) {
     if (value === undefined) {

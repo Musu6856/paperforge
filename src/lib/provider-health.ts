@@ -60,7 +60,7 @@ export async function checkProviderConnectivity(
       configured: false,
       code: "missing_api_key",
       message:
-        "服务端没有配置默认模型 API key。请检查 OPENAI_COMPATIBLE_API_KEY、DEEPSEEK_API_KEY 或 OPENAI_API_KEY。",
+        "服务端没有配置默认模型 API key。请检查 MIMO_API_KEY、OPENAI_COMPATIBLE_API_KEY、DEEPSEEK_API_KEY 或 OPENAI_API_KEY。",
       provider: safeProvider,
     };
   }

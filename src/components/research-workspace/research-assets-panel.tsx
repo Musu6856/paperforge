@@ -8,10 +8,9 @@ import {
   Loader2,
   PanelRightClose,
   PanelRightOpen,
-  RefreshCcw,
   Sigma,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DirectionCard } from "./direction-card";
@@ -51,7 +50,20 @@ type ResearchAssetsPanelProps = {
   onTogglePane?: () => void;
 };
 
-export function ResearchAssetsPanel({
+export function ResearchAssetsPanel(props: ResearchAssetsPanelProps) {
+  const initialActiveTab = getResearchAssetsTabForPhase(props.session.phase);
+
+  return (
+    <ResearchAssetsPanelContent
+      key={`${props.project?.id ?? "new"}:${props.session.phase}`}
+      {...props}
+      initialActiveTab={initialActiveTab}
+    />
+  );
+}
+
+function ResearchAssetsPanelContent({
+  initialActiveTab,
   project,
   session,
   adoptingDirectionId,
@@ -68,13 +80,8 @@ export function ResearchAssetsPanel({
   onRejectAssetPatch,
   isCollapsed,
   onTogglePane,
-}: ResearchAssetsPanelProps) {
-  const [activeTab, setActiveTab] = useState<ResearchAssetsTab>(
-    getResearchAssetsTabForPhase(session.phase)
-  );
-  useEffect(() => {
-    setActiveTab(getResearchAssetsTabForPhase(session.phase));
-  }, [project?.id, session.phase]);
+}: ResearchAssetsPanelProps & { initialActiveTab: ResearchAssetsTab }) {
+  const [activeTab, setActiveTab] = useState<ResearchAssetsTab>(initialActiveTab);
   const flow = getResearchFlowState(project, session);
   const asset = session.assetSummary;
   const analyses = project?.propertyAnalyses ?? [];

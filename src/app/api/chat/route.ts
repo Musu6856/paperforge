@@ -1,5 +1,6 @@
 import { getRequestUserId } from "@/lib/server-auth";
 import {
+  createProviderRequestHeaders,
   getProviderConfig,
   jsonError,
   providerErrorResponse,
@@ -51,18 +52,15 @@ export async function POST(request: Request) {
 
     if (!provider.apiKey) {
       return jsonError(
-        "AI service is not configured. Set DEEPSEEK_API_KEY or OPENAI_COMPATIBLE_API_KEY in the environment.",
+        "AI service is not configured. Set MIMO_API_KEY, OPENAI_COMPATIBLE_API_KEY, DEEPSEEK_API_KEY, or OPENAI_API_KEY in the environment.",
         503,
-        "missing_deepseek_api_key"
+        "missing_provider_api_key"
       );
     }
 
     const upstream = await fetch(`${provider.baseUrl}/chat/completions`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${provider.apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: createProviderRequestHeaders(provider),
       body: JSON.stringify({
         model: provider.model,
         max_tokens: 4096,

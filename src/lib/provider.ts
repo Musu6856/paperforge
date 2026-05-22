@@ -4,8 +4,12 @@ import { isIP } from "node:net";
 import { validateModelSourceBaseUrl } from "./model-source.ts";
 import type { ModelSourceSettings } from "./types";
 
-const DEFAULT_BASE_URL = "https://api.deepseek.com";
-const DEFAULT_MODEL = "deepseek-v4-flash";
+const DEFAULT_BASE_URL = "https://api.xiaomimimo.com/v1";
+const DEFAULT_MODEL = "mimo-v2.5-pro";
+const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
+const DEEPSEEK_MODEL = "deepseek-v4-flash";
+const OPENAI_BASE_URL = "https://api.openai.com/v1";
+const OPENAI_MODEL = "gpt-5.2";
 
 export type ProviderConfig = {
   apiKey?: string;
@@ -55,20 +59,74 @@ type ChatCompletionResponse = {
 };
 
 export function getProviderConfig() {
+  if (process.env.OPENAI_COMPATIBLE_API_KEY) {
+    return {
+      apiKey: process.env.OPENAI_COMPATIBLE_API_KEY,
+      baseUrl: process.env.OPENAI_COMPATIBLE_BASE_URL || DEFAULT_BASE_URL,
+      model: process.env.OPENAI_COMPATIBLE_MODEL || DEFAULT_MODEL,
+    };
+  }
+
+  if (process.env.MIMO_API_KEY) {
+    return {
+      apiKey: process.env.MIMO_API_KEY,
+      baseUrl: process.env.MIMO_BASE_URL || DEFAULT_BASE_URL,
+      model: process.env.MIMO_MODEL || DEFAULT_MODEL,
+    };
+  }
+
+  if (process.env.DEEPSEEK_API_KEY) {
+    return {
+      apiKey: process.env.DEEPSEEK_API_KEY,
+      baseUrl: process.env.DEEPSEEK_BASE_URL || DEEPSEEK_BASE_URL,
+      model: process.env.DEEPSEEK_MODEL || DEEPSEEK_MODEL,
+    };
+  }
+
+  if (process.env.OPENAI_API_KEY) {
+    return {
+      apiKey: process.env.OPENAI_API_KEY,
+      baseUrl: process.env.OPENAI_BASE_URL || OPENAI_BASE_URL,
+      model: process.env.OPENAI_MODEL || OPENAI_MODEL,
+    };
+  }
+
+  if (process.env.OPENAI_COMPATIBLE_BASE_URL || process.env.OPENAI_COMPATIBLE_MODEL) {
+    return {
+      apiKey: undefined,
+      baseUrl: process.env.OPENAI_COMPATIBLE_BASE_URL || DEFAULT_BASE_URL,
+      model: process.env.OPENAI_COMPATIBLE_MODEL || DEFAULT_MODEL,
+    };
+  }
+
+  if (process.env.MIMO_BASE_URL || process.env.MIMO_MODEL) {
+    return {
+      apiKey: undefined,
+      baseUrl: process.env.MIMO_BASE_URL || DEFAULT_BASE_URL,
+      model: process.env.MIMO_MODEL || DEFAULT_MODEL,
+    };
+  }
+
+  if (process.env.DEEPSEEK_BASE_URL || process.env.DEEPSEEK_MODEL) {
+    return {
+      apiKey: undefined,
+      baseUrl: process.env.DEEPSEEK_BASE_URL || DEEPSEEK_BASE_URL,
+      model: process.env.DEEPSEEK_MODEL || DEEPSEEK_MODEL,
+    };
+  }
+
+  if (process.env.OPENAI_BASE_URL || process.env.OPENAI_MODEL) {
+    return {
+      apiKey: undefined,
+      baseUrl: process.env.OPENAI_BASE_URL || OPENAI_BASE_URL,
+      model: process.env.OPENAI_MODEL || OPENAI_MODEL,
+    };
+  }
+
   return {
-    apiKey:
-      process.env.OPENAI_COMPATIBLE_API_KEY ||
-      process.env.DEEPSEEK_API_KEY ||
-      process.env.OPENAI_API_KEY,
-    baseUrl:
-      process.env.OPENAI_COMPATIBLE_BASE_URL ||
-      process.env.DEEPSEEK_BASE_URL ||
-      DEFAULT_BASE_URL,
-    model:
-      process.env.OPENAI_COMPATIBLE_MODEL ||
-      process.env.DEEPSEEK_MODEL ||
-      process.env.OPENAI_MODEL ||
-      DEFAULT_MODEL,
+    apiKey: undefined,
+    baseUrl: DEFAULT_BASE_URL,
+    model: DEFAULT_MODEL,
   };
 }
 
@@ -137,6 +195,26 @@ export function extractChatCompletionContent(data: unknown) {
   return response.choices?.[0]?.message?.content?.trim() ?? "";
 }
 
+export function createProviderRequestHeaders(
+  provider: Pick<ProviderConfig, "apiKey" | "baseUrl">
+) {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (!provider.apiKey) {
+    return headers;
+  }
+
+  if (provider.baseUrl.includes("api.xiaomimimo.com")) {
+    headers["api-key"] = provider.apiKey;
+  } else {
+    headers.Authorization = `Bearer ${provider.apiKey}`;
+  }
+
+  return headers;
+}
+
 export async function completeProviderChat(
   provider: ProviderConfig,
   options: ProviderChatOptions
@@ -147,18 +225,10 @@ export async function completeProviderChat(
 
   const fetchImpl = options.fetch ?? fetch;
   await validateProviderBaseUrl(provider.baseUrl, !options.fetch);
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (provider.baseUrl.includes("api.xiaomimimo.com")) {
-    headers["api-key"] = provider.apiKey;
-  } else {
-    headers.Authorization = `Bearer ${provider.apiKey}`;
-  }
   const upstream = await fetchImpl(`${provider.baseUrl}/chat/completions`, {
     method: "POST",
     signal: options.signal,
-    headers,
+    headers: createProviderRequestHeaders(provider),
     body: JSON.stringify(createChatCompletionPayload(provider, options)),
   });
 
@@ -260,7 +330,7 @@ export function jsonError(error: string, status: number, code: string) {
 
 export async function providerErrorResponse(response: Response) {
   const body = await response.text();
-  console.error("DeepSeek API error:", {
+  console.error("Provider API error:", {
     status: response.status,
     statusText: response.statusText,
     body,
@@ -268,23 +338,23 @@ export async function providerErrorResponse(response: Response) {
 
   if (response.status === 401 || response.status === 403) {
     return jsonError(
-      "DeepSeek authentication failed. Check your API key in the environment.",
+      "AI provider authentication failed. Check your API key in the environment.",
       502,
-      "deepseek_auth_failed"
+      "provider_auth_failed"
     );
   }
 
   if (response.status === 429) {
     return jsonError(
-      "DeepSeek rate limit reached. Please try again later.",
+      "AI provider rate limit reached. Please try again later.",
       429,
-      "deepseek_rate_limited"
+      "provider_rate_limited"
     );
   }
 
   return jsonError(
-    "DeepSeek request failed. Check DEEPSEEK_MODEL and account access.",
+    "AI provider request failed. Check the configured model and account access.",
     502,
-    "deepseek_request_failed"
+    "provider_request_failed"
   );
 }
