@@ -1,13 +1,13 @@
 "use client";
 
-import { SendHorizontal } from "lucide-react";
+import { Loader2, SendHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { MarkdownRenderer } from "@/components/markdown-renderer";
-import type { ResearchSessionMessage } from "@/lib/types";
+import type { ResearchChatViewMessage } from "@/lib/research-chat-view";
 
 type ChatPanelProps = {
-  messages: ResearchSessionMessage[];
+  messages: ResearchChatViewMessage[];
   isBusy: boolean;
   onSubmit: (content: string) => Promise<void> | void;
   headerTitle?: string;
@@ -70,11 +70,25 @@ export function ChatPanel({
                 <div className="mb-1 text-xs text-muted-foreground">
                   {message.role === "user" ? "You" : "PaperForge"}
                 </div>
-                <div className="rounded-md border bg-card px-3 py-2 text-card-foreground">
-                  <MarkdownRenderer
-                    content={message.content}
-                    className="paperforge-markdown text-sm leading-6"
-                  />
+                <div
+                  className={
+                    message.isPending
+                      ? "rounded-md border border-dashed border-muted-foreground/30 bg-muted/30 px-3 py-2 text-muted-foreground"
+                      : "rounded-md border bg-card px-3 py-2 text-card-foreground"
+                  }
+                  aria-live={message.isPending ? "polite" : undefined}
+                >
+                  {message.isPending ? (
+                    <div className="flex items-center gap-2 text-sm leading-6">
+                      <Loader2 className="size-4 shrink-0 animate-spin" />
+                      <span>{message.content}</span>
+                    </div>
+                  ) : (
+                    <MarkdownRenderer
+                      content={message.content}
+                      className="paperforge-markdown text-sm leading-6"
+                    />
+                  )}
                 </div>
               </article>
             ))}

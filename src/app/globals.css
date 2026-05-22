@@ -129,43 +129,44 @@
   }
 }
 
-@layer components {
-  [data-sonner-toast].cn-toast {
-    color: var(--popover-foreground);
-  }
+/* Sonner injects unlayered CSS at runtime, so toast overrides must stay unlayered. */
+[data-sonner-toast].cn-toast {
+  color: var(--popover-foreground);
+}
 
-  [data-sonner-toast].cn-toast .cn-toast-title {
-    color: var(--popover-foreground);
-    font-weight: 600;
-  }
+[data-sonner-toast].cn-toast[data-styled="true"] [data-title].cn-toast-title {
+  color: var(--popover-foreground);
+  font-weight: 600;
+}
 
-  [data-sonner-toast].cn-toast .cn-toast-description {
-    color: oklch(0.34 0.018 250);
-  }
+[data-sonner-toast].cn-toast[data-styled="true"] [data-description].cn-toast-description {
+  color: var(--secondary-foreground);
+  opacity: 1;
+}
 
-  [data-sonner-toast].cn-toast .cn-toast-icon {
-    color: var(--primary);
-  }
+[data-sonner-toast].cn-toast .cn-toast-icon {
+  color: var(--primary);
+}
 
-  [data-sonner-toast].cn-toast[data-type="success"] .cn-toast-icon {
-    color: oklch(0.38 0.07 155);
-  }
+[data-sonner-toast].cn-toast[data-type="success"] .cn-toast-icon {
+  color: oklch(0.38 0.07 155);
+}
 
-  [data-sonner-toast].cn-toast[data-type="info"] .cn-toast-icon {
-    color: oklch(0.42 0.07 225);
-  }
+[data-sonner-toast].cn-toast[data-type="info"] .cn-toast-icon {
+  color: oklch(0.42 0.07 225);
+}
 
-  [data-sonner-toast].cn-toast[data-type="warning"] .cn-toast-icon {
-    color: oklch(0.48 0.08 65);
-  }
+[data-sonner-toast].cn-toast[data-type="warning"] .cn-toast-icon {
+  color: oklch(0.48 0.08 65);
+}
 
-  [data-sonner-toast].cn-toast[data-type="error"] .cn-toast-icon {
-    color: var(--destructive);
-  }
+[data-sonner-toast].cn-toast[data-type="error"] .cn-toast-icon {
+  color: var(--destructive);
+}
 
-  .dark [data-sonner-toast].cn-toast .cn-toast-description {
-    color: oklch(0.8 0.01 88);
-  }
+.dark [data-sonner-toast].cn-toast[data-styled="true"] [data-description].cn-toast-description {
+  color: var(--foreground);
+  opacity: 1;
 }
 
 /* Subtle paper background */

@@ -1,36 +1,36 @@
-# PaperForge Product Context
+# PaperForge 产品上下文
 
 ## Register
 
 product
 
-## Users
+## 用户
 
-Chinese-speaking researchers writing game theory and platform economics papers, especially Hotelling two-sided platform models.
+中文研究者，主要写博弈论、平台经济、双边市场和相关管理科学论文。
 
-## Product Purpose
+## 产品目标
 
-PaperForge helps researchers move from a rough platform-economics idea to a coherent theory workflow: background story, literature inspiration, model construction, symbolic equilibrium, and symbolic property analysis.
+PaperForge 帮助研究者从一个粗糙的选题出发，走完一条清晰的理论研究流程：背景叙事、文献启发、模型构建、符号均衡、性质分析、论文草稿整理。
 
-V1 is not a simulation tool. Equilibrium and property analysis are symbolic-only, with the interface centered on assumptions, variables, equations, and derivations that can be carried into a theory paper.
+V1 不做数值仿真。均衡与性质分析都以符号推导为主，界面围绕假设、变量、方程与可导出的推演结果展开。
 
-## Brand Personality
+## 品牌气质
 
-Precise, research-grade, calm, rigorous, quietly elegant.
+精准、克制、研究级、安静、可靠。
 
-## Anti-References
+## 反例
 
-- Generic AI writing SaaS
-- Decorative landing pages
-- Chatbot-first writing tools
-- One-click paper generation
-- Numerically substituting theoretical equilibrium
-- Purple-blue gradient AI dashboards
+- 通用 AI 写作 SaaS
+- 装饰性的落地页
+- 聊天机器人优先的写作工具
+- 一键生成整篇论文
+- 用数值计算替代理论均衡
+- 紫蓝渐变 AI 仪表盘
 
-## Strategic Design Principles
+## 设计原则
 
-- The interface should feel like a research instrument, not a marketing demo.
-- Dense mathematical work should be readable and calm.
-- Symbols, assumptions, equations, and code are primary objects.
-- The UI should be practical first, polished second, never decorative at the expense of work.
-- Product surfaces should use predictable layout, compact controls, consistent components, and restrained color.
+- 界面像研究仪器，不像营销页面。
+- 密集数学工作要可读、可停留。
+- 符号、假设、方程、代码都是一级内容。
+- 实用优先，精致其次，不做装饰性的复杂。
+- 使用可预测布局、紧凑控件、一致组件和克制颜色。

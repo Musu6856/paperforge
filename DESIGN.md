@@ -14,26 +14,26 @@ radius:
   base: "8px"
 ---
 
-# Overview
+# 概述
 
-PaperForge should feel like a quiet research cockpit: enough density for serious theory work, enough polish that long sessions feel deliberate rather than improvised. The visual system rejects generic AI SaaS tropes and decorative landing-page energy.
+PaperForge 应像一个安静的研究工作台，既能承载密集的理论推导，又能让长时间编辑保持清晰和克制。视觉系统拒绝通用 AI SaaS 套路和装饰性落地页气质。
 
-# Color
+# 颜色
 
-Use restrained OKLCH tinted neutrals with a teal academic accent. Do not introduce purple-blue gradients, neon AI palettes, gradient text, decorative blobs, or large saturated surfaces.
+使用克制的 OKLCH 中性色和青绿色学术强调色。不引入紫蓝渐变、霓虹 AI 配色、渐变文字、装饰性气泡或大面积高饱和色块。
 
-# Typography
+# 字体
 
-Use compact hierarchy. Large type belongs only where it helps orient the home workspace, not inside work panels. Mathematical symbols and code use the mono font.
+使用紧凑的层级。大字号只用于帮助用户进入工作台，不要放进工作面板里。数学符号和代码使用等宽字体。
 
-# Layout
+# 布局
 
-Prefer workspace panes, rails, dense editors, and concise status areas. Avoid nested cards. Use borders, spacing, and section headers to separate work areas.
+优先使用工作区分栏、侧边轨道、密集编辑器和简短状态区。避免嵌套卡片。通过边框、间距和分区标题来组织工作区。
 
-# Components
+# 组件
 
-Controls should be compact and explicit. Symbols, assumptions, equations, and generated code need first-class display. Use consistent buttons, badges, inputs, and status indicators across the product.
+控件要紧凑、明确。符号、假设、方程和生成代码都必须有一级展示位置。按钮、徽标、输入框和状态指示器要保持一致。
 
-# Motion
+# 动效
 
-Use short, subtle transitions only for step changes and loading states.
+只在步骤切换和加载状态里使用短促、轻微的过渡，不要让动画干扰推导阅读。

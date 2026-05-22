@@ -26,7 +26,10 @@ import {
   applyResearchAssetPatchToProject,
   markProjectPatchStatus,
 } from "@/lib/research-asset-patch-apply";
-import { createResearchChatViewMessages } from "@/lib/research-chat-view";
+import {
+  createResearchChatViewMessages,
+  type ResearchChatViewMessage,
+} from "@/lib/research-chat-view";
 import { markResearchAssetsStaleAfterModelEdit } from "@/lib/research-flow";
 import { classifyResearchInput } from "@/lib/research-intent";
 import {
@@ -68,6 +71,8 @@ export function ResearchWorkspace({
     useState(!project || startComposingNewConversation);
   const [optimisticMessage, setOptimisticMessage] =
     useState<ResearchSessionMessage | null>(null);
+  const [pendingAssistantMessage, setPendingAssistantMessage] =
+    useState<ResearchChatViewMessage | null>(null);
   const activeProject = project
     ? normalizeResearchProjectForWorkspace(project)
     : null;
@@ -286,12 +291,14 @@ export function ResearchWorkspace({
     const idea = content.trim();
     if (!idea) return;
 
+    const pendingAssistantBubble = createPendingAssistantMessage();
     setOptimisticMessage({
       id: createMessageId("msg-optimistic"),
       role: "user",
       content: idea,
       createdAt: createTimestamp(),
     });
+    setPendingAssistantMessage(pendingAssistantBubble);
 
     if (isComposingNewConversation || !activeProject) {
       setIsSending(true);
@@ -316,12 +323,14 @@ export function ResearchWorkspace({
       } finally {
         setIsSending(false);
         setOptimisticMessage(null);
+        setPendingAssistantMessage(null);
       }
       return;
     }
 
     if (!session) {
       setOptimisticMessage(null);
+      setPendingAssistantMessage(null);
       return;
     }
 
@@ -368,6 +377,7 @@ export function ResearchWorkspace({
     } finally {
       setIsSending(false);
       setOptimisticMessage(null);
+      setPendingAssistantMessage(null);
     }
   }
 
@@ -487,7 +497,11 @@ export function ResearchWorkspace({
         ? []
         : session.messages;
 
-    return createResearchChatViewMessages(baseMessages, optimisticMessage);
+    return createResearchChatViewMessages(
+      baseMessages,
+      optimisticMessage,
+      pendingAssistantMessage
+    );
   })();
   const chatTitle =
     !displayedProject || isComposingNewConversation
@@ -617,6 +631,16 @@ function createMessageId(prefix: string) {
 
 function createPatchId() {
   return `patch-${createTimestamp()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createPendingAssistantMessage(): ResearchChatViewMessage {
+  return {
+    id: createMessageId("msg-pending-assistant"),
+    role: "assistant",
+    content: "PaperForge 正在生成回复...",
+    createdAt: createTimestamp(),
+    isPending: true,
+  };
 }
 
 function markAssetFreshnessAfterEquilibrium(project: ResearchProject): ResearchProject {
