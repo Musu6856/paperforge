@@ -201,15 +201,60 @@ test("provider config falls back to MiMo defaults when only MiMo env vars are se
   }
 });
 
+test("provider config prefers DeepSeek over MiMo when both are configured", async () => {
+  const previous = {
+    OPENAI_COMPATIBLE_API_KEY: process.env.OPENAI_COMPATIBLE_API_KEY,
+    OPENAI_COMPATIBLE_BASE_URL: process.env.OPENAI_COMPATIBLE_BASE_URL,
+    OPENAI_COMPATIBLE_MODEL: process.env.OPENAI_COMPATIBLE_MODEL,
+    MIMO_API_KEY: process.env.MIMO_API_KEY,
+    MIMO_BASE_URL: process.env.MIMO_BASE_URL,
+    MIMO_MODEL: process.env.MIMO_MODEL,
+    DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+    DEEPSEEK_BASE_URL: process.env.DEEPSEEK_BASE_URL,
+    DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
+  };
+
+  delete process.env.OPENAI_COMPATIBLE_API_KEY;
+  delete process.env.OPENAI_COMPATIBLE_BASE_URL;
+  delete process.env.OPENAI_COMPATIBLE_MODEL;
+  process.env.MIMO_API_KEY = "sk-mimo";
+  process.env.MIMO_BASE_URL = "https://api.xiaomimimo.com/v1";
+  process.env.MIMO_MODEL = "mimo-v2.5-pro";
+  process.env.DEEPSEEK_API_KEY = "sk-deepseek";
+  process.env.DEEPSEEK_BASE_URL = "https://api.deepseek.com";
+  process.env.DEEPSEEK_MODEL = "deepseek-v4-flash";
+
+  const { getProviderConfig } = await import(
+    `./provider.ts?deepseek-priority-test=${Date.now()}`
+  );
+  const config = getProviderConfig();
+
+  assert.deepEqual(config, {
+    apiKey: "sk-deepseek",
+    baseUrl: "https://api.deepseek.com",
+    model: "deepseek-v4-flash",
+  });
+
+  for (const [key, value] of Object.entries(previous)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+});
+
 test("provider config does not send Anthropic keys to OpenAI-compatible endpoints", async () => {
   const previous = {
     OPENAI_COMPATIBLE_API_KEY: process.env.OPENAI_COMPATIBLE_API_KEY,
+    MIMO_API_KEY: process.env.MIMO_API_KEY,
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
   };
 
   delete process.env.OPENAI_COMPATIBLE_API_KEY;
+  delete process.env.MIMO_API_KEY;
   delete process.env.DEEPSEEK_API_KEY;
   delete process.env.OPENAI_API_KEY;
   process.env.ANTHROPIC_API_KEY = "sk-anthropic";

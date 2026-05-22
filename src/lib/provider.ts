@@ -67,19 +67,19 @@ export function getProviderConfig() {
     };
   }
 
-  if (process.env.MIMO_API_KEY) {
-    return {
-      apiKey: process.env.MIMO_API_KEY,
-      baseUrl: process.env.MIMO_BASE_URL || DEFAULT_BASE_URL,
-      model: process.env.MIMO_MODEL || DEFAULT_MODEL,
-    };
-  }
-
   if (process.env.DEEPSEEK_API_KEY) {
     return {
       apiKey: process.env.DEEPSEEK_API_KEY,
       baseUrl: process.env.DEEPSEEK_BASE_URL || DEEPSEEK_BASE_URL,
       model: process.env.DEEPSEEK_MODEL || DEEPSEEK_MODEL,
+    };
+  }
+
+  if (process.env.MIMO_API_KEY) {
+    return {
+      apiKey: process.env.MIMO_API_KEY,
+      baseUrl: process.env.MIMO_BASE_URL || DEFAULT_BASE_URL,
+      model: process.env.MIMO_MODEL || DEFAULT_MODEL,
     };
   }
 
@@ -99,19 +99,19 @@ export function getProviderConfig() {
     };
   }
 
-  if (process.env.MIMO_BASE_URL || process.env.MIMO_MODEL) {
-    return {
-      apiKey: undefined,
-      baseUrl: process.env.MIMO_BASE_URL || DEFAULT_BASE_URL,
-      model: process.env.MIMO_MODEL || DEFAULT_MODEL,
-    };
-  }
-
   if (process.env.DEEPSEEK_BASE_URL || process.env.DEEPSEEK_MODEL) {
     return {
       apiKey: undefined,
       baseUrl: process.env.DEEPSEEK_BASE_URL || DEEPSEEK_BASE_URL,
       model: process.env.DEEPSEEK_MODEL || DEEPSEEK_MODEL,
+    };
+  }
+
+  if (process.env.MIMO_BASE_URL || process.env.MIMO_MODEL) {
+    return {
+      apiKey: undefined,
+      baseUrl: process.env.MIMO_BASE_URL || DEFAULT_BASE_URL,
+      model: process.env.MIMO_MODEL || DEFAULT_MODEL,
     };
   }
 
