@@ -29,7 +29,11 @@ import {
   type ResearchAssetsTab,
   type ResearchPrimaryAction,
 } from "@/lib/research-flow";
-import type { ResearchProject, ResearchSession } from "@/lib/types";
+import type {
+  ResearchAssetKind,
+  ResearchProject,
+  ResearchSession,
+} from "@/lib/types";
 
 type ResearchAssetsPanelProps = {
   project?: ResearchProject;
@@ -145,6 +149,13 @@ function ResearchAssetsPanelContent({
         : activeTab === "properties"
           ? onAnalyzeProperties
           : undefined;
+  const handleApplyAssetPatch = onApplyAssetPatch
+    ? (patchId: string) => {
+        const patch = session.assetPatches?.find((item) => item.id === patchId);
+        if (patch) setActiveTab(getResearchAssetsTabForPatchKind(patch.kind));
+        onApplyAssetPatch(patchId);
+      }
+    : undefined;
 
   if (isCollapsed) {
     return (
@@ -207,7 +218,7 @@ function ResearchAssetsPanelContent({
 
       <PendingAssetPatches
         patches={session.assetPatches ?? []}
-        onApply={onApplyAssetPatch}
+        onApply={handleApplyAssetPatch}
         onReject={onRejectAssetPatch}
       />
 
@@ -481,6 +492,17 @@ function PhaseActionBar({
 
 function getUtilitySideLabel(side: "consumer" | "merchant") {
   return side === "consumer" ? "消费者效用" : "商家效用";
+}
+
+function getResearchAssetsTabForPatchKind(kind: ResearchAssetKind): ResearchAssetsTab {
+  switch (kind) {
+    case "model":
+      return "model";
+    case "equilibrium":
+      return "equilibrium";
+    case "properties":
+      return "properties";
+  }
 }
 
 function EquilibriumTab({

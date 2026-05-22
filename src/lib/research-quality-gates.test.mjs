@@ -104,6 +104,45 @@ test("rejects one-off zero property analysis caused by a missing parameter", asy
   );
 });
 
+test("rejects single provider property analysis even when symbolic", async () => {
+  const modelProject = await createModelProject();
+  const solved = await generateResearchProject({
+    action: "solve_equilibrium",
+    rawIdea: modelProject.rawIdea,
+    project: modelProject,
+  });
+
+  const result = await generateResearchProject(
+    {
+      action: "analyze_properties",
+      rawIdea: solved.project.rawIdea,
+      project: solved.project,
+    },
+    {
+      complete: async () =>
+        JSON.stringify({
+          assistantMessage: "已生成一条符号性质。",
+          propertyAnalysis: {
+            id: "single-symbolic",
+            target: "\\tau_i^*",
+            parameter: "\\alpha_B",
+            operation: "differentiate",
+            symbolicResult:
+              "\\frac{\\partial \\tau_i^*}{\\partial \\alpha_B}=-\\frac{2}{q}",
+            signCondition: "q>0 时为负",
+            propositionDraft: "命题：买方网络效应降低均衡佣金。",
+            proofSketch: "对闭式均衡佣金关于 \\alpha_B 求偏导。",
+            intuition: "平台通过降低佣金扩大卖方参与以吸引买方。",
+            warnings: ["不使用数值模拟"],
+          },
+        }),
+    }
+  );
+
+  assert.equal(result.usedFallback, true);
+  assert.ok((result.project.propertyAnalyses?.length ?? 0) >= 3);
+});
+
 test("keeps a provider property-analysis bundle instead of truncating to one item", async () => {
   const modelProject = await createModelProject();
   const solved = await generateResearchProject({

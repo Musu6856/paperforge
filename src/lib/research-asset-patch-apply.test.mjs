@@ -1,0 +1,127 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import {
+  adoptResearchDirection,
+  confirmResearchModel,
+  createExplorationProject,
+  generateSymbolicEquilibrium,
+} from "./research-session.ts";
+import { applyResearchAssetPatchToProject } from "./research-asset-patch-apply.ts";
+
+function createSolvedProject() {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "研究二手平台佣金和补贴策略",
+    now: 1710000000000,
+  });
+
+  return generateSymbolicEquilibrium(
+    confirmResearchModel(
+      adoptResearchDirection(project, "secondhand-commission-subsidy-hotelling")
+    )
+  );
+}
+
+test("applies a proposed properties patch to the right-side property analyses", () => {
+  const project = createSolvedProject();
+  const patch = {
+    id: "patch-properties",
+    kind: "properties",
+    summary: "新增两条性质分析",
+    status: "proposed",
+    createdAt: 1710000000001,
+    changes: [
+      {
+        kind: "append",
+        path: "propertyAnalyses",
+        value: [
+          {
+            id: "alpha-b-fee",
+            target: "\\tau_i^*",
+            parameter: "\\alpha_B",
+            operation: "differentiate",
+            symbolicResult:
+              "\\frac{\\partial \\tau_i^*}{\\partial \\alpha_B}=-\\frac{2}{q}",
+            signCondition: "当 q>0 时为负。",
+            propositionDraft: "命题：买家侧网络效应提高会降低均衡佣金。",
+            proofSketch: "由闭式解直接对 \\alpha_B 求偏导。",
+            intuition: "买家侧外部性越强，平台越有动机降低佣金以扩大交易。",
+            warnings: [],
+          },
+          {
+            id: "alpha-s-subsidy",
+            target: "s_i^*",
+            parameter: "\\alpha_S",
+            operation: "differentiate",
+            symbolicResult:
+              "\\frac{\\partial s_i^*}{\\partial \\alpha_S}=\\frac{1}{2}",
+            signCondition: "恒为正。",
+            propositionDraft: "命题：卖家侧网络效应提高会抬高均衡补贴。",
+            proofSketch: "由闭式解直接对 \\alpha_S 求偏导。",
+            intuition: "卖家侧价值越高，平台越愿意通过补贴吸引卖家。",
+            warnings: [],
+          },
+        ],
+      },
+    ],
+  };
+
+  const nextProject = applyResearchAssetPatchToProject(project, patch, {
+    now: 1710000000002,
+  });
+
+  assert.equal(nextProject.propertyAnalyses?.length, 2);
+  assert.equal(nextProject.propertyAnalyses?.[0].id, "alpha-b-fee");
+  assert.equal(nextProject.propertyAnalyses?.[1].id, "alpha-s-subsidy");
+  assert.equal(nextProject.researchSession?.phase, "analysis");
+  assert.equal(nextProject.researchSession?.assetFreshness?.properties, "fresh");
+  assert.equal(nextProject.researchSession?.assetSummary.pendingDecision, undefined);
+  assert.ok(
+    nextProject.researchSession?.messages
+      .at(-1)
+      ?.content.includes("性质分析资产")
+  );
+});
+
+test("applies an equilibrium patch to the right-side equilibrium result", () => {
+  const project = createSolvedProject();
+  const patch = {
+    id: "patch-equilibrium",
+    kind: "equilibrium",
+    summary: "改写闭式解和存在条件",
+    status: "proposed",
+    createdAt: 1710000000001,
+    changes: [
+      {
+        kind: "replace",
+        path: "equilibriumResult.closedForm",
+        value:
+          "\\tau_A^*=\\tau_B^*=\\frac{t_S-2\\alpha_B}{q},\\quad s_A^*=s_B^*=\\frac{t_S+\\alpha_S}{2}",
+      },
+      {
+        kind: "append",
+        path: "equilibriumResult.conditions",
+        value: "二阶条件要求 q>0 且 D>0。",
+      },
+    ],
+  };
+
+  const nextProject = applyResearchAssetPatchToProject(project, patch, {
+    now: 1710000000002,
+  });
+
+  assert.match(
+    nextProject.equilibriumResult?.closedForm ?? "",
+    /\\frac\{t_S-2\\alpha_B\}\{q\}/
+  );
+  assert.ok(
+    nextProject.equilibriumResult?.conditions.includes("二阶条件要求 q>0 且 D>0。")
+  );
+  assert.equal(nextProject.researchSession?.assetFreshness?.equilibrium, "fresh");
+  assert.equal(nextProject.researchSession?.assetFreshness?.properties, "stale");
+  assert.equal(
+    nextProject.researchSession?.assetSummary.pendingDecision?.kind,
+    "analyze_properties"
+  );
+});

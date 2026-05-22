@@ -181,8 +181,15 @@ function parseConversationAssetPatch(
 
   const kind = parseConversationPatchKind(value.kind);
   const summary = parseText(value.summary);
-  const changes = Array.isArray(value.changes)
-    ? value.changes.map(parseConversationPatchChange)
+  const rawChanges = Array.isArray(value.changes)
+    ? value.changes
+    : Array.isArray(value.patch)
+      ? value.patch
+      : Array.isArray(value.operations)
+        ? value.operations
+        : null;
+  const changes = rawChanges
+    ? rawChanges.map(parseConversationPatchChange)
     : null;
 
   if (!kind || !summary || !changes || changes.some((change) => !change)) {
@@ -201,9 +208,9 @@ function parseConversationPatchChange(
 ): ResearchAssetPatchChange | null {
   if (!isRecord(value)) return null;
 
-  const target = parseText(value.target);
+  const target = parseText(value.target) ?? parseText(value.path);
   const op = parseConversationPatchOperation(value.op);
-  const reason = parseText(value.reason);
+  const reason = parseText(value.reason) ?? parseText(value.note);
   if (!target || !op) return null;
 
   return {
@@ -221,10 +228,24 @@ function parseConversationPatchKind(
 ): ResearchAssetPatch["kind"] | null {
   if (
     value === "update_model" ||
-    value === "update_equilibrium" ||
-    value === "update_properties"
+    value === "model"
   ) {
-    return value;
+    return "update_model";
+  }
+
+  if (
+    value === "update_equilibrium" ||
+    value === "equilibrium"
+  ) {
+    return "update_equilibrium";
+  }
+
+  if (
+    value === "update_properties" ||
+    value === "properties" ||
+    value === "propertyAnalyses"
+  ) {
+    return "update_properties";
   }
   return null;
 }
@@ -232,8 +253,16 @@ function parseConversationPatchKind(
 function parseConversationPatchOperation(
   value: unknown
 ): ResearchAssetPatchChange["op"] | null {
-  if (value === "set" || value === "insert" || value === "remove") {
-    return value;
+  if (value === "set" || value === "replace" || value === "update") {
+    return "set";
+  }
+
+  if (value === "insert" || value === "append" || value === "add") {
+    return "insert";
+  }
+
+  if (value === "remove" || value === "delete") {
+    return "remove";
   }
   return null;
 }
@@ -507,11 +536,7 @@ async function analyzeProperties(
   const fallbackProject = generatePropertyAnalysis(request.project);
   const content = await tryComplete(client, createPropertyAnalysisPrompt(request.project));
   const payload = content ? (extractFirstJsonObject(content) as PropertyAnalysisPayload | null) : null;
-  const analyses =
-    parsePropertyAnalyses(payload?.propertyAnalyses) ??
-    (parsePropertyAnalysis(payload?.propertyAnalysis)
-      ? [parsePropertyAnalysis(payload?.propertyAnalysis) as PropertyAnalysis]
-      : null);
+  const analyses = parsePropertyAnalyses(payload?.propertyAnalyses);
   const assistantMessage = parseText(payload?.assistantMessage);
 
   if (analyses && assistantMessage) {
@@ -815,7 +840,7 @@ function createEquilibriumPrompt(project: ResearchProject): LlmMessage[] {
     {
       role: "developer",
       content:
-        "You output strict JSON only. Top-level keys must be assistantMessage and equilibriumResult. No markdown. equilibriumResult must include status,concept,solvingSteps,focs,conditions,closedForm,derivation,code,warnings. The result must be symbolic: use FOC equations, reaction functions, closed-form expressions or exact symbolic-failure explanation plus reusable SymPy code. Do not use numeric substitution, simulation, calibration, Monte Carlo, empirical regression, or parameter assignment as equilibrium. Reuse the supplied symbol registry exactly; if a symbol is missing, define it explicitly and keep notation consistent with the current model.",
+        "You output strict JSON only. Top-level keys must be assistantMessage and equilibriumResult. assistantMessage must be the exact natural-language reply the user should see in chat, in Chinese Markdown text, without markdown fences or code fences. Use headings, bullet lists, bold text, and inline LaTeX when that improves readability. equilibriumResult must include status,concept,solvingSteps,focs,conditions,closedForm,derivation,code,warnings. Keep closedForm compact: use a pure formula, reaction system, or concise symbolic-failure statement; do not mix long prose into closedForm. Put explanations in derivation and warnings. The result must be symbolic: use FOC equations, reaction functions, closed-form expressions or exact symbolic-failure explanation plus reusable SymPy code. Do not use numeric substitution, simulation, calibration, Monte Carlo, empirical regression, or parameter assignment as equilibrium. Reuse the supplied symbol registry exactly; if a symbol is missing, define it explicitly and keep notation consistent with the current model.",
     },
     {
       role: "user",
@@ -828,14 +853,14 @@ function createEquilibriumPrompt(project: ResearchProject): LlmMessage[] {
           symbolRegistry: symbolContext.symbolRegistry,
           symbolGovernanceIssues: symbolContext.symbolIssues,
           requiredShape: {
-            assistantMessage: "中文说明",
+            assistantMessage: "中文 Markdown 回复",
             equilibriumResult: {
               status: "solved 或 symbolic_failure",
               concept: "均衡概念",
               solvingSteps: ["符号求解步骤"],
               focs: ["\\frac{\\partial \\Pi_i}{\\partial \\tau_i}=0"],
               conditions: ["参数约束"],
-              closedForm: "闭式解、反应函数或符号爆炸说明",
+              closedForm: "纯公式闭式解、反应函数系统或简短符号失败说明",
               derivation: "符号推导说明",
               code: "可运行 SymPy 代码",
               warnings: ["仅保留符号解，不用数值模拟"],
@@ -852,7 +877,7 @@ function createPropertyAnalysisPrompt(project: ResearchProject): LlmMessage[] {
     {
       role: "developer",
       content:
-        "You output strict JSON only. Top-level keys must be assistantMessage and propertyAnalyses. No markdown. propertyAnalyses must be an array of 3 to 5 objects. Each object must include id,target,parameter,operation,symbolicResult,signCondition,propositionDraft,proofSketch,intuition,warnings. The analyses must be useful symbolic comparative statics/proposition analysis, not simulation, numeric examples, or trivial zero derivatives caused only by a parameter being absent from the model. Reuse the supplied symbol registry exactly and state symbol meanings consistently.",
+        "You output strict JSON only. Top-level keys must be assistantMessage and propertyAnalyses. assistantMessage must be the exact natural-language reply the user should see in chat, in Chinese Markdown text, without markdown fences or code fences. Use headings, bullet lists, bold text, and inline LaTeX when that improves readability. propertyAnalyses must be an array of 3 to 5 objects. Each object must include id,target,parameter,operation,symbolicResult,signCondition,propositionDraft,proofSketch,intuition,warnings. The analyses must be useful symbolic comparative statics/proposition analysis, not simulation, numeric examples, or trivial zero derivatives caused only by a parameter being absent from the model. Reuse the supplied symbol registry exactly and state symbol meanings consistently.",
     },
     {
       role: "user",
@@ -865,7 +890,7 @@ function createPropertyAnalysisPrompt(project: ResearchProject): LlmMessage[] {
           symbolRegistry: symbolContext.symbolRegistry,
           symbolGovernanceIssues: symbolContext.symbolIssues,
           requiredShape: {
-            assistantMessage: "中文说明",
+            assistantMessage: "中文 Markdown 回复，概述 3 条以上性质分析",
             propertyAnalyses: [
               {
                 id: "analysis-id",
@@ -902,7 +927,7 @@ function createConversationPrompt(
     {
       role: "developer",
       content:
-        "You are PaperForge, a Chinese research assistant for theoretical game theory papers. Return strict JSON only. Top-level keys must be assistantMessage and optionally assetPatch. assistantMessage must be the exact natural-language reply the user should see in chat, in Chinese, without markdown fences or code fences. Use assetPatch only when the user explicitly asks for a structured edit to the current model, equilibrium result, or property analyses. If you include assetPatch, make it concrete, symbolic, and limited to the requested edit. Do not silently overwrite the project in the reply text. Reuse the supplied symbol registry and, when the user asks about notation, answer with the current symbol names or produce a symbol patch instead of a generic workflow reply. For symbol edits, use assetPatch.kind='update_model' and target paths such as hotellingModel.symbols[tau_A].symbol, hotellingModel.symbols[tau_A].meaning, or hotellingModel.symbols with op='insert' and a complete symbol object.",
+        "You are PaperForge, a Chinese research assistant for theoretical game theory papers. Return strict JSON only. Top-level keys must be assistantMessage and optionally assetPatch. assistantMessage must be the exact natural-language reply the user should see in chat, in Chinese Markdown text, without markdown fences or code fences. Use headings, bullet lists, bold text, and inline LaTeX when that improves readability. Use assetPatch only when the user explicitly asks for a structured edit to the current model, equilibrium result, or property analyses. If you include assetPatch, make it concrete, symbolic, and limited to the requested edit. When assetPatch is included, say the content will appear on the right as a pending change for review, not that it has already overwritten the asset. If you do not include assetPatch, do not claim the right-side asset has been updated. Reuse the supplied symbol registry and, when the user asks about notation, answer with the current symbol names or produce a symbol patch instead of a generic workflow reply. For symbol edits, use assetPatch.kind='update_model' and target paths such as hotellingModel.symbols[tau_A].symbol, hotellingModel.symbols[tau_A].meaning, or hotellingModel.symbols with op='insert' and a complete symbol object. For property edits, use assetPatch.kind='update_properties', target='propertyAnalyses', and op='insert'.",
     },
     {
       role: "user",
@@ -1350,6 +1375,7 @@ function parseEquilibriumResult(value: unknown): EquilibriumResult | null {
 
 function parsePropertyAnalyses(value: unknown): PropertyAnalysis[] | null {
   if (!Array.isArray(value)) return null;
+  if (value.length < 3 || value.length > 5) return null;
   const analyses = value.map(parsePropertyAnalysis);
   if (analyses.some((analysis) => !analysis)) return null;
   return analyses as PropertyAnalysis[];

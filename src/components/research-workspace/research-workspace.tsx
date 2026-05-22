@@ -22,6 +22,11 @@ import {
   getRuntimeModelSourceSettings,
   parseStoredModelSourceSettings,
 } from "@/lib/model-source";
+import {
+  applyResearchAssetPatchToProject,
+  markProjectPatchStatus,
+} from "@/lib/research-asset-patch-apply";
+import { createResearchChatViewMessages } from "@/lib/research-chat-view";
 import { markResearchAssetsStaleAfterModelEdit } from "@/lib/research-flow";
 import { classifyResearchInput } from "@/lib/research-intent";
 import {
@@ -34,7 +39,6 @@ import {
   normalizeResearchProjectForWorkspace,
 } from "@/lib/research-session";
 import { normalizeSymbolRegistry } from "@/lib/symbol-governance";
-import { applyModelPatchToHotellingModel } from "@/lib/research-model-patch";
 import { useStore } from "@/lib/store";
 import type {
   ModelSourceSettings,
@@ -461,61 +465,19 @@ export function ResearchWorkspace({
     );
     if (!patch) return;
 
-    let nextProject = markPatchStatus(activeProject, patchId, "applied");
-
-    if (patch.kind === "model" && activeProject.hotellingModel) {
-      const nextModel = applyModelPatchToHotellingModel(
-        activeProject.hotellingModel,
-        patch.changes
-      );
-      nextProject = markResearchAssetsStaleAfterModelEdit({
-        ...nextProject,
-        hotellingModel: nextModel,
-        researchSession: nextProject.researchSession
-          ? {
-              ...nextProject.researchSession,
-              assetSummary: {
-                ...nextProject.researchSession.assetSummary,
-                confirmedAssumptions: nextModel.assumptions,
-                pendingDecision: {
-                  kind: "solve_equilibrium",
-                  prompt:
-                    "模型或符号表已经按建议修改。请重新生成符号均衡，再进入性质分析。",
-                },
-                nextActions: [
-                  "核对右侧模型和符号表",
-                  "重新生成符号均衡",
-                  "基于新模型重做性质分析",
-                ],
-              },
-              messages: [
-                ...nextProject.researchSession.messages,
-                {
-                  id: createMessageId("msg-asset-patch-applied"),
-                  role: "assistant",
-                  content:
-                    "我已把这条修改建议应用到右侧模型资产里。均衡和性质分析需要重新生成后才适合继续使用。",
-                  createdAt: createTimestamp(),
-                },
-              ],
-            }
-          : nextProject.researchSession,
-      });
-    }
-
+    const nextProject = applyResearchAssetPatchToProject(activeProject, patch);
     await persistGeneratedProject(nextProject);
     toast.success("修改已应用", {
-      description:
-        patch.kind === "model"
-          ? "模型已更新，均衡和性质分析需要重新生成。"
-          : "这类修改已记录为已应用，请继续人工核对右侧资产。",
+      description: getAppliedPatchToastDescription(patch.kind),
     });
   }
 
   async function handleRejectAssetPatch(patchId: string) {
     if (!activeProject?.researchSession) return;
 
-    await persistGeneratedProject(markPatchStatus(activeProject, patchId, "rejected"));
+    await persistGeneratedProject(
+      markProjectPatchStatus(activeProject, patchId, "rejected")
+    );
     toast.info("已拒绝修改建议");
   }
 
@@ -525,9 +487,7 @@ export function ResearchWorkspace({
         ? []
         : session.messages;
 
-    return optimisticMessage
-      ? [...baseMessages, optimisticMessage]
-      : baseMessages;
+    return createResearchChatViewMessages(baseMessages, optimisticMessage);
   })();
   const chatTitle =
     !displayedProject || isComposingNewConversation
@@ -647,32 +607,6 @@ function convertApiConversationPatch(
   };
 }
 
-function markPatchStatus(
-  project: ResearchProject,
-  patchId: string,
-  status: ResearchAssetPatch["status"]
-): ResearchProject {
-  const session =
-    project.researchSession ?? createInitialResearchSession(project.rawIdea);
-
-  return {
-    ...project,
-    researchSession: {
-      ...session,
-      assetPatches: (session.assetPatches ?? []).map((patch) =>
-        patch.id === patchId
-          ? {
-              ...patch,
-              status,
-              ...(status === "applied" ? { appliedAt: createTimestamp() } : {}),
-              ...(status === "rejected" ? { rejectedAt: createTimestamp() } : {}),
-            }
-          : patch
-      ),
-    },
-  };
-}
-
 function createTimestamp() {
   return Date.now();
 }
@@ -720,6 +654,17 @@ function markAssetFreshnessAfterProperties(project: ResearchProject): ResearchPr
       },
     },
   };
+}
+
+function getAppliedPatchToastDescription(kind: ResearchAssetPatch["kind"]) {
+  switch (kind) {
+    case "model":
+      return "模型已更新，均衡和性质分析需要重新生成。";
+    case "equilibrium":
+      return "均衡资产已更新，性质分析已标记为需要重新检查。";
+    case "properties":
+      return "性质分析已写入右侧工作台。";
+  }
 }
 
 function attachChatMessageToProject(

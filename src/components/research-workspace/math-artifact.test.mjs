@@ -38,3 +38,10 @@ test("math artifact unwraps whole Chinese sentences accidentally wrapped as math
     "对称均衡费用：f_B=t_B-\\alpha，市场份额为 1/2。"
   );
 });
+
+test("math artifact leaves mixed Chinese explanations for markdown rendering", () => {
+  const content = "对称均衡下，f_A^B=f_B^B=f_B，其中 f_B=t_B-\\alpha_S";
+
+  assert.equal(shouldRenderAsPlainMath(content), false);
+  assert.equal(formatMathArtifactContent(content), content);
+});

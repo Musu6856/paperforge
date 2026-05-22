@@ -120,3 +120,67 @@ test("conversation fallback proposes symbol patches for explicit notation edits"
   assert.equal(result.assetPatch?.changes[0].value, "f_A");
   assert.equal(result.project.hotellingModel, built.project.hotellingModel);
 });
+
+test("conversation accepts provider property patch aliases for right-side review", async () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "Research secondhand platform pricing",
+    now: 1710000000000,
+  });
+  const built = await generateResearchProject(
+    {
+      action: "build_model",
+      rawIdea: project.rawIdea,
+      selectedDirectionId: "secondhand-commission-subsidy-hotelling",
+      project,
+    },
+    {
+      complete: async () => "{",
+    }
+  );
+
+  const result = await generateResearchProject(
+    {
+      action: "continue_conversation",
+      rawIdea: built.project.rawIdea,
+      userMessage: "那你帮我生成这些性质分析吧。",
+      project: built.project,
+    },
+    {
+      complete: async () =>
+        JSON.stringify({
+          assistantMessage:
+            "已生成性质分析建议，右侧会显示为待应用修改，确认后再写入结构化资产。",
+          assetPatch: {
+            kind: "properties",
+            summary: "新增三条性质分析",
+            changes: [
+              {
+                path: "propertyAnalyses",
+                op: "append",
+                value: [
+                  {
+                    id: "alpha-b-fee",
+                    target: "f_S",
+                    parameter: "\\alpha_B",
+                    operation: "differentiate",
+                    symbolicResult: "\\partial f_S/\\partial \\alpha_B=-1",
+                    signCondition: "负",
+                    propositionDraft: "命题：买家侧网络外部性提高会降低卖家费用。",
+                    proofSketch: "由 f_S=t_S-\\alpha_B 直接求导。",
+                    intuition: "网络外部性提高后平台更愿意补贴卖家侧。",
+                    warnings: [],
+                  },
+                ],
+                reason: "用户要求生成性质分析。",
+              },
+            ],
+          },
+        }),
+    }
+  );
+
+  assert.equal(result.assetPatch?.kind, "update_properties");
+  assert.equal(result.assetPatch?.changes[0].op, "insert");
+  assert.equal(result.assetPatch?.changes[0].target, "propertyAnalyses");
+});
