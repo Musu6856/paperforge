@@ -10,6 +10,11 @@ const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
 const DEEPSEEK_MODEL = "deepseek-v4-flash";
 const OPENAI_BASE_URL = "https://api.openai.com/v1";
 const OPENAI_MODEL = "gpt-5.2";
+const OFFICIAL_PROVIDER_HOSTS = new Set([
+  "api.deepseek.com",
+  "api.openai.com",
+  "api.xiaomimimo.com",
+]);
 
 export type ProviderConfig = {
   apiKey?: string;
@@ -252,7 +257,12 @@ export class ProviderHttpError extends Error {
   }
 }
 
-async function validateProviderBaseUrl(baseUrl: string, resolveHost: boolean) {
+export async function validateProviderBaseUrl(
+  baseUrl: string,
+  resolveHost: boolean,
+  resolveAddresses: (host: string) => Promise<Array<{ address: string }>> =
+    resolveProviderHostAddresses
+) {
   validateModelSourceBaseUrl(baseUrl);
 
   if (!resolveHost) {
@@ -269,10 +279,18 @@ async function validateProviderBaseUrl(baseUrl: string, resolveHost: boolean) {
     return;
   }
 
-  const addresses = await lookup(host, { all: true, verbatim: true });
+  if (OFFICIAL_PROVIDER_HOSTS.has(host)) {
+    return;
+  }
+
+  const addresses = await resolveAddresses(host);
   if (addresses.some((record) => isPrivateAddress(record.address))) {
     throw new Error("Provider base URL cannot resolve to private addresses.");
   }
+}
+
+async function resolveProviderHostAddresses(host: string) {
+  return lookup(host, { all: true, verbatim: true });
 }
 
 function isPrivateAddress(address: string) {

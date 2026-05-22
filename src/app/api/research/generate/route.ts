@@ -6,11 +6,9 @@ import {
   jsonError,
 } from "@/lib/provider";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getProviderTimeoutMs } from "@/lib/research-generation-timeout";
 import { getRequestUserId } from "@/lib/server-auth";
 import { normalizeModelSourceSettings } from "@/lib/model-source";
-
-const PROVIDER_TIMEOUT_MS = 15000;
-const SYMBOLIC_PROVIDER_TIMEOUT_MS = 45000;
 
 export async function POST(request: Request) {
   const userId = await getRequestUserId();
@@ -96,12 +94,6 @@ export async function POST(request: Request) {
   });
 
   return Response.json(result);
-}
-
-function getProviderTimeoutMs(action: ResearchGenerationRequest["action"]) {
-  return action === "solve_equilibrium" || action === "analyze_properties"
-    ? SYMBOLIC_PROVIDER_TIMEOUT_MS
-    : PROVIDER_TIMEOUT_MS;
 }
 
 function validateRequest(body: ResearchGenerationRequest) {

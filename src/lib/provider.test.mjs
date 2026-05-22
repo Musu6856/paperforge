@@ -7,6 +7,7 @@ import {
   createChatCompletionPayload,
   extractChatCompletionContent,
   getProviderConfigForModelSource,
+  validateProviderBaseUrl,
 } from "./provider.ts";
 
 const provider = {
@@ -315,6 +316,24 @@ test("completeProviderChat rejects unsafe base URLs before making a request", as
   );
 
   assert.equal(called, false);
+});
+
+test("provider base URL validation allows official DeepSeek host behind local DNS proxying", async () => {
+  await assert.doesNotReject(() =>
+    validateProviderBaseUrl("https://api.deepseek.com", true, async () => [
+      { address: "198.18.0.37", family: 4 },
+    ])
+  );
+});
+
+test("provider base URL validation still rejects unknown hosts resolving to proxy-reserved addresses", async () => {
+  await assert.rejects(
+    () =>
+      validateProviderBaseUrl("https://provider.example.com", true, async () => [
+        { address: "198.18.0.37", family: 4 },
+      ]),
+    /private addresses/
+  );
 });
 
 test("provider config rejects own Anthropic model source for OpenAI-compatible generation", () => {
