@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { getRequestUserId } from "@/lib/server-auth";
 import {
   getProviderConfig,
   jsonError,
@@ -27,7 +27,7 @@ function extractDelta(line: string) {
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth();
+    const userId = await getRequestUserId();
     if (!userId) {
       return jsonError("Unauthorized", 401, "unauthorized");
     }
@@ -51,21 +51,21 @@ export async function POST(request: Request) {
 
     if (!provider.apiKey) {
       return jsonError(
-        "AI service is not configured. Set XIAOMI_API_KEY in Vercel.",
+        "AI service is not configured. Set DEEPSEEK_API_KEY or OPENAI_COMPATIBLE_API_KEY in the environment.",
         503,
-        "missing_mimo_api_key"
+        "missing_deepseek_api_key"
       );
     }
 
     const upstream = await fetch(`${provider.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
-        "api-key": provider.apiKey,
+        Authorization: `Bearer ${provider.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: provider.model,
-        max_completion_tokens: 4096,
+        max_tokens: 4096,
         stream: true,
         messages: [
           {

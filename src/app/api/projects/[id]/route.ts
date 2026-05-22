@@ -1,16 +1,11 @@
-import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { projects } from "@/db/schema";
 import { projectFromRow, sanitizeProjectPayload } from "@/lib/project-records";
+import { getRequestUserId } from "@/lib/server-auth";
 
 function jsonError(error: string, status: number, code: string) {
   return Response.json({ error, code }, { status });
-}
-
-async function requireUserId() {
-  const { userId } = await auth();
-  return userId;
 }
 
 type ProjectRouteContext = {
@@ -19,7 +14,7 @@ type ProjectRouteContext = {
 
 export async function GET(_request: Request, context: ProjectRouteContext) {
   try {
-    const userId = await requireUserId();
+    const userId = await getRequestUserId();
     if (!userId) return jsonError("Unauthorized", 401, "unauthorized");
 
     const { id } = await context.params;
@@ -40,7 +35,7 @@ export async function GET(_request: Request, context: ProjectRouteContext) {
 
 export async function PATCH(request: Request, context: ProjectRouteContext) {
   try {
-    const userId = await requireUserId();
+    const userId = await getRequestUserId();
     if (!userId) return jsonError("Unauthorized", 401, "unauthorized");
 
     const { id } = await context.params;
@@ -55,7 +50,10 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
       .set({
         rawIdea: project.rawIdea,
         refinedIdea: project.refinedIdea,
+        projectType: project.projectType ?? "legacy",
         model: project.model,
+        researchSession: project.researchSession ?? null,
+        modelSource: project.modelSource ?? null,
         wizardCompleted: project.wizardCompleted,
         sections: project.sections,
         references: project.references,
@@ -80,7 +78,7 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
 
 export async function DELETE(_request: Request, context: ProjectRouteContext) {
   try {
-    const userId = await requireUserId();
+    const userId = await getRequestUserId();
     if (!userId) return jsonError("Unauthorized", 401, "unauthorized");
 
     const { id } = await context.params;

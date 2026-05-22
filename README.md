@@ -39,7 +39,7 @@ Academic writing with AI breaks down when the model has no structure to follow. 
 - shadcn/ui-style components
 - Clerk (authentication & user management)
 - Neon + Drizzle ORM (cloud database)
-- Xiaomi MiMo API through an OpenAI-compatible chat completions endpoint
+- DeepSeek through an OpenAI-compatible chat completions endpoint
 - KaTeX / react-markdown for academic output
 
 ## Environment Variables
@@ -52,21 +52,17 @@ CLERK_SECRET_KEY=sk_test_...
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 DATABASE_URL=postgresql://...
-MIMO_API_KEY=your_xiaomi_mimo_api_key
-```
-
-The API route also accepts these aliases for deployment convenience:
-
-```bash
-XIAOMI_API_KEY=your_xiaomi_mimo_api_key
-ANTHROPIC_API_KEY=your_xiaomi_mimo_api_key
+DEEPSEEK_API_KEY=your_deepseek_api_key
 ```
 
 Optional overrides:
 
 ```bash
-MIMO_BASE_URL=https://api.xiaomimimo.com/v1
-MIMO_MODEL=mimo-v2.5-pro
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-flash
+OPENAI_COMPATIBLE_API_KEY=your_openai_compatible_api_key
+OPENAI_COMPATIBLE_BASE_URL=https://api.example.com
+OPENAI_COMPATIBLE_MODEL=provider-model-name
 ```
 
 ## Local Development

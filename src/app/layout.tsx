@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import "katex/dist/katex.min.css";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store";
 import { Toaster } from "@/components/ui/sonner";
@@ -30,14 +31,6 @@ export default function RootLayout({
       lang="zh"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
-          integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rl+2el07mTWj4H3TY8NiN8"
-          crossOrigin="anonymous"
-        />
-      </head>
       <body className="min-h-full flex flex-col">
         <ClerkProvider>
           <StoreProvider>

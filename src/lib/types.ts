@@ -165,15 +165,142 @@ export interface PropertyAnalysis {
   warnings: string[];
 }
 
+export type ModelSourceProvider =
+  | "openai"
+  | "openai-compatible";
+
+export type ModelSourceSettings =
+  | {
+      source: "paperforge";
+    }
+  | {
+      source: "own";
+      provider: ModelSourceProvider;
+      apiKey: string;
+      model: string;
+      baseUrl?: string;
+    };
+
+export type ModelSourceMetadata =
+  | {
+      source: "paperforge";
+    }
+  | {
+      source: "own";
+      provider: ModelSourceProvider;
+      model: string;
+      hasBrowserApiKey: boolean;
+      baseUrl?: string;
+    };
+
+export type ResearchProjectType = "exploration" | "formal" | "legacy";
+
+export interface ResearchDirection {
+  id: string;
+  title: string;
+  summary: string;
+  model: string;
+  contribution: string;
+  recommended: boolean;
+}
+
+export interface ResearchSessionMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: number;
+}
+
+export type ResearchAssetKind = "model" | "equilibrium" | "properties";
+
+export type ResearchAssetChangeKind = "replace" | "append" | "remove";
+
+export type ResearchAssetPatchStatus = "proposed" | "applied" | "rejected";
+
+export type ResearchAssetFreshness = "fresh" | "stale";
+
+export interface ResearchAssetFreshnessMap {
+  model: ResearchAssetFreshness;
+  equilibrium: ResearchAssetFreshness;
+  properties: ResearchAssetFreshness;
+}
+
+export interface ResearchAssetChange {
+  kind: ResearchAssetChangeKind;
+  path: string;
+  value?: unknown;
+  previousValue?: unknown;
+  note?: string;
+}
+
+export interface ResearchAssetPatch {
+  id: string;
+  kind: ResearchAssetKind;
+  summary: string;
+  changes: ResearchAssetChange[];
+  status: ResearchAssetPatchStatus;
+  createdAt: number;
+  sourceMessageId?: string;
+  appliedAt?: number;
+  rejectedAt?: number;
+  rejectionReason?: string;
+}
+
+export interface ResearchAssetPatchInput {
+  id?: string;
+  kind: ResearchAssetKind;
+  summary: string;
+  changes: ResearchAssetChange[];
+  createdAt?: number;
+  sourceMessageId?: string;
+}
+
+export interface ResearchSessionDecision {
+  kind:
+    | "choose_direction"
+    | "answer_model_question"
+    | "solve_equilibrium"
+    | "analyze_properties";
+  prompt: string;
+}
+
+export type ResearchSessionEquilibriumStatus =
+  | "not_started"
+  | "等待模型确认"
+  | "等待开始求解"
+  | "待推导解析解"
+  | EquilibriumResult["status"];
+
+export interface ResearchSessionAssetSummary {
+  currentDirection?: ResearchDirection;
+  confirmedAssumptions: string[];
+  pendingDecision?: ResearchSessionDecision;
+  utilityFunctions: string[];
+  equilibriumStatus: ResearchSessionEquilibriumStatus;
+  nextActions: string[];
+}
+
+export interface ResearchSession {
+  phase: "direction" | "model" | "equilibrium" | "analysis";
+  directions: ResearchDirection[];
+  messages: ResearchSessionMessage[];
+  assetSummary: ResearchSessionAssetSummary;
+  assetFreshness?: ResearchAssetFreshnessMap;
+  assetPatches?: ResearchAssetPatch[];
+}
+
 export interface ResearchProject {
   id: string;
   createdAt: number;
   rawIdea: string;
   refinedIdea: string;
+  projectType?: ResearchProjectType;
   model: GameTheoryModel | null;
   wizardCompleted: boolean;
   sections: PaperSection[];
   references: Reference[];
+  modelSource?: ModelSourceMetadata;
+  researchSession?: ResearchSession;
   background?: BackgroundStory;
   literatureAnalyses?: LiteratureAnalysis[];
   hotellingModel?: HotellingModel;

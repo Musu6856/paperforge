@@ -10,6 +10,8 @@ import React, {
 } from "react";
 import { useUser } from "@clerk/nextjs";
 import { fetchProjects, saveProject } from "./api";
+import { isDevelopmentGuestMode } from "./auth";
+import { markResearchAssetsStaleAfterModelEdit } from "./research-flow";
 import type {
   ResearchProject,
   BackgroundStory,
@@ -46,23 +48,41 @@ type Action =
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "NEW_PROJECT"; payload: ResearchProject }
   | { type: "LOAD_PROJECTS"; payload: ResearchProject[] }
+  | { type: "DELETE_PROJECT"; payload: string }
   | { type: "CLEAR_PROJECTS" };
 
 const initialState: AppState = {
   currentProject: null,
   projects: [],
   wizardStep: "players",
-  isLoading: false,
+  isLoading: true,
 };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "SET_PROJECT":
-      return { ...state, currentProject: action.payload };
+      const projectExists = state.projects.some(
+        (project) => project.id === action.payload.id
+      );
+      return {
+        ...state,
+        currentProject: action.payload,
+        projects: projectExists
+          ? state.projects.map((project) =>
+              project.id === action.payload.id ? action.payload : project
+            )
+          : [action.payload, ...state.projects],
+      };
     case "UPDATE_PROJECT":
       if (!state.currentProject) return state;
       const updated = { ...state.currentProject, ...action.payload };
-      return { ...state, currentProject: updated };
+      return {
+        ...state,
+        currentProject: updated,
+        projects: state.projects.map((project) =>
+          project.id === updated.id ? updated : project
+        ),
+      };
     case "SET_BACKGROUND":
       if (!state.currentProject) return state;
       return {
@@ -80,12 +100,19 @@ function reducer(state: AppState, action: Action): AppState {
       };
     case "SET_HOTELLING_MODEL":
       if (!state.currentProject) return state;
+      const nextProject = {
+        ...state.currentProject,
+        hotellingModel: action.payload,
+      };
+      const updatedProject = state.currentProject.hotellingModel
+        ? markResearchAssetsStaleAfterModelEdit(nextProject)
+        : nextProject;
       return {
         ...state,
-        currentProject: {
-          ...state.currentProject,
-          hotellingModel: action.payload,
-        },
+        currentProject: updatedProject,
+        projects: state.projects.map((project) =>
+          project.id === updatedProject.id ? updatedProject : project
+        ),
       };
     case "SET_EQUILIBRIUM_RESULT":
       if (!state.currentProject) return state;
@@ -154,9 +181,18 @@ function reducer(state: AppState, action: Action): AppState {
         wizardStep: "players",
       };
     case "LOAD_PROJECTS":
-      return { ...state, projects: action.payload };
+      return { ...state, projects: action.payload, isLoading: false };
+    case "DELETE_PROJECT":
+      return {
+        ...state,
+        currentProject:
+          state.currentProject?.id === action.payload
+            ? null
+            : state.currentProject,
+        projects: state.projects.filter((project) => project.id !== action.payload),
+      };
     case "CLEAR_PROJECTS":
-      return initialState;
+      return { ...initialState, isLoading: false };
     default:
       return state;
   }
@@ -170,6 +206,8 @@ const StoreContext = createContext<{
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { isLoaded, isSignedIn } = useUser();
+  const authReady = isDevelopmentGuestMode() || isLoaded;
+  const canUseProjects = isDevelopmentGuestMode() || isSignedIn;
   const lastSavedProject = useRef<string | null>(null);
   const saveInFlight = useRef(false);
   const pendingSave = useRef<{
@@ -208,9 +246,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Load projects from Neon once Clerk knows the current auth state.
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!authReady) return;
 
-    if (!isSignedIn) {
+    if (!canUseProjects) {
       dispatch({ type: "CLEAR_PROJECTS" });
       lastSavedProject.current = null;
       pendingSave.current = null;
@@ -220,6 +258,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     async function loadProjects() {
+      dispatch({ type: "SET_LOADING", payload: true });
       try {
         const projects = await fetchProjects();
         if (!cancelled) {
@@ -227,6 +266,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (e) {
         console.error("Failed to load projects", e);
+        if (!cancelled) {
+          dispatch({ type: "SET_LOADING", payload: false });
+        }
       }
     }
 
@@ -235,11 +277,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, isSignedIn]);
+  }, [authReady, canUseProjects]);
 
   // Persist the active project after local edits.
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !state.currentProject) return;
+    if (!authReady || !canUseProjects || !state.currentProject) return;
 
     const serialized = JSON.stringify(state.currentProject);
     if (serialized === lastSavedProject.current) return;
@@ -253,7 +295,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }, 500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [flushPendingSave, isLoaded, isSignedIn, state.currentProject]);
+  }, [flushPendingSave, authReady, canUseProjects, state.currentProject]);
 
   return (
     <StoreContext.Provider value={{ state, dispatch }}>

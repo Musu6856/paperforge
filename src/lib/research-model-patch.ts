@@ -1,0 +1,354 @@
+import type { HotellingModel, ResearchAssetChange, SymbolDefinition } from "./types";
+import {
+  createSymbolDraft,
+  normalizeSymbolDefinition,
+  normalizeSymbolRegistry,
+} from "./symbol-governance.ts";
+
+const SYMBOL_FIELDS = new Set<keyof SymbolDefinition>([
+  "id",
+  "symbol",
+  "baseSymbol",
+  "subscript",
+  "superscript",
+  "codeName",
+  "name",
+  "meaning",
+  "role",
+  "side",
+  "assumption",
+  "recommended",
+]);
+
+export function applyModelPatchToHotellingModel(
+  model: HotellingModel,
+  changes: ResearchAssetChange[]
+): HotellingModel {
+  return {
+    ...model,
+    assumptions: applyModelPatchToAssumptions(model.assumptions, changes),
+    symbols: applyModelPatchToSymbols(model.symbols, changes),
+  };
+}
+
+export function applyModelPatchToAssumptions(
+  assumptions: string[],
+  changes: ResearchAssetChange[]
+) {
+  let nextAssumptions = [...assumptions];
+
+  for (const change of changes) {
+    if (!change.path.includes("assumptions")) continue;
+
+    if (Array.isArray(change.value)) {
+      nextAssumptions = change.value.map(String).filter(Boolean);
+      continue;
+    }
+
+    const value = typeof change.value === "string" ? change.value.trim() : "";
+    const indexMatch = change.path.match(/assumptions\[(\d+)\]/);
+    const index = indexMatch ? Number(indexMatch[1]) : -1;
+
+    if (change.kind === "remove") {
+      nextAssumptions =
+        index >= 0
+          ? nextAssumptions.filter((_, itemIndex) => itemIndex !== index)
+          : nextAssumptions.filter((assumption) => assumption !== value);
+      continue;
+    }
+
+    if (!value) continue;
+
+    if (change.kind === "append" || index < 0) {
+      nextAssumptions.push(value);
+      continue;
+    }
+
+    nextAssumptions[index] = value;
+  }
+
+  return nextAssumptions.filter(Boolean);
+}
+
+export function applyModelPatchToSymbols(
+  symbols: SymbolDefinition[],
+  changes: ResearchAssetChange[]
+) {
+  let nextSymbols = normalizeSymbolRegistry(symbols);
+
+  for (const change of changes) {
+    const target = parseSymbolPatchPath(change.path);
+    if (!target) continue;
+
+    if (target.kind === "registry") {
+      if (Array.isArray(change.value)) {
+        const parsed = normalizeSymbolRegistry(change.value);
+        nextSymbols =
+          change.kind === "append" ? [...nextSymbols, ...parsed] : parsed;
+        continue;
+      }
+
+      if (change.kind === "remove") {
+        nextSymbols = [];
+        continue;
+      }
+
+      const nextSymbol = createSymbolFromPatchValue(change.value, nextSymbols.length);
+      if (nextSymbol) nextSymbols = [...nextSymbols, nextSymbol];
+      continue;
+    }
+
+    const index = resolveSymbolIndex(nextSymbols, target.selector);
+
+    if (change.kind === "remove" && !target.field) {
+      if (index >= 0) {
+        nextSymbols = nextSymbols.filter((_, itemIndex) => itemIndex !== index);
+      }
+      continue;
+    }
+
+    if (index < 0) {
+      const nextSymbol = createSymbolFromMissingTarget(target, change);
+      if (nextSymbol) nextSymbols = [...nextSymbols, nextSymbol];
+      continue;
+    }
+
+    const current = nextSymbols[index];
+    const patched = patchSymbol(current, target.field, change, index);
+    if (patched) nextSymbols[index] = patched;
+  }
+
+  return normalizeSymbolRegistry(nextSymbols);
+}
+
+type SymbolPatchTarget =
+  | { kind: "registry" }
+  | { kind: "symbol"; selector: string | number; field?: keyof SymbolDefinition };
+
+function parseSymbolPatchPath(path: string): SymbolPatchTarget | null {
+  const normalized = path.trim();
+  if (!/(^|\.)(symbols|symbolRegistry)(\.|\[|$)/i.test(normalized)) {
+    return null;
+  }
+
+  if (/(^|\.)(symbols|symbolRegistry)$/i.test(normalized)) {
+    return { kind: "registry" };
+  }
+
+  const bracketMatch = normalized.match(
+    /(?:^|\.)(?:symbols|symbolRegistry)\[["']?([^\]"']+)["']?\](?:\.([A-Za-z_][A-Za-z0-9_]*))?$/i
+  );
+  if (bracketMatch) {
+    const selector = /^\d+$/.test(bracketMatch[1])
+      ? Number(bracketMatch[1])
+      : bracketMatch[1];
+    return toSymbolPatchTarget(selector, bracketMatch[2]);
+  }
+
+  const dotMatch = normalized.match(
+    /(?:^|\.)(?:symbols|symbolRegistry)\.([A-Za-z0-9_\\{}^]+)(?:\.([A-Za-z_][A-Za-z0-9_]*))?$/i
+  );
+  if (dotMatch) {
+    return toSymbolPatchTarget(dotMatch[1], dotMatch[2]);
+  }
+
+  return null;
+}
+
+function toSymbolPatchTarget(
+  selector: string | number,
+  rawField?: string
+): SymbolPatchTarget | null {
+  const field = rawField as keyof SymbolDefinition | undefined;
+  if (field && !SYMBOL_FIELDS.has(field)) return null;
+  return { kind: "symbol", selector, ...(field ? { field } : {}) };
+}
+
+function resolveSymbolIndex(
+  symbols: SymbolDefinition[],
+  selector: string | number
+) {
+  if (typeof selector === "number") {
+    return selector >= 0 && selector < symbols.length ? selector : -1;
+  }
+
+  const needle = selector.trim();
+  return symbols.findIndex(
+    (symbol) =>
+      symbol.id === needle ||
+      symbol.codeName === needle ||
+      symbol.symbol === needle ||
+      symbol.baseSymbol === needle
+  );
+}
+
+function patchSymbol(
+  current: SymbolDefinition,
+  field: keyof SymbolDefinition | undefined,
+  change: ResearchAssetChange,
+  index: number
+) {
+  if (!field) {
+    return createSymbolFromPatchValue(change.value, index, current);
+  }
+
+  const nextValue = change.kind === "remove" ? emptySymbolField(field) : change.value;
+  const candidate = {
+    ...current,
+    [field]: nextValue,
+  };
+
+  return normalizePatchedSymbol(candidate, index, field);
+}
+
+function createSymbolFromMissingTarget(
+  target: Extract<SymbolPatchTarget, { kind: "symbol" }>,
+  change: ResearchAssetChange
+) {
+  if (change.kind === "remove") return null;
+
+  const selector = String(target.selector);
+  const seed = createSymbolDraft(symbolSeedFromNotation(selector));
+
+  if (target.field) {
+    return normalizePatchedSymbol(
+      {
+        ...seed,
+        [target.field]: change.value,
+      },
+      0,
+      target.field
+    );
+  }
+
+  return createSymbolFromPatchValue(change.value, 0, seed);
+}
+
+function createSymbolFromPatchValue(
+  value: unknown,
+  index: number,
+  base?: SymbolDefinition
+) {
+  if (isRecord(value)) {
+    return normalizePatchedSymbol({ ...(base ?? {}), ...value }, index);
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    return normalizePatchedSymbol(
+      {
+        ...(base ?? {}),
+        ...symbolSeedFromNotation(value),
+      },
+      index,
+      "symbol"
+    );
+  }
+
+  return base ? normalizeSymbolDefinition(base, index) : null;
+}
+
+function normalizePatchedSymbol(
+  value: Record<string, unknown>,
+  index: number,
+  changedField?: keyof SymbolDefinition
+) {
+  const candidate = { ...value };
+
+  if (changedField === "symbol" && typeof candidate.symbol === "string") {
+    const parsed = parseNotation(candidate.symbol);
+    candidate.baseSymbol = parsed.baseSymbol;
+    candidate.subscript = parsed.subscript;
+    candidate.superscript = parsed.superscript;
+    candidate.codeName = toCodeName(parsed);
+  } else if (
+    changedField === "baseSymbol" ||
+    changedField === "subscript" ||
+    changedField === "superscript"
+  ) {
+    const notation = formatSymbolNotation({
+      baseSymbol: String(candidate.baseSymbol ?? "x"),
+      subscript: String(candidate.subscript ?? ""),
+      superscript: String(candidate.superscript ?? ""),
+    });
+    candidate.symbol = notation;
+    candidate.codeName = toCodeName({
+      baseSymbol: String(candidate.baseSymbol ?? "x"),
+      subscript: String(candidate.subscript ?? ""),
+      superscript: String(candidate.superscript ?? ""),
+    });
+  }
+
+  return normalizeSymbolDefinition(candidate, index);
+}
+
+function symbolSeedFromNotation(notation: string) {
+  const parsed = parseNotation(notation);
+  return {
+    symbol: formatSymbolNotation(parsed),
+    baseSymbol: parsed.baseSymbol,
+    subscript: parsed.subscript,
+    superscript: parsed.superscript,
+    codeName: toCodeName(parsed),
+    name: formatSymbolNotation(parsed),
+    meaning: "",
+    assumption: "real",
+  };
+}
+
+function parseNotation(notation: string) {
+  const cleaned = notation
+    .trim()
+    .replace(/^\$|\$$/g, "")
+    .replace(/^\\\(|\\\)$/g, "")
+    .trim();
+  const match = cleaned.match(/^(.+?)(?:_\{?([^}^{]+)\}?)?(?:\^\{?([^}^{]+)\}?)?$/);
+
+  return {
+    baseSymbol: match?.[1]?.trim() || cleaned || "x",
+    subscript: match?.[2]?.trim() ?? "",
+    superscript: match?.[3]?.trim() ?? "",
+  };
+}
+
+function formatSymbolNotation({
+  baseSymbol,
+  subscript,
+  superscript,
+}: {
+  baseSymbol: string;
+  subscript?: string;
+  superscript?: string;
+}) {
+  const base = baseSymbol.trim() || "x";
+  const sub = subscript?.trim();
+  const sup = superscript?.trim();
+  return `${base}${sub ? `_${sub}` : ""}${sup ? `^${sup}` : ""}`;
+}
+
+function toCodeName({
+  baseSymbol,
+  subscript,
+  superscript,
+}: {
+  baseSymbol: string;
+  subscript?: string;
+  superscript?: string;
+}) {
+  return [baseSymbol, subscript, superscript]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join("_")
+    .replace(/\\/g, "")
+    .replace(/[^A-Za-z0-9_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function emptySymbolField(field: keyof SymbolDefinition) {
+  if (field === "recommended") return false;
+  return "";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
