@@ -4,6 +4,7 @@ import {
   AlertCircle,
   CheckCircle2,
   CircleDot,
+  Download,
   FileText,
   Loader2,
   PanelRightClose,
@@ -21,6 +22,10 @@ import { PendingAssetPatches } from "./pending-asset-patches";
 import { PhaseIndicator } from "./phase-indicator";
 import { ResearchAssetsTabs } from "./research-assets-tabs";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
+import {
+  buildResearchProjectMarkdown,
+  getResearchProjectMarkdownFilename,
+} from "@/lib/research-export";
 import {
   createResearchActionClickHandler,
   getResearchAssetsTabForPhase,
@@ -156,6 +161,18 @@ function ResearchAssetsPanelContent({
         onApplyAssetPatch(patchId);
       }
     : undefined;
+  const handleExportMarkdown = () => {
+    if (!project) return;
+
+    const markdown = buildResearchProjectMarkdown(project);
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = getResearchProjectMarkdownFilename(project);
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (isCollapsed) {
     return (
@@ -189,19 +206,8 @@ function ResearchAssetsPanelContent({
 
   return (
     <aside className="flex h-full min-h-0 min-w-0 flex-col bg-background">
-      <div className="relative min-h-14 border-b border-border/70 px-4 py-3 pr-24">
-        <button
-          type="button"
-          className="absolute right-3 top-3 inline-flex h-8 items-center gap-1.5 rounded-md border border-transparent px-2.5 text-[12px] font-semibold tracking-wide text-muted-foreground transition-colors hover:border-border hover:bg-muted/40 hover:text-foreground"
-          aria-label="收起右侧研究资产"
-          onClick={() => {
-            onTogglePane?.();
-          }}
-        >
-          <PanelRightClose className="size-3.5" />
-          研究资产
-        </button>
-        <div className="flex min-h-14 items-center justify-between gap-3 pr-14">
+      <div className="border-b border-border/70 px-4 py-3">
+        <div className="flex min-h-14 items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 className="truncate text-base font-semibold">
               {asset.currentDirection?.title ?? "工作台总览"}
@@ -211,6 +217,30 @@ function ResearchAssetsPanelContent({
             </p>
           </div>
           <div className="flex items-start gap-2">
+            {project ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5"
+                onClick={handleExportMarkdown}
+              >
+                <Download className="size-3.5" />
+                导出 Markdown
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="收起右侧研究资产"
+              onClick={() => {
+                onTogglePane?.();
+              }}
+            >
+              <PanelRightClose className="size-3.5" />
+            </Button>
             <PhaseIndicator phase={session.phase} />
           </div>
         </div>

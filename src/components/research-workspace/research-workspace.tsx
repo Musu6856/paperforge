@@ -10,7 +10,6 @@ import { ResearchAssetsPanel } from "./research-assets-panel";
 import { ResearchSidebar } from "./research-sidebar";
 import { ResearchWorkspaceShell } from "./research-workspace-shell";
 import {
-  createExplorationProjectApi,
   createProject,
   generateResearchProjectApi,
   saveProject,
@@ -33,18 +32,14 @@ import {
 import { markResearchAssetsStaleAfterModelEdit } from "@/lib/research-flow";
 import { classifyResearchInput } from "@/lib/research-intent";
 import {
-  adoptResearchDirection,
   confirmResearchModel,
-  createExplorationProject,
   createInitialResearchSession,
-  generatePropertyAnalysis,
-  generateSymbolicEquilibrium,
   normalizeResearchProjectForWorkspace,
 } from "@/lib/research-session";
 import { normalizeSymbolRegistry } from "@/lib/symbol-governance";
+import { getPersistableResearchProject } from "@/lib/research-generation-result";
 import { useStore } from "@/lib/store";
 import type {
-  ModelSourceSettings,
   ResearchAssetPatch,
   ResearchProject,
   ResearchSessionMessage,
@@ -108,7 +103,7 @@ export function ResearchWorkspace({
 
     setAdoptingDirectionId(directionId);
     try {
-      const { project: nextProject, usedFallback } =
+      const result =
         await generateResearchProjectApi({
           action: "build_model",
           rawIdea: activeProject.rawIdea,
@@ -116,22 +111,18 @@ export function ResearchWorkspace({
           project: activeProject,
           runtimeModelSource: readRuntimeModelSourceSettings(),
         });
+      const nextProject = getPersistableResearchProject(result);
+      if (!nextProject) {
+        toast.error("模型生成失败，右侧资产未更新。");
+        return;
+      }
       await persistGeneratedProject(nextProject);
       toast.success("已采用方向", {
-        description: usedFallback
-          ? "模型服务不可用时已使用本地模型草稿。"
-          : "模型草稿已放到右侧模型页，可以继续检查和编辑。",
+        description: "模型草稿已放到右侧模型页，可以继续检查和编辑。",
       });
     } catch (error) {
       console.error("Failed to adopt direction", error);
-      try {
-        const fallbackProject = adoptResearchDirection(activeProject, directionId);
-        await persistGeneratedProject(fallbackProject);
-        toast.info("已使用本地 Hotelling 模型草稿。");
-      } catch (fallbackError) {
-        console.error("Failed to adopt direction with client fallback", fallbackError);
-        toast.error("采用方向失败");
-      }
+      toast.error("采用方向失败");
     } finally {
       setAdoptingDirectionId(null);
     }
@@ -173,13 +164,27 @@ export function ResearchWorkspace({
 
     setIsSolvingEquilibrium(true);
     try {
-      const { project: nextProject, usedFallback } =
+      const result =
         await generateResearchProjectApi({
           action: "solve_equilibrium",
           rawIdea: activeProject.rawIdea,
           project: activeProject,
           runtimeModelSource: readRuntimeModelSourceSettings(),
         });
+      const nextProject = getPersistableResearchProject(result);
+      if (!nextProject) {
+        if (userMessage) {
+          await persistGeneratedProject(
+            appendConversationTurnToProject(
+              activeProject,
+              userMessage,
+              "模型服务暂时不可用，我没有把这次均衡结果写入右侧资产。请稍后重试。"
+            )
+          );
+        }
+        toast.error("符号均衡生成失败，右侧资产未更新。");
+        return;
+      }
       const nextProjectWithMessage = userMessage
         ? attachChatMessageToProject(
             markAssetFreshnessAfterEquilibrium(nextProject),
@@ -187,28 +192,12 @@ export function ResearchWorkspace({
           )
         : markAssetFreshnessAfterEquilibrium(nextProject);
       await persistGeneratedProject(nextProjectWithMessage);
-      toast.success(usedFallback ? "已生成本地符号推导草稿" : "符号均衡推导已生成", {
+      toast.success("符号均衡推导已生成", {
         description: "请检查闭式解、推导步骤和存在条件是否可用于论文。",
       });
     } catch (error) {
       console.error("Failed to solve symbolic equilibrium", error);
-      try {
-        const fallbackProject = generateSymbolicEquilibrium(activeProject);
-        const nextProjectWithMessage = userMessage
-          ? attachChatMessageToProject(
-              markAssetFreshnessAfterEquilibrium(fallbackProject),
-              userMessage
-            )
-          : markAssetFreshnessAfterEquilibrium(fallbackProject);
-        await persistGeneratedProject(nextProjectWithMessage);
-        toast.info("已使用本地符号均衡推导草稿。");
-      } catch (fallbackError) {
-        console.error(
-          "Failed to solve symbolic equilibrium with client fallback",
-          fallbackError
-        );
-        toast.error("符号均衡推导生成失败");
-      }
+      toast.error("符号均衡推导生成失败");
     } finally {
       setIsSolvingEquilibrium(false);
     }
@@ -232,13 +221,27 @@ export function ResearchWorkspace({
 
     setIsAnalyzingProperties(true);
     try {
-      const { project: nextProject, usedFallback } =
+      const result =
         await generateResearchProjectApi({
           action: "analyze_properties",
           rawIdea: activeProject.rawIdea,
           project: activeProject,
           runtimeModelSource: readRuntimeModelSourceSettings(),
         });
+      const nextProject = getPersistableResearchProject(result);
+      if (!nextProject) {
+        if (userMessage) {
+          await persistGeneratedProject(
+            appendConversationTurnToProject(
+              activeProject,
+              userMessage,
+              "模型服务暂时不可用，我没有把这次性质分析写入右侧资产。请稍后重试。"
+            )
+          );
+        }
+        toast.error("性质分析生成失败，右侧资产未更新。");
+        return;
+      }
       const nextProjectWithMessage = userMessage
         ? attachChatMessageToProject(
             markAssetFreshnessAfterProperties(nextProject),
@@ -246,43 +249,15 @@ export function ResearchWorkspace({
           )
         : markAssetFreshnessAfterProperties(nextProject);
       await persistGeneratedProject(nextProjectWithMessage);
-      toast.success(usedFallback ? "已生成本地性质分析草稿" : "性质分析已生成", {
+      toast.success("性质分析已生成", {
         description: "低质量或单条空洞性质会被拒绝，右侧质检会继续提示风险。",
       });
     } catch (error) {
       console.error("Failed to analyze properties", error);
-      try {
-        const fallbackProject = generatePropertyAnalysis(activeProject);
-        const nextProjectWithMessage = userMessage
-          ? attachChatMessageToProject(
-              markAssetFreshnessAfterProperties(fallbackProject),
-              userMessage
-            )
-          : markAssetFreshnessAfterProperties(fallbackProject);
-        await persistGeneratedProject(nextProjectWithMessage);
-        toast.info("已使用本地符号性质分析草稿。");
-      } catch (fallbackError) {
-        console.error(
-          "Failed to analyze properties with client fallback",
-          fallbackError
-        );
-        toast.error("性质分析生成失败");
-      }
+      toast.error("性质分析生成失败");
     } finally {
       setIsAnalyzingProperties(false);
     }
-  }
-
-  async function createFallbackProject(idea: string, settings: ModelSourceSettings) {
-    const fallbackProject = createExplorationProject({
-      rawIdea: idea,
-      modelSource: settings,
-    });
-    const saved = await createExplorationProjectApi(fallbackProject);
-    dispatch({ type: "NEW_PROJECT", payload: saved });
-    setIsComposingNewConversation(false);
-    router.push(`/research/${saved.id}`);
-    toast.info("模型服务不可用，已使用本地 Hotelling 模板。");
   }
 
   async function handleSubmit(content: string) {
@@ -305,21 +280,26 @@ export function ResearchWorkspace({
       const settings = readStoredModelSourceSettings();
 
       try {
-        const { project: generatedProject, usedFallback } =
+        const result =
           await generateResearchProjectApi({
             action: "discover_directions",
             rawIdea: idea,
             modelSource: getModelSourceMetadata(settings),
             runtimeModelSource: getRuntimeModelSourceSettings(settings),
           });
+        const generatedProject = getPersistableResearchProject(result);
+        if (!generatedProject) {
+          toast.error("模型服务不可用，未创建新研究。");
+          return;
+        }
         const saved = await createProject(generatedProject);
         dispatch({ type: "NEW_PROJECT", payload: saved });
         setIsComposingNewConversation(false);
         router.push(`/research/${saved.id}`);
-        toast.success(usedFallback ? "已用本地模板开启探索" : "已开启新的探索对话");
+        toast.success("已开启新的探索对话");
       } catch (error) {
         console.error("Failed to generate research project", error);
-        await createFallbackProject(idea, settings);
+        toast.error("新研究生成失败");
       } finally {
         setIsSending(false);
         setOptimisticMessage(null);
@@ -355,15 +335,17 @@ export function ResearchWorkspace({
         project: activeProject,
         runtimeModelSource: readRuntimeModelSourceSettings(),
       });
-      const nextProject = attachConversationPatch(result);
+      const nextProject = result.usedFallback
+        ? result.project
+        : attachConversationPatch(result);
       await persistGeneratedProject(nextProject);
 
-      if (result.assetPatch) {
+      if (result.assetPatch && !result.usedFallback) {
         toast.success("已生成修改建议", {
           description: "右侧会显示待应用修改，确认后才会改动结构化资产。",
         });
       } else if (result.usedFallback) {
-        toast.info("模型服务暂不可用，已用本地研究助手回复。");
+        toast.info("模型服务暂不可用，已保留对话消息，右侧资产未更新。");
       } else {
         toast.success("已回复", {
           description: inputIntent === "refine_model"
@@ -721,6 +703,39 @@ function attachChatMessageToProject(
           createdAt: createTimestamp(),
         },
         ...messages.slice(insertIndex),
+      ],
+    },
+  };
+}
+
+function appendConversationTurnToProject(
+  project: ResearchProject,
+  userMessage: string,
+  assistantMessage: string
+): ResearchProject {
+  const session =
+    project.researchSession ??
+    createInitialResearchSession(project.rawIdea);
+  const createdAt = createTimestamp();
+
+  return {
+    ...project,
+    researchSession: {
+      ...session,
+      messages: [
+        ...session.messages,
+        {
+          id: `msg-user-fallback-${createdAt}`,
+          role: "user",
+          content: userMessage.trim(),
+          createdAt,
+        },
+        {
+          id: `msg-assistant-fallback-${createdAt}`,
+          role: "assistant",
+          content: assistantMessage,
+          createdAt,
+        },
       ],
     },
   };
