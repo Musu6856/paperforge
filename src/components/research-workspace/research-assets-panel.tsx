@@ -162,6 +162,10 @@ function ResearchAssetsPanelContent({
         : activeTab === "properties"
           ? onAnalyzeProperties
           : undefined;
+  const handleReviewAssetPatch = (patchId: string) => {
+    const patch = session.assetPatches?.find((item) => item.id === patchId);
+    if (patch) setActiveTab(getResearchAssetsTabForPatchKind(patch.kind));
+  };
   const handleApplyAssetPatch = onApplyAssetPatch
     ? (patchId: string) => {
         const patch = session.assetPatches?.find((item) => item.id === patchId);
@@ -256,6 +260,7 @@ function ResearchAssetsPanelContent({
 
       <PendingAssetPatches
         patches={session.assetPatches ?? []}
+        onReview={handleReviewAssetPatch}
         onApply={handleApplyAssetPatch}
         onReject={onRejectAssetPatch}
       />

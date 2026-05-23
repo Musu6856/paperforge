@@ -211,3 +211,92 @@ test("applies several model symbol operations and marks downstream assets stale"
     "solve_equilibrium"
   );
 });
+
+test("applies multi-symbol model patches with several inserts and replacements", () => {
+  const project = createSolvedProject();
+  const patch = {
+    id: "patch-model-many-symbols",
+    kind: "model",
+    summary: "Batch update model symbols",
+    status: "proposed",
+    createdAt: 1710000000001,
+    changes: [
+      {
+        kind: "replace",
+        path: "hotellingModel.symbols[tau_A].symbol",
+        value: "r_A",
+      },
+      {
+        kind: "replace",
+        path: "hotellingModel.symbols[tau_B].name",
+        value: "Platform B seller fee rate",
+      },
+      {
+        kind: "append",
+        path: "hotellingModel.symbols",
+        value: {
+          symbol: "F_A",
+          baseSymbol: "F",
+          subscript: "A",
+          codeName: "F_A",
+          name: "Platform A fixed cost",
+          meaning: "Platform A fixed operating cost.",
+          role: "cost",
+          side: "platform",
+          assumption: "nonnegative",
+          recommended: false,
+        },
+      },
+      {
+        kind: "append",
+        path: "hotellingModel.symbols",
+        value: {
+          symbol: "F_B",
+          baseSymbol: "F",
+          subscript: "B",
+          codeName: "F_B",
+          name: "Platform B fixed cost",
+          meaning: "Platform B fixed operating cost.",
+          role: "cost",
+          side: "platform",
+          assumption: "nonnegative",
+          recommended: false,
+        },
+      },
+    ],
+  };
+  const projectWithPatch = {
+    ...project,
+    researchSession: {
+      ...project.researchSession,
+      assetPatches: [...(project.researchSession?.assetPatches ?? []), patch],
+    },
+  };
+
+  const nextProject = applyResearchAssetPatchToProject(projectWithPatch, patch, {
+    now: 1710000000002,
+  });
+  const symbols = nextProject.hotellingModel?.symbols ?? [];
+  const appliedPatch = nextProject.researchSession?.assetPatches?.find(
+    (item) => item.id === "patch-model-many-symbols"
+  );
+
+  assert.equal(
+    symbols.some((symbol) => symbol.symbol === "r_A" && symbol.codeName === "r_A"),
+    true
+  );
+  assert.equal(
+    symbols.some((symbol) => symbol.codeName === "tau_A"),
+    false
+  );
+  assert.equal(
+    symbols.find((symbol) => symbol.codeName === "tau_B")?.name,
+    "Platform B seller fee rate"
+  );
+  assert.equal(symbols.find((symbol) => symbol.codeName === "F_A")?.role, "cost");
+  assert.equal(symbols.find((symbol) => symbol.codeName === "F_B")?.role, "cost");
+  assert.equal(appliedPatch?.status, "applied");
+  assert.equal(nextProject.researchSession?.assetFreshness?.model, "fresh");
+  assert.equal(nextProject.researchSession?.assetFreshness?.equilibrium, "stale");
+  assert.equal(nextProject.researchSession?.assetFreshness?.properties, "stale");
+});

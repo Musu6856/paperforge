@@ -1,17 +1,26 @@
 "use client";
 
-import { Check, X } from "lucide-react";
+import { Check, Eye, X } from "lucide-react";
 
-import type { ResearchAssetChange, ResearchAssetPatch } from "@/lib/types";
+import type { ResearchAssetPatch } from "@/lib/types";
+import {
+  describeResearchAssetChange,
+  formatPatchPath,
+  getResearchAssetChangeKindLabel,
+  getResearchAssetKindLabel,
+  getResearchAssetPatchSummaryLine,
+} from "@/lib/research-asset-patch-display";
 
 type PendingAssetPatchesProps = {
   patches: ResearchAssetPatch[];
+  onReview?: (patchId: string) => void;
   onApply?: (patchId: string) => void;
   onReject?: (patchId: string) => void;
 };
 
 export function PendingAssetPatches({
   patches,
+  onReview,
   onApply,
   onReject,
 }: PendingAssetPatchesProps) {
@@ -29,11 +38,11 @@ export function PendingAssetPatches({
               <div className="min-w-0">
                 <div className="text-sm font-medium">{patch.summary}</div>
                 <div className="mt-1 text-xs leading-5 text-muted-foreground">
-                  {getPatchSummaryLine(patch)}
+                  {getResearchAssetPatchSummaryLine(patch)}
                 </div>
               </div>
               <span className="shrink-0 rounded-sm border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                {getPatchKindLabel(patch.kind)}
+                {getResearchAssetKindLabel(patch.kind)}
               </span>
             </div>
             <div className="mt-2 space-y-1">
@@ -44,17 +53,15 @@ export function PendingAssetPatches({
                 >
                   <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                     <span className="rounded-sm border bg-background px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
-                      {getChangeKindLabel(change.kind)}
+                      {getResearchAssetChangeKindLabel(change.kind)}
                     </span>
-                    <span className="min-w-0 break-all font-mono text-foreground">
-                      {formatPatchPath(change.path)}
+                    <span className="min-w-0 break-words text-foreground">
+                      {describeResearchAssetChange(change, patch.kind)}
                     </span>
                   </div>
-                  {formatPatchValuePreview(change) ? (
-                    <div className="mt-1 break-words font-mono text-[11px] text-foreground">
-                      {formatPatchValuePreview(change)}
-                    </div>
-                  ) : null}
+                  <div className="mt-1 break-all font-mono text-[10px] text-muted-foreground">
+                    {formatPatchPath(change.path)}
+                  </div>
                   {change.note ? (
                     <div className="mt-1 break-words">{change.note}</div>
                   ) : null}
@@ -62,6 +69,15 @@ export function PendingAssetPatches({
               ))}
             </div>
             <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50"
+                disabled={!onReview}
+                onClick={() => onReview?.(patch.id)}
+              >
+                <Eye size={14} />
+                查看
+              </button>
               <button
                 type="button"
                 className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
@@ -86,71 +102,4 @@ export function PendingAssetPatches({
       </div>
     </section>
   );
-}
-
-function getPatchSummaryLine(patch: ResearchAssetPatch) {
-  const count = patch.changes.length;
-  if (patch.kind === "model") {
-    const symbolEdits = patch.changes.filter((change) =>
-      change.path.includes("symbols")
-    ).length;
-    const assumptionEdits = patch.changes.filter((change) =>
-      change.path.includes("assumptions")
-    ).length;
-    const parts = [
-      symbolEdits > 0 ? `${symbolEdits} symbol edit${symbolEdits === 1 ? "" : "s"}` : "",
-      assumptionEdits > 0
-        ? `${assumptionEdits} assumption edit${assumptionEdits === 1 ? "" : "s"}`
-        : "",
-    ].filter(Boolean);
-    return parts.length > 0
-      ? `Model patch: ${parts.join(", ")}`
-      : `Model patch: ${count} change${count === 1 ? "" : "s"}`;
-  }
-
-  return `${getPatchKindLabel(patch.kind)} patch: ${count} change${count === 1 ? "" : "s"}`;
-}
-
-function getPatchKindLabel(kind: ResearchAssetPatch["kind"]) {
-  switch (kind) {
-    case "model":
-      return "Model";
-    case "equilibrium":
-      return "Equilibrium";
-    case "properties":
-      return "Properties";
-  }
-}
-
-function getChangeKindLabel(kind: ResearchAssetChange["kind"]) {
-  switch (kind) {
-    case "append":
-      return "add";
-    case "replace":
-      return "edit";
-    case "remove":
-      return "remove";
-  }
-}
-
-function formatPatchPath(path: string) {
-  return path
-    .replace(/^hotellingModel\./, "")
-    .replace(/^equilibriumResult\./, "")
-    .replace(/^propertyAnalyses\./, "properties.");
-}
-
-function formatPatchValuePreview(change: ResearchAssetChange) {
-  if (change.kind === "remove" || change.value === undefined) return "";
-  if (typeof change.value === "string") return `-> ${change.value}`;
-  if (isRecord(change.value)) {
-    const symbol = typeof change.value.symbol === "string" ? change.value.symbol : "";
-    const name = typeof change.value.name === "string" ? change.value.name : "";
-    return [symbol, name].filter(Boolean).join(" - ");
-  }
-  return "";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

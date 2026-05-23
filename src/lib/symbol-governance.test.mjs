@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  createSymbolDraft,
+  createSymbolDraftForRole,
   groupSymbolRegistryForDisplay,
   normalizeSymbolDefinition,
   normalizeSymbolRegistry,
@@ -71,9 +73,62 @@ test("display groups keep canonical notation and surface symbols that need atten
 
   assert.deepEqual(
     registry.groups.map((group) => group.role),
-    ["decision", "demand", "parameter"]
+    ["decision", "demand", "utility", "parameter", "cost", "derived"]
   );
   assert.equal(registry.groups[1].symbols[0].symbol.symbol, "n_A^B");
-  assert.equal(registry.groups[2].symbols[0].symbol.id, "missing-meaning");
-  assert.equal(registry.groups[2].symbols[0].issueCount, 1);
+  assert.equal(registry.groups[3].symbols[0].symbol.id, "missing-meaning");
+  assert.equal(registry.groups[3].symbols[0].issueCount, 1);
+});
+
+test("display groups include empty role buckets for the registry UI", () => {
+  const registry = groupSymbolRegistryForDisplay([
+    "x: 消费者在[0,1]线段上的位置",
+  ]);
+
+  assert.deepEqual(
+    registry.groups.map((group) => [group.role, group.count]),
+    [
+      ["decision", 1],
+      ["demand", 0],
+      ["utility", 0],
+      ["parameter", 0],
+      ["cost", 0],
+      ["derived", 0],
+    ]
+  );
+});
+
+test("symbol drafts get unique ids for repeated inserts", () => {
+  const first = createSymbolDraft();
+  const second = createSymbolDraft();
+
+  assert.notEqual(first.id, second.id);
+});
+
+test("role-specific symbol drafts inherit role and default side", () => {
+  assert.deepEqual(
+    ["decision", "demand", "utility", "parameter", "cost", "derived"].map(
+      (role) => {
+        const symbol = createSymbolDraftForRole(role);
+        return [role, symbol.role, symbol.side];
+      }
+    ),
+    [
+      ["decision", "decision", "consumer"],
+      ["demand", "demand", "consumer"],
+      ["utility", "utility", "consumer"],
+      ["parameter", "parameter", "platform"],
+      ["cost", "cost", "platform"],
+      ["derived", "derived", "global"],
+    ]
+  );
+});
+
+test("role-specific drafts still get unique ids for repeated inserts", () => {
+  const first = createSymbolDraftForRole("cost");
+  const second = createSymbolDraftForRole("cost");
+
+  assert.equal(first.role, "cost");
+  assert.equal(second.role, "cost");
+  assert.notEqual(first.id, second.id);
 });
