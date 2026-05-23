@@ -51,10 +51,12 @@ const DELETING_PROJECT_SESSION_KEY = "paperforge-deleting-project-id";
 export function ResearchSidebar({
   project,
   onStartNewConversation,
+  onOpenProject,
   isComposingNewConversation,
 }: {
   project: ResearchProject;
   onStartNewConversation: () => void;
+  onOpenProject: () => void;
   isComposingNewConversation: boolean;
 }) {
   const router = useRouter();
@@ -219,12 +221,14 @@ export function ResearchSidebar({
           title="正式项目"
           groupedProjects={groupedFormalProjects}
           activeId={project.id}
+          onOpenProject={onOpenProject}
           onDelete={handleDeleteProject}
         />
         <NavSection
           title="探索记录"
           groupedProjects={groupedExplorationProjects}
           activeId={project.id}
+          onOpenProject={onOpenProject}
           onDelete={handleDeleteProject}
           action={
             <Button
@@ -531,12 +535,14 @@ function NavSection({
   groupedProjects,
   activeId,
   action,
+  onOpenProject,
   onDelete,
 }: {
   title: string;
   groupedProjects: ReturnType<typeof groupProjectsByDate>;
   activeId: string;
   action?: React.ReactNode;
+  onOpenProject: (project: ResearchProject) => void;
   onDelete: (project: ResearchProject) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -596,6 +602,7 @@ function NavSection({
                         className="block min-w-0"
                         title={`查看记录：${title}`}
                         aria-label={`查看记录：${title}`}
+                        onClick={() => onOpenProject(project)}
                       >
                         <span className="line-clamp-2">{title}</span>
                       </Link>
@@ -605,7 +612,12 @@ function NavSection({
                           size="xs"
                           className="h-6 gap-1 px-1.5 text-[11px]"
                           nativeButton={false}
-                          render={<Link href={`/research/${project.id}`} />}
+                          render={
+                            <Link
+                              href={`/research/${project.id}`}
+                              onClick={() => onOpenProject(project)}
+                            />
+                          }
                           title={`查看记录：${title}`}
                           aria-label={`查看记录：${title}`}
                         >

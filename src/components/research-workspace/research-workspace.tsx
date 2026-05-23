@@ -30,6 +30,7 @@ import {
   type ResearchChatViewMessage,
 } from "@/lib/research-chat-view";
 import { markResearchAssetsStaleAfterModelEdit } from "@/lib/research-flow";
+import { getResearchWorkspaceViewState } from "@/lib/research-workspace-state";
 import { classifyResearchInput } from "@/lib/research-intent";
 import {
   confirmResearchModel,
@@ -62,8 +63,8 @@ export function ResearchWorkspace({
   const [isConfirmingModel, setIsConfirmingModel] = useState(false);
   const [isSolvingEquilibrium, setIsSolvingEquilibrium] = useState(false);
   const [isAnalyzingProperties, setIsAnalyzingProperties] = useState(false);
-  const [isComposingNewConversationLocally, setIsComposingNewConversationLocally] =
-    useState(false);
+  const [localComposingProjectId, setLocalComposingProjectId] =
+    useState<string | null>(null);
   const [optimisticMessage, setOptimisticMessage] =
     useState<ResearchSessionMessage | null>(null);
   const [pendingAssistantMessage, setPendingAssistantMessage] =
@@ -71,8 +72,11 @@ export function ResearchWorkspace({
   const activeProject = project
     ? normalizeResearchProjectForWorkspace(project)
     : null;
-  const isComposingNewConversation =
-    !project || startComposingNewConversation || isComposingNewConversationLocally;
+  const { isComposingNewConversation } = getResearchWorkspaceViewState({
+    projectId: project?.id,
+    startComposingNewConversation,
+    localComposingProjectId,
+  });
   const displayedProject = isComposingNewConversation ? null : activeProject;
   const session = displayedProject
     ? displayedProject.researchSession ??
@@ -296,7 +300,7 @@ export function ResearchWorkspace({
         }
         const saved = await createProject(generatedProject);
         dispatch({ type: "NEW_PROJECT", payload: saved });
-        setIsComposingNewConversationLocally(false);
+        setLocalComposingProjectId(null);
         router.push(`/research/${saved.id}`);
         toast.success("已开启新的探索对话");
       } catch (error) {
@@ -503,7 +507,8 @@ export function ResearchWorkspace({
           <ResearchSidebar
             project={activeProject}
             isComposingNewConversation={isComposingNewConversation}
-            onStartNewConversation={() => setIsComposingNewConversationLocally(true)}
+            onStartNewConversation={() => setLocalComposingProjectId(activeProject.id)}
+            onOpenProject={() => setLocalComposingProjectId(null)}
           />
         ) : (
           <ResearchEmptySidebar />
