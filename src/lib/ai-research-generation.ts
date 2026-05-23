@@ -24,6 +24,7 @@ import {
   normalizeSymbolRegistry,
   validateSymbolGovernance,
 } from "./symbol-governance.ts";
+import { createConfirmedRepairProposalPatch } from "./research-confirmed-repair-patch.ts";
 
 export type ResearchGenerationAction =
   | "discover_directions"
@@ -199,16 +200,23 @@ async function continueConversation(
     createConversationPrompt(request.project, userMessage)
   );
   const payload = content ? (extractFirstJsonObject(content) as ConversationPayload | null) : null;
-  const assistantMessage =
-    parseText(payload?.assistantMessage) ??
-    (payload
-      ? createConversationFallbackMessage(request.project, userMessage)
-      : parseText(content) ?? createConversationFallbackMessage(request.project, userMessage));
+  const providerAssetPatch = parseConversationAssetPatch(payload?.assetPatch);
+  const fallbackAssetPatch = providerAssetPatch
+    ? null
+    : createConversationFallbackAssetPatch(request.project, userMessage);
   const assetPatch =
-    parseConversationAssetPatch(payload?.assetPatch) ??
-    createConversationFallbackAssetPatch(request.project, userMessage);
+    providerAssetPatch ?? fallbackAssetPatch;
+  const assistantMessage =
+    fallbackAssetPatch
+      ? createConversationPatchFallbackMessage(fallbackAssetPatch)
+      : parseText(payload?.assistantMessage) ??
+        (payload
+          ? createConversationFallbackMessage(request.project, userMessage)
+          : parseText(content) ?? createConversationFallbackMessage(request.project, userMessage));
   const usedFallback =
-    !content || (payload !== null && !parseText(payload.assistantMessage));
+    !content ||
+    (payload !== null && !parseText(payload.assistantMessage)) ||
+    Boolean(fallbackAssetPatch);
 
   return {
     project: appendConversationMessages(
@@ -1238,7 +1246,7 @@ function createConversationPrompt(
     {
       role: "developer",
       content:
-        "You are PaperForge, a Chinese research assistant for theoretical game theory papers. Return strict JSON only. Top-level keys must be assistantMessage and optionally assetPatch. assistantMessage must be the exact natural-language reply the user should see in chat, in Chinese Markdown text, without markdown fences or code fences. Use headings, bullet lists, bold text, and inline LaTeX when that improves readability. Use assetPatch only when the user explicitly asks for a structured edit to the current model, equilibrium result, or property analyses. If you include assetPatch, make it concrete, symbolic, and limited to the requested edit. When assetPatch is included, say the content will appear on the right as a pending change for review, not that it has already overwritten the asset. If you do not include assetPatch, do not claim the right-side asset has been updated. Reuse the supplied symbol registry and, when the user asks about notation, answer with the current symbol names or produce a symbol patch instead of a generic workflow reply. For symbol edits, use assetPatch.kind='update_model' and target paths such as hotellingModel.symbols[tau_A].symbol, hotellingModel.symbols[tau_A].meaning, or hotellingModel.symbols with op='insert' and a complete symbol object. For property edits, use assetPatch.kind='update_properties', target='propertyAnalyses', and op='insert'.",
+        "You are PaperForge, a Chinese research assistant for theoretical game theory papers. Return strict JSON only. Top-level keys must be assistantMessage and optionally assetPatch. assistantMessage must be the exact natural-language reply the user should see in chat, in Chinese Markdown text, without markdown fences or code fences. Use headings, bullet lists, bold text, and inline LaTeX when that improves readability. Use assetPatch when the user explicitly asks for a structured edit to the current model, equilibrium result, or property analyses. A short confirmation such as “确认”, “接受”, “同意”, “按这个改”, or “你帮我处理好” counts as an explicit structured edit when recentMessages show that the assistant just proposed concrete model/equilibrium/property changes or asked whether to accept them. In that confirmation case, return the concrete assetPatch instead of repeating the proposal. If you include assetPatch, make it concrete, symbolic, and limited to the requested edit. When assetPatch is included, say the content will appear on the right as a pending change for review, not that it has already overwritten the asset. If you do not include assetPatch, do not claim the right-side asset has been updated. Reuse the supplied symbol registry and, when the user asks about notation, answer with the current symbol names or produce a symbol patch instead of a generic workflow reply. For symbol edits, use assetPatch.kind='update_model' and target paths such as hotellingModel.symbols[tau_A].symbol, hotellingModel.symbols[tau_A].meaning, or hotellingModel.symbols with op='insert' and a complete symbol object. For model text edits, use assetPatch.kind='update_model' and target paths such as hotellingModel.modelSetupDraft, hotellingModel.demandDerivation, hotellingModel.assumptions, hotellingModel.utilityFunctions[0].notes, or hotellingModel.profitFunctions[0].expression. For property edits, use assetPatch.kind='update_properties', target='propertyAnalyses', and op='insert'.",
     },
     {
       role: "user",
@@ -1299,11 +1307,28 @@ function createConversationFallbackMessage(
   return `我已经保留当前性质分析草稿。你可以直接问我哪条命题为什么这样写，或者明确要求我重做性质分析并统一符号。`;
 }
 
+function createConversationPatchFallbackMessage(patch: ResearchAssetPatch) {
+  const kindLabel =
+    patch.kind === "update_model"
+      ? "模型"
+      : patch.kind === "update_equilibrium"
+        ? "均衡"
+        : "性质分析";
+
+  return `已生成一条${kindLabel}修改建议，右侧会显示为待应用修改。你可以先查看具体改动，确认无误后点击“应用”；应用后再重新生成受影响的后续资产。`;
+}
+
 function createConversationFallbackAssetPatch(
   project: ResearchProject,
   userMessage: string
 ): ResearchAssetPatch | null {
   if (!project.hotellingModel) return null;
+
+  const confirmedRepairPatch = createConfirmedRepairProposalPatch(
+    project,
+    userMessage
+  );
+  if (confirmedRepairPatch) return confirmedRepairPatch;
 
   const englishRenameMatch = userMessage.match(
     /(?:change|rename|replace)\s+([\\A-Za-z][\\A-Za-z0-9_{}^]*)\s+(?:to|as|with)\s+([\\A-Za-z][\\A-Za-z0-9_{}^]*)/i

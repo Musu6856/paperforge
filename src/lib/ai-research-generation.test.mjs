@@ -764,7 +764,7 @@ test("conversation fallback returns a direct model patch for explicit symbol edi
   assert.equal(result.assetPatch?.changes[0].target, "hotellingModel.symbols[tau_A].symbol");
   assert.equal(result.assetPatch?.changes[0].op, "set");
   assert.equal(result.assetPatch?.changes[0].value, "f_A");
-  assert.match(result.assistantMessage, /pending model change/i);
+  assert.match(result.assistantMessage, /右侧|待应用|应用/);
 });
 
 test("build fallback can recover model phase from a project without directions", async () => {

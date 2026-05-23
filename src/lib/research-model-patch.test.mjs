@@ -80,3 +80,41 @@ test("model patch can insert a complete new symbol definition", () => {
   assert.equal(fixedCost?.role, "cost");
   assert.equal(fixedCost?.meaning, "平台 A 的固定治理成本。");
 });
+
+test("model patch updates text fields used by repair proposals", () => {
+  const model = createModel();
+  const patched = applyModelPatchToHotellingModel(model, [
+    {
+      kind: "replace",
+      path: "hotellingModel.modelSetupDraft",
+      value:
+        "在模型中令 \\psi_i(a_{d2}) = k_B a_{d2}，\\phi_i(a_{d2}) = k_S a_{d2}。",
+    },
+    {
+      kind: "replace",
+      path: "hotellingModel.demandDerivation",
+      value: "需求推导沿用 Hotelling 无差异点。",
+    },
+    {
+      kind: "replace",
+      path: "hotellingModel.utilityFunctions[0].notes",
+      value: "买家效用已代入线性机制收益。",
+    },
+    {
+      kind: "replace",
+      path: "hotellingModel.profitFunctions[profit-a].expression",
+      value: "\\Pi_A = R_A - \\frac{c}{2}a_{d2}^2",
+    },
+  ]);
+
+  assert.match(
+    patched.modelSetupDraft,
+    /\\psi_i\(a_\{d2\}\) = k_B a_\{d2\}/
+  );
+  assert.equal(patched.demandDerivation, "需求推导沿用 Hotelling 无差异点。");
+  assert.equal(patched.utilityFunctions[0].notes, "买家效用已代入线性机制收益。");
+  assert.equal(
+    patched.profitFunctions.find((formula) => formula.id === "profit-a")?.expression,
+    "\\Pi_A = R_A - \\frac{c}{2}a_{d2}^2"
+  );
+});

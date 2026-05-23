@@ -212,6 +212,62 @@ test("applies several model symbol operations and marks downstream assets stale"
   );
 });
 
+test("applies model text patches for confirmed repair proposals", () => {
+  const project = createSolvedProject();
+  const patch = {
+    id: "patch-model-repair-text",
+    kind: "model",
+    summary: "补充可求解机制函数设定",
+    status: "proposed",
+    createdAt: 1710000000001,
+    changes: [
+      {
+        kind: "replace",
+        path: "hotellingModel.modelSetupDraft",
+        value:
+          "在模型中令 \\psi_i(a_{d2}) = k_B a_{d2}，\\phi_i(a_{d2}) = k_S a_{d2}。",
+      },
+      {
+        kind: "replace",
+        path: "hotellingModel.demandDerivation",
+        value:
+          "需求推导沿用 Hotelling 无差异点，并代入 \\psi_i(a_{d2}) = k_B a_{d2}。",
+      },
+      {
+        kind: "append",
+        path: "hotellingModel.assumptions",
+        value: "\\psi_i(a_{d2}) = k_B a_{d2}",
+      },
+    ],
+  };
+  const projectWithPatch = {
+    ...project,
+    researchSession: {
+      ...project.researchSession,
+      assetPatches: [...(project.researchSession?.assetPatches ?? []), patch],
+    },
+  };
+
+  const nextProject = applyResearchAssetPatchToProject(projectWithPatch, patch, {
+    now: 1710000000002,
+  });
+
+  assert.match(
+    nextProject.hotellingModel?.modelSetupDraft ?? "",
+    /\\psi_i\(a_\{d2\}\) = k_B a_\{d2\}/
+  );
+  assert.match(
+    nextProject.hotellingModel?.demandDerivation ?? "",
+    /Hotelling 无差异点/
+  );
+  assert.ok(
+    nextProject.hotellingModel?.assumptions.includes(
+      "\\psi_i(a_{d2}) = k_B a_{d2}"
+    )
+  );
+  assert.equal(nextProject.researchSession?.assetFreshness?.equilibrium, "stale");
+});
+
 test("applies multi-symbol model patches with several inserts and replacements", () => {
   const project = createSolvedProject();
   const patch = {

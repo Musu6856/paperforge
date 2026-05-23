@@ -1,4 +1,10 @@
-import type { HotellingModel, ResearchAssetChange, SymbolDefinition } from "./types";
+import type {
+  HotellingModel,
+  ProfitFunction,
+  ResearchAssetChange,
+  SymbolDefinition,
+  UtilityFunction,
+} from "./types";
 import {
   createSymbolDraft,
   normalizeSymbolDefinition,
@@ -20,15 +26,169 @@ const SYMBOL_FIELDS = new Set<keyof SymbolDefinition>([
   "recommended",
 ]);
 
+const UTILITY_FUNCTION_FIELDS = new Set(["id", "side", "platform", "expression", "notes"]);
+const PROFIT_FUNCTION_FIELDS = new Set(["id", "platform", "expression", "notes"]);
+
 export function applyModelPatchToHotellingModel(
   model: HotellingModel,
   changes: ResearchAssetChange[]
 ): HotellingModel {
   return {
     ...model,
+    demandDerivation: applyModelPatchToTextField(
+      model.demandDerivation,
+      changes,
+      "demandDerivation"
+    ),
+    modelSetupDraft: applyModelPatchToTextField(
+      model.modelSetupDraft,
+      changes,
+      "modelSetupDraft"
+    ),
+    utilityFunctions: applyFormulaArrayFieldPatch(
+      model.utilityFunctions,
+      changes,
+      "utilityFunctions",
+      UTILITY_FUNCTION_FIELDS
+    ),
+    profitFunctions: applyFormulaArrayFieldPatch(
+      model.profitFunctions,
+      changes,
+      "profitFunctions",
+      PROFIT_FUNCTION_FIELDS
+    ),
     assumptions: applyModelPatchToAssumptions(model.assumptions, changes),
     symbols: applyModelPatchToSymbols(model.symbols, changes),
   };
+}
+
+function applyModelPatchToTextField(
+  currentValue: string,
+  changes: ResearchAssetChange[],
+  fieldName: "demandDerivation" | "modelSetupDraft"
+) {
+  let nextValue = currentValue;
+
+  for (const change of changes) {
+    if (!targetsModelTextField(change.path, fieldName)) continue;
+
+    if (change.kind === "remove") {
+      nextValue = "";
+      continue;
+    }
+
+    const value = typeof change.value === "string" ? change.value.trim() : "";
+    if (!value) continue;
+
+    nextValue =
+      change.kind === "append"
+        ? [nextValue.trim(), value].filter(Boolean).join("\n\n")
+        : value;
+  }
+
+  return nextValue;
+}
+
+function targetsModelTextField(
+  path: string,
+  fieldName: "demandDerivation" | "modelSetupDraft"
+) {
+  const normalized = path.trim().replace(/^hotellingModel\./, "");
+  return normalized === fieldName;
+}
+
+function applyFormulaArrayFieldPatch<T extends UtilityFunction | ProfitFunction>(
+  items: T[],
+  changes: ResearchAssetChange[],
+  fieldName: "utilityFunctions" | "profitFunctions",
+  allowedFields: Set<string>
+) {
+  let nextItems = [...items];
+
+  for (const change of changes) {
+    const target = parseObjectArrayFieldTarget(
+      change.path,
+      fieldName,
+      allowedFields
+    );
+    if (!target) continue;
+
+    if (target.kind === "array") {
+      if (Array.isArray(change.value)) {
+        const parsed = change.value.filter(isRecord) as unknown as T[];
+        nextItems = change.kind === "append" ? [...nextItems, ...parsed] : parsed;
+        continue;
+      }
+
+      if (change.kind === "remove") {
+        nextItems = [];
+        continue;
+      }
+
+      if (isRecord(change.value)) {
+        nextItems = [...nextItems, change.value as unknown as T];
+      }
+      continue;
+    }
+
+    const index = resolveObjectArrayFieldIndex(nextItems, target.selector);
+    if (change.kind === "remove" && !target.field) {
+      if (index >= 0) {
+        nextItems = nextItems.filter((_, itemIndex) => itemIndex !== index);
+      }
+      continue;
+    }
+
+    if (index < 0 || !target.field) continue;
+
+    const current = nextItems[index];
+    const value = change.kind === "remove" ? "" : change.value;
+    nextItems[index] = {
+      ...current,
+      [target.field]: value,
+    } as T;
+  }
+
+  return nextItems;
+}
+
+function parseObjectArrayFieldTarget(
+  path: string,
+  fieldName: "utilityFunctions" | "profitFunctions",
+  allowedFields: Set<string>
+):
+  | { kind: "array" }
+  | { kind: "item"; selector: string | number; field?: string }
+  | null {
+  const normalized = path.trim().replace(/^hotellingModel\./, "");
+  if (normalized === fieldName) return { kind: "array" };
+
+  const bracketMatch = normalized.match(
+    new RegExp(`^${fieldName}\\[["']?([^\\]"']+)["']?\\](?:\\.([A-Za-z_][A-Za-z0-9_]*))?$`)
+  );
+  if (!bracketMatch) return null;
+
+  const field = bracketMatch[2];
+  if (field && !allowedFields.has(field)) return null;
+
+  return {
+    kind: "item",
+    selector: /^\d+$/.test(bracketMatch[1])
+      ? Number(bracketMatch[1])
+      : bracketMatch[1],
+    ...(field ? { field } : {}),
+  };
+}
+
+function resolveObjectArrayFieldIndex<T extends { id: string }>(
+  items: T[],
+  selector: string | number
+) {
+  if (typeof selector === "number") {
+    return selector >= 0 && selector < items.length ? selector : -1;
+  }
+
+  return items.findIndex((item) => item.id === selector);
 }
 
 export function applyModelPatchToAssumptions(

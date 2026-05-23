@@ -121,6 +121,107 @@ test("conversation fallback proposes symbol patches for explicit notation edits"
   assert.equal(result.project.hotellingModel, built.project.hotellingModel);
 });
 
+test("conversation confirmation of a prior model repair proposal creates a pending model patch", async () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "短视频平台内容垂直化与用户粘性",
+    now: 1710000000000,
+  });
+  const built = await generateResearchProject(
+    {
+      action: "build_model",
+      rawIdea: project.rawIdea,
+      selectedDirectionId: "secondhand-commission-subsidy-hotelling",
+      project,
+    },
+    {
+      complete: async () => "{",
+    }
+  );
+  const repairProposal =
+    "可以把不可求解的机制函数先具体化：\n" +
+    "- \\psi_i(a_{d2}) = k_B a_{d2}\n" +
+    "- \\phi_i(a_{d2}) = k_S a_{d2}\n" +
+    "- C_i(a_{d2}) = \\frac{c}{2}a_{d2}^2\n" +
+    "如果你接受这些修改，请回复确认，我会把它们写入模型设定。";
+  const projectWithRepairProposal = {
+    ...built.project,
+    researchSession: {
+      ...built.project.researchSession,
+      messages: [
+        ...(built.project.researchSession?.messages ?? []),
+        {
+          id: "msg-repair-proposal",
+          role: "assistant",
+          content: repairProposal,
+          createdAt: 1710000000001,
+        },
+      ],
+    },
+  };
+
+  const result = await generateResearchProject(
+    {
+      action: "continue_conversation",
+      rawIdea: built.project.rawIdea,
+      userMessage: "确认",
+      project: projectWithRepairProposal,
+    },
+    {
+      complete: async () =>
+        JSON.stringify({
+          assistantMessage:
+            "我再解释一下为什么这些函数形式可以降低求解难度，但还不会修改右侧模型。",
+        }),
+    }
+  );
+
+  assert.equal(result.assetPatch?.kind, "update_model");
+  assert.match(result.assetPatch?.summary ?? "", /模型修复|上一轮/);
+  assert.equal(
+    result.assetPatch?.changes.some(
+      (change) =>
+        change.target === "hotellingModel.assumptions" &&
+        change.op === "insert" &&
+        String(change.value).includes("\\psi_i(a_{d2}) = k_B a_{d2}")
+    ),
+    true
+  );
+  assert.equal(
+    result.assetPatch?.changes.some(
+      (change) =>
+        change.target === "hotellingModel.modelSetupDraft" &&
+        change.op === "set" &&
+        String(change.value).includes("\\phi_i(a_{d2}) = k_S a_{d2}")
+    ),
+    true
+  );
+  assert.equal(
+    result.assetPatch?.changes.some(
+      (change) =>
+        change.target === "hotellingModel.symbols" &&
+        typeof change.value === "object" &&
+        change.value !== null &&
+        "codeName" in change.value &&
+        change.value.codeName === "a_d2"
+    ),
+    true
+  );
+  assert.equal(
+    result.assetPatch?.changes.some(
+      (change) =>
+        change.target === "hotellingModel.symbols" &&
+        typeof change.value === "object" &&
+        change.value !== null &&
+        "codeName" in change.value &&
+        change.value.codeName === "a_d2_2"
+    ),
+    false
+  );
+  assert.match(result.assistantMessage, /右侧|待应用|应用/);
+  assert.equal(result.project.hotellingModel, built.project.hotellingModel);
+});
+
 test("conversation accepts provider property patch aliases for right-side review", async () => {
   const project = createExplorationProject({
     id: "11111111-1111-4111-8111-111111111111",
