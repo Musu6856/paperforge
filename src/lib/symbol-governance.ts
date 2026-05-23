@@ -49,7 +49,7 @@ export interface SymbolRegistryDisplaySummary {
   issues: SymbolGovernanceIssue[];
 }
 
-const SYMBOL_ROLE_DISPLAY_ORDER: SymbolRole[] = [
+export const SYMBOL_ROLE_DISPLAY_ORDER: SymbolRole[] = [
   "decision",
   "demand",
   "utility",
@@ -74,6 +74,10 @@ const SYMBOL_ROLE_LABELS: Record<SymbolRole, string> = {
   cost: "成本",
   derived: "派生项",
 };
+
+export function getSymbolRoleLabel(role: SymbolRole) {
+  return SYMBOL_ROLE_LABELS[role];
+}
 
 const CORE_HOTELLING_SYMBOLS: SymbolSeed[] = [
   {
@@ -302,6 +306,7 @@ export function createSymbolDraft(
   overrides: Partial<SymbolDefinition> = {}
 ): SymbolDefinition {
   return materializeSymbol({
+    id: createSymbolId(),
     symbol: "x_i",
     baseSymbol: "x",
     subscript: "i",
@@ -315,6 +320,27 @@ export function createSymbolDraft(
     recommended: false,
     ...overrides,
   });
+}
+
+export function createSymbolDraftForRole(role: SymbolRole): SymbolDefinition {
+  return createSymbolDraft({
+    role,
+    side: getDefaultSymbolSideForRole(role),
+  });
+}
+
+function getDefaultSymbolSideForRole(role: SymbolRole): SymbolSide {
+  switch (role) {
+    case "parameter":
+    case "cost":
+      return "platform";
+    case "derived":
+      return "global";
+    case "decision":
+    case "demand":
+    case "utility":
+      return "consumer";
+  }
 }
 
 export function normalizeSymbolRegistry(value: unknown): SymbolDefinition[] {
@@ -401,10 +427,8 @@ export function groupSymbolRegistryForDisplay(
     grouped.set(symbol.role, [...(grouped.get(symbol.role) ?? []), item]);
   });
 
-  const groups = SYMBOL_ROLE_DISPLAY_ORDER.flatMap((role) => {
+  const groups = SYMBOL_ROLE_DISPLAY_ORDER.map((role) => {
     const roleSymbols = grouped.get(role) ?? [];
-    if (roleSymbols.length === 0) return [];
-
     const sortedSymbols = [...roleSymbols].sort(compareDisplaySymbols);
 
     return {

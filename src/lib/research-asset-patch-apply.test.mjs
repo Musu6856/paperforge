@@ -125,3 +125,178 @@ test("applies an equilibrium patch to the right-side equilibrium result", () => 
     "analyze_properties"
   );
 });
+
+test("applies several model symbol operations and marks downstream assets stale", () => {
+  const project = createSolvedProject();
+  const patch = {
+    id: "patch-model-symbols",
+    kind: "model",
+    summary: "Rename seller fee symbol and add platform fixed cost",
+    status: "proposed",
+    createdAt: 1710000000001,
+    changes: [
+      {
+        kind: "replace",
+        path: "hotellingModel.symbols[\\tau_A].symbol",
+        value: "f_A",
+      },
+      {
+        kind: "replace",
+        path: "hotellingModel.symbols[f_A].meaning",
+        value: "Platform A seller transaction fee rate.",
+      },
+      {
+        kind: "append",
+        path: "hotellingModel.symbols",
+        value: {
+          symbol: "F_A",
+          baseSymbol: "F",
+          subscript: "A",
+          codeName: "F_A",
+          name: "Platform A fixed cost",
+          meaning: "Platform A fixed operating cost.",
+          role: "cost",
+          side: "platform",
+          assumption: "nonnegative",
+          recommended: false,
+        },
+      },
+      {
+        kind: "append",
+        path: "hotellingModel.assumptions",
+        value: "Platforms have fixed operating costs.",
+      },
+    ],
+  };
+
+  const projectWithPatch = {
+    ...project,
+    researchSession: {
+      ...project.researchSession,
+      assetPatches: [...(project.researchSession?.assetPatches ?? []), patch],
+    },
+  };
+
+  const nextProject = applyResearchAssetPatchToProject(projectWithPatch, patch, {
+    now: 1710000000002,
+  });
+  const symbols = nextProject.hotellingModel?.symbols ?? [];
+  const feeSymbols = symbols.filter(
+    (symbol) => symbol.symbol === "f_A" || symbol.codeName === "f_A"
+  );
+  const oldFeeSymbols = symbols.filter(
+    (symbol) => symbol.symbol === "tau_A" || symbol.codeName === "tau_A"
+  );
+  const fixedCost = symbols.find((symbol) => symbol.codeName === "F_A");
+  const appliedPatch = nextProject.researchSession?.assetPatches?.find(
+    (item) => item.id === "patch-model-symbols"
+  );
+
+  assert.equal(feeSymbols.length, 1);
+  assert.equal(oldFeeSymbols.length, 0);
+  assert.equal(feeSymbols[0].meaning, "Platform A seller transaction fee rate.");
+  assert.equal(fixedCost?.role, "cost");
+  assert.ok(
+    nextProject.hotellingModel?.assumptions.includes(
+      "Platforms have fixed operating costs."
+    )
+  );
+  assert.equal(appliedPatch?.status, "applied");
+  assert.equal(appliedPatch?.appliedAt, 1710000000002);
+  assert.equal(nextProject.researchSession?.assetFreshness?.model, "fresh");
+  assert.equal(nextProject.researchSession?.assetFreshness?.equilibrium, "stale");
+  assert.equal(nextProject.researchSession?.assetFreshness?.properties, "stale");
+  assert.equal(
+    nextProject.researchSession?.assetSummary.pendingDecision?.kind,
+    "solve_equilibrium"
+  );
+});
+
+test("applies multi-symbol model patches with several inserts and replacements", () => {
+  const project = createSolvedProject();
+  const patch = {
+    id: "patch-model-many-symbols",
+    kind: "model",
+    summary: "Batch update model symbols",
+    status: "proposed",
+    createdAt: 1710000000001,
+    changes: [
+      {
+        kind: "replace",
+        path: "hotellingModel.symbols[tau_A].symbol",
+        value: "r_A",
+      },
+      {
+        kind: "replace",
+        path: "hotellingModel.symbols[tau_B].name",
+        value: "Platform B seller fee rate",
+      },
+      {
+        kind: "append",
+        path: "hotellingModel.symbols",
+        value: {
+          symbol: "F_A",
+          baseSymbol: "F",
+          subscript: "A",
+          codeName: "F_A",
+          name: "Platform A fixed cost",
+          meaning: "Platform A fixed operating cost.",
+          role: "cost",
+          side: "platform",
+          assumption: "nonnegative",
+          recommended: false,
+        },
+      },
+      {
+        kind: "append",
+        path: "hotellingModel.symbols",
+        value: {
+          symbol: "F_B",
+          baseSymbol: "F",
+          subscript: "B",
+          codeName: "F_B",
+          name: "Platform B fixed cost",
+          meaning: "Platform B fixed operating cost.",
+          role: "cost",
+          side: "platform",
+          assumption: "nonnegative",
+          recommended: false,
+        },
+      },
+    ],
+  };
+  const projectWithPatch = {
+    ...project,
+    researchSession: {
+      ...project.researchSession,
+      assetPatches: [...(project.researchSession?.assetPatches ?? []), patch],
+    },
+  };
+
+  const nextProject = applyResearchAssetPatchToProject(projectWithPatch, patch, {
+    now: 1710000000002,
+  });
+  const symbols = nextProject.hotellingModel?.symbols ?? [];
+  const appliedPatch = nextProject.researchSession?.assetPatches?.find(
+    (item) => item.id === "patch-model-many-symbols"
+  );
+
+  assert.equal(
+    symbols.some((symbol) => symbol.symbol === "r_A" && symbol.codeName === "r_A"),
+    true
+  );
+  assert.equal(
+    symbols.some((symbol) => symbol.codeName === "tau_A"),
+    false
+  );
+  assert.equal(
+    symbols.find((symbol) => symbol.codeName === "tau_B")?.name,
+    "Platform B seller fee rate"
+  );
+  assert.equal(symbols.find((symbol) => symbol.codeName === "F_A")?.role, "cost");
+  assert.equal(symbols.find((symbol) => symbol.codeName === "F_B")?.role, "cost");
+  assert.equal(appliedPatch?.status, "applied");
+  assert.equal(nextProject.researchSession?.assetFreshness?.model, "fresh");
+  assert.equal(nextProject.researchSession?.assetFreshness?.equilibrium, "stale");
+  assert.equal(nextProject.researchSession?.assetFreshness?.properties, "stale");
+});
