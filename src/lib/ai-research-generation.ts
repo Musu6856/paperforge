@@ -201,7 +201,8 @@ async function continueConversation(
       : parseText(payload?.assistantMessage) ??
         (payload
           ? createConversationFallbackMessage(request.project, userMessage)
-          : parseText(content) ?? createConversationFallbackMessage(request.project, userMessage));
+          : extractMalformedAssistantMessage(content) ??
+            createConversationFallbackMessage(request.project, userMessage));
   const usedFallback =
     !content ||
     (payload !== null && !parseText(payload.assistantMessage)) ||
@@ -217,6 +218,32 @@ async function continueConversation(
     assistantMessage,
     ...(assetPatch ? { assetPatch } : {}),
   };
+}
+
+function extractMalformedAssistantMessage(content: string | null) {
+  const text = parseText(content);
+  if (!text) return null;
+  if (!looksLikeAssistantJson(text)) return text;
+
+  const assistantMessageMatch = text.match(
+    /"assistantMessage"\s*:\s*"((?:\\.|[^"\\])*)"/
+  );
+  if (!assistantMessageMatch) return null;
+
+  try {
+    return parseText(JSON.parse(`"${assistantMessageMatch[1]}"`));
+  } catch {
+    return parseText(
+      assistantMessageMatch[1]
+        .replace(/\\n/g, "\n")
+        .replace(/\\"/g, "\"")
+        .replace(/\\\\/g, "\\")
+    );
+  }
+}
+
+function looksLikeAssistantJson(text: string) {
+  return /^\s*\{/.test(text) && /"assistantMessage"\s*:/.test(text);
 }
 
 function parseConversationAssetPatch(

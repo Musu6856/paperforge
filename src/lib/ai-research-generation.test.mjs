@@ -8,6 +8,7 @@ import {
   generateResearchProject,
 } from "./ai-research-generation.ts";
 import {
+  createBuildPrompt,
   createDiscoverPrompt as createDiscoverPromptFromResearchGenerationPrompts,
 } from "./research-generation/prompts.ts";
 import {
@@ -41,6 +42,24 @@ test("research-generation prompt module builds the discovery prompt", () => {
   assert.equal(messages[0].role, "developer");
   assert.match(systemPrompt, /Hotelling/);
   assert.match(systemPrompt, /symbolic equilibrium solving/);
+});
+
+test("model-building prompt asks for a solvable subsidy core", () => {
+  const messages = createBuildPrompt(
+    {
+      action: "build_model",
+      rawIdea: "研究二手平台佣金和买家补贴",
+    },
+    []
+  );
+  const systemPrompt = messages[0].content;
+  const shapePrompt = messages[1].content;
+
+  assert.match(systemPrompt, /two-decision solvable core/);
+  assert.match(systemPrompt, /\+s_i/);
+  assert.match(systemPrompt, /-s_i n_i\^B/);
+  assert.match(shapePrompt, /s_A/);
+  assert.match(shapePrompt, /\\tau_A q n_A\^S n_A\^B - s_A n_A\^B/);
 });
 
 test("direction parser accepts localized contribution keys from providers", () => {

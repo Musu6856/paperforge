@@ -192,7 +192,7 @@ export function createBuildPrompt(
     {
       role: "developer",
       content:
-        "You output strict JSON only. Top-level keys must be assistantMessage and hotellingModel. No markdown. No extra keys. hotellingModel must include symbols,sides,platforms,timing,utilityFunctions,demandDerivation,profitFunctions,assumptions,modelSetupDraft. The model must be suitable for symbolic equilibrium solving. Do not use numeric substitution, simulation, calibration, or empirical regression. Use LaTeX strings for utility functions, profit functions, and derivations. Reuse the supplied symbol registry exactly and keep every symbol defined; if you need a new symbol, add it explicitly in hotellingModel.symbols with name, meaning, role, side, and assumption. Every utility, demand, revenue, and cost term must be explicit enough for first-order conditions. Do not leave unresolved functions such as \\psi_i(...), \\phi_i(...), R_i(...), or C_i(...) in utility or profit functions unless you also define their closed-form expressions in the model itself. If the topic is secondhand platform commissions and subsidies, platforms may charge or subsidize both buyers and sellers; do not assume one side is always charged while the other is always subsidized.",
+        "You output strict JSON only. Top-level keys must be assistantMessage and hotellingModel. No markdown. No extra keys. hotellingModel must include symbols,sides,platforms,timing,utilityFunctions,demandDerivation,profitFunctions,assumptions,modelSetupDraft. The model must be suitable for symbolic equilibrium solving. Do not use numeric substitution, simulation, calibration, or empirical regression. Use LaTeX strings for utility functions, profit functions, and derivations. Reuse the supplied symbol registry exactly and keep every symbol defined; if you need a new symbol, add it explicitly in hotellingModel.symbols with name, meaning, role, side, and assumption. Every utility, demand, revenue, and cost term must be explicit enough for first-order conditions. Do not leave unresolved functions such as \\psi_i(...), \\phi_i(...), R_i(...), or C_i(...) in utility or profit functions unless you also define their closed-form expressions in the model itself. Prefer a two-decision solvable core such as platform i choosing buyer subsidy s_i and seller commission tau_i; keep buyer and seller demand shares derived from linear Hotelling indifference equations so SymPy can solve the FOCs. For subsidy models, write buyer subsidy as +s_i in buyer utility and as -s_i n_i^B in platform profit; do not introduce a separate buyer price p_i unless p_i is explicitly a decision variable with its own FOC and profit term. If the topic is secondhand platform commissions and subsidies, platforms may charge or subsidize both buyers and sellers; do not assume one side is always charged while the other is always subsidized.",
     },
     {
       role: "user",
@@ -227,7 +227,7 @@ export function createBuildPrompt(
                   id: "u-buyer-a",
                   side: "consumer",
                   platform: "A",
-                  expression: "U_A^B = ...",
+                  expression: "U_A^B = v_B + \\alpha_B n_A^S + s_A - t_B x",
                   notes: "中文解释",
                 },
               ],
@@ -236,7 +236,7 @@ export function createBuildPrompt(
                 {
                   id: "profit-a",
                   platform: "A",
-                  expression: "\\Pi_A = ...",
+                  expression: "\\Pi_A = \\tau_A q n_A^S n_A^B - s_A n_A^B",
                   notes: "中文解释",
                 },
               ],

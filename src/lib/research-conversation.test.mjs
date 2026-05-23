@@ -251,6 +251,158 @@ test("conversation confirmation of a prior model repair proposal creates a pendi
   assert.equal(result.project.hotellingModel, built.project.hotellingModel);
 });
 
+test("conversation confirmation with update wording applies prior repair proposal", async () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "短视频平台内容垂直化与用户粘性",
+    now: 1710000000000,
+  });
+  const built = await generateResearchProject(
+    {
+      action: "build_model",
+      rawIdea: project.rawIdea,
+      selectedDirectionId: "secondhand-commission-subsidy-hotelling",
+      project,
+    },
+    {
+      complete: async () => "{",
+    }
+  );
+  const repairProposal =
+    "当前模型存在关键问题：利润函数中缺少买家补贴成本项。\n\n" +
+    "建议修改：\n" +
+    "1. 将买家效用中的 -p_A 改为 +s_A，即 U_A^B = v_B + \\alpha_B n_A^S + s_A - t_B x。\n" +
+    "2. 将利润函数中的 p_A n_A^B 改为 -s_A n_A^B。\n" +
+    "3. 删除符号 p_A, p_B，保留 s_A, s_B 作为决策变量。\n" +
+    "如果你同意这个修改，我可以直接更新模型设定，然后重新尝试符号求解。是否按这个方案修改？";
+  const modelWithBuyerPrice = {
+    ...built.project.hotellingModel,
+    utilityFunctions: built.project.hotellingModel.utilityFunctions.map((entry) =>
+      entry.id === "u-buyer-a"
+        ? {
+            ...entry,
+            expression:
+              "U_A^B = v_B + \\alpha_B n_A^S - p_A - t_B x",
+          }
+        : entry.id === "u-buyer-b"
+          ? {
+              ...entry,
+              expression:
+                "U_B^B = v_B + \\alpha_B n_B^S - p_B - t_B(1-x)",
+            }
+          : entry
+    ),
+    profitFunctions: built.project.hotellingModel.profitFunctions.map((entry) =>
+      entry.id === "profit-a"
+        ? {
+            ...entry,
+            expression: "Pi_A = p_A n_A^B + tau_A q n_A^S",
+          }
+        : entry.id === "profit-b"
+          ? {
+              ...entry,
+              expression: "Pi_B = p_B n_B^B + tau_B q n_B^S",
+            }
+          : entry
+    ),
+  };
+  const projectWithRepairProposal = {
+    ...built.project,
+    hotellingModel: modelWithBuyerPrice,
+    researchSession: {
+      ...built.project.researchSession,
+      messages: [
+        ...(built.project.researchSession?.messages ?? []),
+        {
+          id: "msg-repair-proposal-price",
+          role: "assistant",
+          content: repairProposal,
+          createdAt: 1710000000001,
+        },
+      ],
+    },
+  };
+
+  const result = await generateResearchProject(
+    {
+      action: "continue_conversation",
+      rawIdea: built.project.rawIdea,
+      userMessage: "更新吧",
+      project: projectWithRepairProposal,
+    },
+    {
+      complete: async () =>
+        JSON.stringify({
+          assistantMessage:
+            "好的，已按你的要求更新模型设定。",
+        }),
+    }
+  );
+
+  assert.equal(result.assetPatch?.kind, "update_model");
+  assert.match(result.assistantMessage, /右侧|待应用|应用/);
+  assert.equal(
+    result.assetPatch?.changes.some((change) =>
+      /^hotellingModel\.utilityFunctions\[.+\]\.expression$/.test(change.target) &&
+      change.op === "set" &&
+      /\+\s*s_A/.test(String(change.value))
+    ),
+    true
+  );
+  assert.equal(
+    result.assetPatch?.changes.some((change) =>
+      /^hotellingModel\.profitFunctions\[.+\]\.expression$/.test(change.target) &&
+      change.op === "set" &&
+      /-\s*s_A/.test(String(change.value)) &&
+      !String(change.value).includes("p_A n_A^B")
+    ),
+    true
+  );
+  assert.equal(
+    result.assetPatch?.changes.some((change) =>
+      change.target === "hotellingModel.symbols[p_A]" &&
+      change.op === "remove"
+    ),
+    true
+  );
+});
+
+test("conversation strips malformed provider JSON instead of showing raw object text", async () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "Research secondhand platform pricing",
+    now: 1710000000000,
+  });
+  const built = await generateResearchProject(
+    {
+      action: "build_model",
+      rawIdea: project.rawIdea,
+      selectedDirectionId: "secondhand-commission-subsidy-hotelling",
+      project,
+    },
+    {
+      complete: async () => "{",
+    }
+  );
+
+  const result = await generateResearchProject(
+    {
+      action: "continue_conversation",
+      rawIdea: built.project.rawIdea,
+      userMessage: "求解均衡失败，帮我修复",
+      project: built.project,
+    },
+    {
+      complete: async () =>
+        '{"assistantMessage":"好的，我来检查并修复均衡求解失败的问题。\\n\\n建议先把补贴写入利润函数。",',
+    }
+  );
+
+  assert.doesNotMatch(result.assistantMessage ?? "", /^\s*\{/);
+  assert.doesNotMatch(result.assistantMessage ?? "", /"assistantMessage"/);
+  assert.match(result.assistantMessage ?? "", /补贴|修复|模型|均衡/);
+});
+
 test("conversation accepts provider property patch aliases for right-side review", async () => {
   const project = createExplorationProject({
     id: "11111111-1111-4111-8111-111111111111",

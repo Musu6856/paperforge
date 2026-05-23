@@ -1,4 +1,5 @@
 import type {
+  HotellingModel,
   ResearchProject,
   SymbolDefinition,
 } from "./types";
@@ -34,23 +35,42 @@ export function createConfirmedRepairProposalPatch(
   const proposal = findRecentAssistantModelRepairProposal(project);
   if (!proposal) return null;
 
+  const modelFieldChanges = extractModelFieldPatchChanges(proposal, model);
   const mechanismEquations = extractMechanismEquationLines(proposal);
   const mechanismAssumptions =
     mechanismEquations.length > 0
       ? mechanismEquations
+      : modelFieldChanges.length > 0
+        ? []
       : extractRepairAssumptionLines(proposal);
-  if (mechanismAssumptions.length === 0) return null;
+  if (mechanismAssumptions.length === 0 && modelFieldChanges.length === 0) {
+    return null;
+  }
 
   const addedAssumptions = mechanismAssumptions.filter(
     (assumption) => !model.assumptions.includes(assumption)
   );
-  const nextModelSetupDraft = appendUniqueParagraphs(model.modelSetupDraft, [
-    "为修复上一轮均衡求解失败，先把机制函数收窄为可符号求解的函数形式：",
-    ...mechanismAssumptions,
-  ]);
-  const nextDemandDerivation = appendUniqueParagraphs(model.demandDerivation, [
-    `均衡求解时需代入已确认的机制函数：${mechanismAssumptions.join("；")}。`,
-  ]);
+  const setupParagraphs =
+    mechanismAssumptions.length > 0
+      ? [
+          "为修复上一轮均衡求解失败，先把机制函数收窄为可符号求解的函数形式：",
+          ...mechanismAssumptions,
+        ]
+      : [
+          "为修复上一轮均衡求解失败，已按确认方案统一买家补贴、平台利润和决策变量口径。",
+        ];
+  const nextModelSetupDraft = appendUniqueParagraphs(
+    model.modelSetupDraft,
+    setupParagraphs
+  );
+  const nextDemandDerivation =
+    mechanismAssumptions.length > 0
+      ? appendUniqueParagraphs(model.demandDerivation, [
+          `均衡求解时需代入已确认的机制函数：${mechanismAssumptions.join("；")}。`,
+        ])
+      : appendUniqueParagraphs(model.demandDerivation, [
+          "均衡求解时将买家补贴视为效用正项、平台利润成本项，并只对已确认的策略变量求一阶条件。",
+        ]);
   const symbolValues = extractSymbolPatchValuesFromEquations(
     mechanismAssumptions,
     model.symbols
@@ -68,6 +88,7 @@ export function createConfirmedRepairProposalPatch(
       value: symbol,
       reason: "补齐模型修复中新增的机制参数或函数符号。",
     })),
+    ...modelFieldChanges,
   ];
 
   if (nextModelSetupDraft !== model.modelSetupDraft) {
@@ -102,13 +123,13 @@ function isAffirmativeModelRepairRequest(userMessage: string) {
   if (!text) return false;
 
   return (
-    /^(确认|接受|同意|可以|行|好|好的|没问题|按这个|就这样|采用|采纳)[。！!，,\s]*(吧|了)?$/.test(
+    /^(确认|接受|同意|可以|行|好|好的|没问题|更新|修改|改|应用|按这个|就这样|采用|采纳)[。！!，,\s]*(吧|了)?$/.test(
       text
     ) ||
-    /(确认|接受|同意|可以|按这个|就这样|采用|采纳).{0,12}(改|修改|处理|写入|应用|生成|执行|做)/.test(
+    /(确认|接受|同意|可以|更新|修改|改|应用|按这个|就这样|采用|采纳).{0,12}(改|修改|处理|写入|应用|生成|执行|做|更新)/.test(
       text
     ) ||
-    /(帮我|你来|你帮我).{0,12}(处理好|改好|写入|应用|做了|弄好)/.test(
+    /(帮我|你来|你帮我).{0,12}(处理好|改好|更新|写入|应用|做了|弄好)/.test(
       text
     )
   );
@@ -127,13 +148,13 @@ function findRecentAssistantModelRepairProposal(
     if (!content) continue;
 
     const asksForConfirmation =
-      /(确认|接受|同意|采纳|是否|如果你|若你).{0,30}(修改|设定|方案|写入|模型|函数|应用|接受|确认)/.test(
+      /(确认|接受|同意|采纳|是否|如果你|若你)[\s\S]{0,80}(修改|设定|方案|写入|模型|函数|应用|接受|确认)/.test(
         content
       );
     const hasConcreteRepair =
       /(\\psi|ψ|\\phi|φ|C_i|成本函数|机制函数|具体化|函数形式|不可求解|求解失败|修复|均衡失败|模型设定)/i.test(
         content
-      ) && /=/.test(content);
+      ) || /(效用|利润函数|补贴|收费|价格项|决策变量)[\s\S]{0,120}(改|替换|删除|保留)/.test(content);
 
     if (asksForConfirmation && hasConcreteRepair) return content;
   }
@@ -189,6 +210,102 @@ function extractRepairAssumptionLines(text: string) {
     .map((line) => line.replace(/[。；;]\s*$/, ""));
 
   return uniqueStrings(candidates).slice(0, 6);
+}
+
+function extractModelFieldPatchChanges(
+  text: string,
+  model: HotellingModel
+): ConfirmedRepairAssetPatchChange[] {
+  const changes: ConfirmedRepairAssetPatchChange[] = [];
+  const mentionsBuyerSubsidy =
+    /买家效用|消费者效用|用户效用/.test(text) &&
+    /(\+|正|补贴项?)\s*s_A|s_A\s*(?:作为|为)?补贴|补贴.*s_A/.test(text);
+  const mentionsBuyerProfitCost =
+    /利润函数/.test(text) &&
+    /(-|成本|扣除|补贴成本)\s*s_A|s_A\s*n_A\^B|s_A\s*n_A/.test(text);
+
+  if (mentionsBuyerSubsidy) {
+    for (const utility of model.utilityFunctions) {
+      if (utility.side !== "consumer") continue;
+      const nextExpression = ensureBuyerSubsidyInUtility(
+        utility.expression,
+        utility.platform
+      );
+      if (nextExpression === utility.expression) continue;
+
+      changes.push({
+        target: `hotellingModel.utilityFunctions[${utility.id}].expression`,
+        op: "set",
+        value: nextExpression,
+        reason: "上一轮修复建议要求把买家补贴作为效用中的正项写入。",
+      });
+    }
+  }
+
+  if (mentionsBuyerProfitCost) {
+    for (const profit of model.profitFunctions) {
+      const nextExpression = ensureBuyerSubsidyCostInProfit(
+        profit.expression,
+        profit.platform
+      );
+      if (nextExpression === profit.expression) continue;
+
+      changes.push({
+        target: `hotellingModel.profitFunctions[${profit.id}].expression`,
+        op: "set",
+        value: nextExpression,
+        reason: "上一轮修复建议要求把买家补贴写成平台利润中的成本项。",
+      });
+    }
+  }
+
+  if (/(删除|去掉|移除)[\s\S]{0,40}(p_A|p_B|p_i|价格|买家价格)/.test(text)) {
+    for (const selector of ["p_A", "p_B", "p_i"]) {
+      changes.push({
+        target: `hotellingModel.symbols[${selector}]`,
+        op: "remove",
+        reason: "上一轮修复建议要求删除不再作为决策变量的买家价格符号。",
+      });
+    }
+  }
+
+  return changes;
+}
+
+function ensureBuyerSubsidyInUtility(expression: string, platform: string) {
+  const subsidy = platform.toUpperCase() === "B" ? "s_B" : "s_A";
+  if (expression.includes(subsidy)) return expression;
+
+  return expression.replace(
+    /\s-\s*p(?:_?[AB])?\b/,
+    ` + ${subsidy}`
+  );
+}
+
+function ensureBuyerSubsidyCostInProfit(expression: string, platform: string) {
+  const normalizedPlatform = platform.toUpperCase() === "B" ? "B" : "A";
+  const subsidy = normalizedPlatform === "B" ? "s_B" : "s_A";
+  const buyerDemand =
+    normalizedPlatform === "B" ? "n_B^B" : "n_A^B";
+  const buyerPrice = normalizedPlatform === "B" ? "p_B" : "p_A";
+  const priceRevenuePattern = new RegExp(
+    `\\b${escapeRegExp(buyerPrice)}\\s*${escapeRegExp(buyerDemand)}\\b`,
+    "g"
+  );
+  const withoutBuyerPrice = expression
+    .replace(priceRevenuePattern, `- ${subsidy} ${buyerDemand}`)
+    .replace(/\+\s*-\s*/g, "- ");
+  if (withoutBuyerPrice !== expression) return withoutBuyerPrice;
+
+  if (expression.includes(`-${subsidy}`) || expression.includes(`- ${subsidy}`)) {
+    return expression;
+  }
+
+  return `${expression} - ${subsidy} ${buyerDemand}`;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function normalizeRepairEquation(value: string) {
