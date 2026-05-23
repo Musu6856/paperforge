@@ -17,7 +17,7 @@ export function LandingPage() {
               可求解的博弈论模型
             </h1>
             <p className="mt-6 text-lg leading-8 text-muted-foreground">
-              为中文经济学与管理科学研究者打造的理论建模工作台。先发现方向，再共创模型，最后进入符号均衡求解与性质分析。
+              面向平台经济与博弈论论文写作，帮助你从模糊想法中聚焦研究方向，并把模型设定、公式推导和性质分析整理成连续的研究流程。
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <StartResearchLink className="h-12 gap-2 px-7 text-base" />
