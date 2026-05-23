@@ -16,6 +16,7 @@ function hasPersistableFallbackAsset(project: ResearchProject) {
   const equilibriumStatus = project.equilibriumResult?.status;
   const hasPropertyAnalyses = Boolean(project.propertyAnalyses?.length);
 
+  if (phase === "equilibrium") return equilibriumStatus === "solved";
   if (hasPropertyAnalyses) return phase === "analysis";
-  return phase === "equilibrium" && equilibriumStatus === "solved";
+  return false;
 }

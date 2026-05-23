@@ -7,6 +7,7 @@ import {
   adoptResearchDirection,
   confirmResearchModel,
   createExplorationProject,
+  generatePropertyAnalysis,
   generateSymbolicEquilibrium,
 } from "./research-session.ts";
 
@@ -62,6 +63,32 @@ test("symbolic equilibrium fallback remains persistable", () => {
   };
 
   assert.equal(getPersistableResearchProject(result), solved);
+});
+
+test("solved equilibrium fallback remains persistable when stale property analyses exist", () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "研究二手平台佣金与补贴策略",
+    now: 1710000000000,
+  });
+  const analyzed = generatePropertyAnalysis(
+    generateSymbolicEquilibrium(
+      confirmResearchModel(
+        adoptResearchDirection(project, "secondhand-commission-subsidy-hotelling")
+      )
+    )
+  );
+  const reSolved = generateSymbolicEquilibrium(analyzed);
+
+  const result = {
+    project: reSolved,
+    usedFallback: true,
+    assistantMessage: "已重新生成本地符号均衡推导",
+  };
+
+  assert.equal(reSolved.equilibriumResult?.status, "solved");
+  assert.ok(reSolved.propertyAnalyses?.length);
+  assert.equal(getPersistableResearchProject(result), reSolved);
 });
 
 test("symbolic failure fallback is not persisted as completed equilibrium", () => {
