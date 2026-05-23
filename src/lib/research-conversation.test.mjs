@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { generateResearchProject } from "./ai-research-generation.ts";
+import { createConversationFallbackAssetPatch } from "./research-generation/fallbacks.ts";
 import { createExplorationProject } from "./research-session.ts";
 
 test("conversation action answers casual messages without rebuilding research assets", async () => {
@@ -119,6 +120,34 @@ test("conversation fallback proposes symbol patches for explicit notation edits"
   assert.equal(result.assetPatch?.changes[0].target, "hotellingModel.symbols[tau_A].symbol");
   assert.equal(result.assetPatch?.changes[0].value, "f_A");
   assert.equal(result.project.hotellingModel, built.project.hotellingModel);
+});
+
+test("research-generation fallback module proposes symbol patches for explicit notation edits", async () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "Research secondhand platform pricing",
+    now: 1710000000000,
+  });
+  const built = await generateResearchProject(
+    {
+      action: "build_model",
+      rawIdea: project.rawIdea,
+      selectedDirectionId: "secondhand-commission-subsidy-hotelling",
+      project,
+    },
+    {
+      complete: async () => "{",
+    }
+  );
+
+  const patch = createConversationFallbackAssetPatch(
+    built.project,
+    "change tau_A to f_A"
+  );
+
+  assert.equal(patch?.kind, "update_model");
+  assert.equal(patch?.changes[0].target, "hotellingModel.symbols[tau_A].symbol");
+  assert.equal(patch?.changes[0].value, "f_A");
 });
 
 test("conversation confirmation of a prior model repair proposal creates a pending model patch", async () => {

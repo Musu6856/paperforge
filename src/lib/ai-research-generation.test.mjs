@@ -8,6 +8,15 @@ import {
   generateResearchProject,
 } from "./ai-research-generation.ts";
 import {
+  createDiscoverPrompt as createDiscoverPromptFromResearchGenerationPrompts,
+} from "./research-generation/prompts.ts";
+import {
+  extractFirstJsonObject as extractFirstJsonObjectFromResearchGenerationParsers,
+} from "./research-generation/parsers.ts";
+import {
+  isSymbolicEquilibriumResult,
+} from "./research-generation/quality-gates.ts";
+import {
   adoptResearchDirection,
   createExplorationProject,
 } from "./research-session.ts";
@@ -21,6 +30,17 @@ test("direction discovery prompt excludes empirical and simulation-only directio
   assert.match(systemPrompt, /empirical/);
   assert.match(systemPrompt, /simulation-only/);
   assert.equal(messages[0].role, "developer");
+});
+
+test("research-generation prompt module builds the discovery prompt", () => {
+  const messages = createDiscoverPromptFromResearchGenerationPrompts(
+    "Research secondhand platform pricing"
+  );
+  const systemPrompt = messages[0].content;
+
+  assert.equal(messages[0].role, "developer");
+  assert.match(systemPrompt, /Hotelling/);
+  assert.match(systemPrompt, /symbolic equilibrium solving/);
 });
 
 test("direction parser accepts localized contribution keys from providers", () => {
@@ -114,6 +134,31 @@ After`);
 
   assert.equal(extracted?.assistantMessage, "Pick a direction");
   assert.equal(extracted?.directions[0].id, "market-maker");
+});
+
+test("research-generation parser module extracts JSON objects", () => {
+  const extracted = extractFirstJsonObjectFromResearchGenerationParsers(
+    "before {\"ok\":true,\"value\":2} after"
+  );
+
+  assert.deepEqual(extracted, { ok: true, value: 2 });
+});
+
+test("research-generation quality gate accepts symbolic equilibrium results", () => {
+  assert.equal(
+    isSymbolicEquilibriumResult({
+      status: "solved",
+      concept: "Interior symbolic equilibrium",
+      solvingSteps: ["Write FOCs"],
+      focs: ["\\frac{\\partial \\Pi_i}{\\partial \\tau_i}=0"],
+      conditions: ["q>0"],
+      closedForm: "\\tau_i^*=\\frac{t}{2q}",
+      derivation: "Solve the first-order conditions symbolically.",
+      code: "sp.solve(focs, [tau_A, tau_B])",
+      warnings: [],
+    }),
+    true
+  );
 });
 
 test("invalid JSON falls back to deterministic direction discovery", async () => {
