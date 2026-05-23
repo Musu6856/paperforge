@@ -77,6 +77,37 @@ test("research flow exposes analysis after symbolic equilibrium even if message 
   assert.equal(state.analysisStatusLabel, "等待生成性质分析");
 });
 
+test("research flow does not mark missing property analysis as stale after equilibrium", () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "研究二手平台佣金与补贴策略",
+    now: 1710000000000,
+  });
+  const solved = generateSymbolicEquilibrium(
+    confirmResearchModel(
+      adoptResearchDirection(project, "secondhand-commission-subsidy-hotelling")
+    )
+  );
+
+  const state = getResearchFlowState({
+    ...solved,
+    researchSession: solved.researchSession
+      ? {
+          ...solved.researchSession,
+          assetFreshness: {
+            model: "fresh",
+            equilibrium: "fresh",
+            properties: "stale",
+          },
+        }
+      : solved.researchSession,
+  });
+
+  assert.equal(state.hasPropertyAnalyses, false);
+  assert.equal(state.isPropertyAnalysisStale, false);
+  assert.equal(state.analysisStatusLabel, "等待生成性质分析");
+});
+
 test("research flow marks completed analysis without pending action", () => {
   const project = createExplorationProject({
     id: "11111111-1111-4111-8111-111111111111",

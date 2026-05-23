@@ -218,7 +218,7 @@ export function generateSymbolicEquilibrium(
       id: `msg-equilibrium-solved-${Date.now()}`,
       role: "assistant",
       content:
-        "我先给出一版可写入论文推导的符号均衡资产：从两侧无差异条件得到需求份额，再把需求代入平台利润函数，并在对称内部候选均衡下联立一阶条件得到佣金与补贴的闭式解。结果会自动切到性质分析页，方便继续检查比较静态。若后续模型加入非对称平台或更多状态变量，应继续做一般符号求解，而不是改用数值模拟。",
+        "我先给出一版可写入论文推导的符号均衡资产：从两侧无差异条件得到需求份额，再把需求代入平台利润函数，并在对称内部候选均衡下联立一阶条件得到佣金与补贴的闭式解。右侧会停在均衡页，方便先检查闭式解、一阶条件和存在条件；确认可用后再进入性质分析。若后续模型加入非对称平台或更多状态变量，应继续做一般符号求解，而不是改用数值模拟。",
       createdAt: 0,
     },
   ];
@@ -293,7 +293,7 @@ function applySymbolicEquilibriumResult(
     equilibriumResult,
     researchSession: {
       ...session,
-      phase: "analysis",
+      phase: "equilibrium",
       messages,
       assetSummary: {
         ...session.assetSummary,

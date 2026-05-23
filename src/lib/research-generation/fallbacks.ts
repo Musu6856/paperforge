@@ -285,7 +285,7 @@ export function attachEquilibriumResult(
     equilibriumResult,
     researchSession: {
       ...session,
-      phase: "analysis",
+      phase: "equilibrium",
       directions: session?.directions ?? [],
       messages,
       assetSummary: {

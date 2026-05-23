@@ -177,6 +177,8 @@ export function getResearchFlowState(
   const hasSolvableEquilibrium = isUsableEquilibriumStatus(equilibriumStatus);
   const assetFreshness =
     session?.assetFreshness ?? createFreshResearchAssetFreshness();
+  const hasStalePropertyAnalyses =
+    hasPropertyAnalyses && assetFreshness.properties === "stale";
 
   const canConfirmModel =
     Boolean(project?.hotellingModel) &&
@@ -187,7 +189,7 @@ export function getResearchFlowState(
     pendingKind === "solve_equilibrium" &&
     (!hasPropertyAnalyses ||
       assetFreshness.equilibrium === "stale" ||
-      assetFreshness.properties === "stale");
+      hasStalePropertyAnalyses);
   const canAnalyzeProperties =
     pendingKind === "analyze_properties" &&
     hasSolvableEquilibrium &&
@@ -201,7 +203,7 @@ export function getResearchFlowState(
     hasPropertyAnalyses,
     assetFreshness,
     isEquilibriumStale: assetFreshness.equilibrium === "stale",
-    isPropertyAnalysisStale: assetFreshness.properties === "stale",
+    isPropertyAnalysisStale: hasStalePropertyAnalyses,
     equilibriumStatusLabel: canSolveEquilibrium
       ? "等待生成符号均衡推导"
       : formatEquilibriumStatus(
@@ -248,7 +250,7 @@ function formatEquilibriumStatus(
     case "solved":
       return "已生成符号均衡";
     case "symbolic_failure":
-      return "仅有符号推导草稿";
+      return "已生成符号推导草稿";
     default:
       return "等待生成";
   }

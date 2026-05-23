@@ -207,7 +207,7 @@ test("solve_equilibrium retries once when the provider returns numeric output", 
   assert.match(prompts[1][0].content, /repair/i);
   assert.equal(result.usedFallback, false);
   assert.equal(result.assistantMessage, "symbolic repair");
-  assert.equal(result.project.researchSession?.phase, "analysis");
+  assert.equal(result.project.researchSession?.phase, "equilibrium");
   assert.equal(result.project.equilibriumResult?.status, "solved");
   assert.match(result.project.equilibriumResult?.closedForm ?? "", /\\tau_A\^\*/);
 });

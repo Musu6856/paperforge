@@ -954,7 +954,7 @@ test("equilibrium generation produces symbolic Hotelling assets", async () => {
   );
 
   assert.equal(result.usedFallback, true);
-  assert.equal(result.project.researchSession?.phase, "analysis");
+  assert.equal(result.project.researchSession?.phase, "equilibrium");
   assert.equal(result.project.equilibriumResult?.status, "solved");
   assert.match(result.project.equilibriumResult?.derivation ?? "", /无差异条件|需求份额/);
   assert.ok(result.project.equilibriumResult?.closedForm);
@@ -1027,7 +1027,7 @@ test("equilibrium generation rejects simulation-only provider output", async () 
   );
 
   assert.equal(result.usedFallback, true);
-  assert.equal(result.project.researchSession?.phase, "analysis");
+  assert.equal(result.project.researchSession?.phase, "equilibrium");
   assert.doesNotMatch(
     [
       result.project.equilibriumResult?.closedForm,
@@ -1083,7 +1083,7 @@ test("successful equilibrium generation uses symbolic provider result", async ()
 
   assert.equal(result.usedFallback, false);
   assert.equal(result.assistantMessage, "已给出符号均衡。");
-  assert.equal(result.project.researchSession?.phase, "analysis");
+  assert.equal(result.project.researchSession?.phase, "equilibrium");
   assert.equal(result.project.equilibriumResult?.status, "solved");
   assert.equal(result.project.equilibriumResult?.concept, "符号内部纳什均衡");
   assert.equal(
@@ -1392,7 +1392,7 @@ test("equilibrium fallback solves symbolically after explicit solve action", asy
   });
 
   assert.equal(result.usedFallback, true);
-  assert.equal(result.project.researchSession?.phase, "analysis");
+  assert.equal(result.project.researchSession?.phase, "equilibrium");
   assert.equal(result.project.equilibriumResult?.status, "solved");
   assert.match(result.project.equilibriumResult?.code ?? "", /sympy/);
   assert.match(

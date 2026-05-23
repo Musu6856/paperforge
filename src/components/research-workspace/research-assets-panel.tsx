@@ -72,7 +72,7 @@ export function ResearchAssetsPanel(props: ResearchAssetsPanelProps) {
 
   return (
     <ResearchAssetsPanelContent
-      key={`${props.project?.id ?? "new"}:${props.session.phase}:${patchKey}`}
+      key={`${props.project?.id ?? "new"}:${props.session.phase}:${props.session.assetSummary.equilibriumStatus}:${patchKey}`}
       {...props}
       initialActiveTab={initialActiveTab}
     />
@@ -582,7 +582,7 @@ function EquilibriumTab({
           tone={isStale || isSymbolicFailure ? "warning" : equilibrium ? "success" : "neutral"}
         />
         {isSymbolicFailure ? (
-          <WarningBox text="当前不是完整闭式均衡，只能作为符号推导草稿。进入性质分析前应先收窄模型或重做均衡。" />
+          <WarningBox text="已保留一版可检查的符号推导草稿，但还不是完整闭式均衡。建议先检查一阶条件、约束和 SymPy 代码，再决定是否进入性质分析。" />
         ) : null}
         {isStale ? (
           <WarningBox text="模型假设已被编辑，旧均衡不再是当前模型的权威结果。" />

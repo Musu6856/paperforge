@@ -629,6 +629,7 @@ function createPendingAssistantMessage(): ResearchChatViewMessage {
 
 function markAssetFreshnessAfterEquilibrium(project: ResearchProject): ResearchProject {
   if (!project.researchSession) return project;
+  const hasExistingPropertyAnalyses = Boolean(project.propertyAnalyses?.length);
   return {
     ...project,
     researchSession: {
@@ -640,7 +641,7 @@ function markAssetFreshnessAfterEquilibrium(project: ResearchProject): ResearchP
           properties: "fresh",
         }),
         equilibrium: "fresh",
-        properties: "stale",
+        properties: hasExistingPropertyAnalyses ? "stale" : "fresh",
       },
     },
   };

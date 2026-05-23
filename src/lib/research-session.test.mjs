@@ -194,7 +194,7 @@ test("non-recommended equilibrium fallback does not reuse commission subsidy clo
 
   const solved = generateSymbolicEquilibrium(confirmed);
 
-  assert.equal(solved.researchSession?.phase, "analysis");
+  assert.equal(solved.researchSession?.phase, "equilibrium");
   assert.equal(solved.equilibriumResult?.status, "symbolic_failure");
   assert.doesNotMatch(
     solved.equilibriumResult?.closedForm ?? "",
@@ -355,7 +355,7 @@ test("generates symbolic equilibrium and moves the session into equilibrium phas
 
   const solved = generateSymbolicEquilibrium(confirmed);
 
-  assert.equal(solved.researchSession?.phase, "analysis");
+  assert.equal(solved.researchSession?.phase, "equilibrium");
   assert.equal(solved.equilibriumResult?.status, "solved");
   assert.ok(solved.equilibriumResult?.closedForm);
   assert.match(
@@ -414,7 +414,7 @@ test("tracks session decisions from direction discovery to solve readiness", () 
       "direction",
       "model",
       "equilibrium",
-      "analysis",
+      "equilibrium",
       "analysis",
     ]
   );
