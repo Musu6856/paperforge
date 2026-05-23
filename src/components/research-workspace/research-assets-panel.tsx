@@ -723,28 +723,59 @@ function PropertiesTab({
 }
 
 function PaperTab({ project }: { project?: ResearchProject }) {
+  const markdown = project ? buildResearchProjectMarkdown(project) : "";
   const sections = project?.sections ?? [];
-
-  if (sections.length === 0) {
-    return (
-      <EmptyLine text="论文输出暂未生成。先把方向、模型、均衡和性质分析稳定下来，再整理成命题与正文。" />
-    );
-  }
+  const hasDraftSections = sections.length > 0;
 
   return (
-    <div className="space-y-3">
-      {sections.map((section) => (
-        <article key={section.id} className="rounded-md border bg-background p-3">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-            <FileText className="size-3.5" />
-            {section.status}
-          </p>
-          <h3 className="mt-1 text-sm font-semibold">{section.title}</h3>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {section.content}
-          </p>
-        </article>
-      ))}
+    <div className="space-y-4">
+      <AssetSection
+        title="导出说明"
+        description="Markdown 导出会把当前研究方向、模型、均衡和性质分析整理成一份完整正文。"
+      >
+        <div className="grid gap-2 sm:grid-cols-2">
+          <InfoTile
+            label="导出格式"
+            value="Markdown"
+          />
+          <InfoTile
+            label="导出内容"
+            value={hasDraftSections ? "正文 + 草稿章节" : "方向 / 模型 / 均衡 / 性质"}
+          />
+        </div>
+      </AssetSection>
+
+      <AssetSection title="论文预览">
+        {markdown ? (
+          <div className="rounded-md border bg-background px-3 py-3">
+            <MarkdownRenderer
+              content={markdown}
+              className="paperforge-markdown text-sm leading-7"
+            />
+          </div>
+        ) : (
+          <EmptyLine text="论文输出暂未生成。先把方向、模型、均衡和性质分析稳定下来，再整理成命题与正文。" />
+        )}
+      </AssetSection>
+
+      {hasDraftSections ? (
+        <AssetSection title="草稿章节">
+          <div className="space-y-3">
+            {sections.map((section) => (
+              <article key={section.id} className="rounded-md border bg-background p-3">
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                  <FileText className="size-3.5" />
+                  {section.status}
+                </p>
+                <h3 className="mt-1 text-sm font-semibold">{section.title}</h3>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  {section.content}
+                </p>
+              </article>
+            ))}
+          </div>
+        </AssetSection>
+      ) : null}
     </div>
   );
 }

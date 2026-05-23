@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildResearchProjectMarkdown } from "./research-export.ts";
+import {
+  buildResearchProjectMarkdown,
+  getResearchProjectMarkdownFilename,
+} from "./research-export.ts";
 import {
   adoptResearchDirection,
   confirmResearchModel,
@@ -9,6 +12,48 @@ import {
   generatePropertyAnalysis,
   generateSymbolicEquilibrium,
 } from "./research-session.ts";
+
+function createGeneratedResearchProject(rawIdea = "secondhand platform subsidy") {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea,
+    now: 1710000000000,
+  });
+
+  return generatePropertyAnalysis(
+    generateSymbolicEquilibrium(
+      confirmResearchModel(
+        adoptResearchDirection(project, "secondhand-commission-subsidy-hotelling")
+      )
+    )
+  );
+}
+
+test("getResearchProjectMarkdownFilename returns a stable sanitized Markdown filename", () => {
+  const project = {
+    ...createGeneratedResearchProject(),
+    refinedIdea: '  A/B: platform <commission> "subsidy"? *policy*  ',
+  };
+
+  assert.equal(
+    getResearchProjectMarkdownFilename(project),
+    "paperforge-A-B-platform-commission-subsidy-policy.md"
+  );
+  assert.equal(
+    getResearchProjectMarkdownFilename(project),
+    "paperforge-A-B-platform-commission-subsidy-policy.md"
+  );
+});
+
+test("buildResearchProjectMarkdown produces non-empty paper markdown for a fully generated project", () => {
+  const analyzed = createGeneratedResearchProject();
+
+  const markdown = buildResearchProjectMarkdown(analyzed);
+
+  assert.ok(markdown.trim().length > 0);
+  assert.match(markdown, /^# /);
+  assert.match(markdown, /\n## /);
+});
 
 test("buildResearchProjectMarkdown includes the core research assets", () => {
   const project = createExplorationProject({
