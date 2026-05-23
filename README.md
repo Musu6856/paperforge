@@ -25,7 +25,7 @@ PaperForge 是面向中文研究者的理论研究工作台，聚焦博弈论、
 - 三栏研究工作台，左侧项目与设置，中间对话，右侧研究资产
 - 研究资产管理，方向、模型、均衡、性质分析、待处理修订项
 - 结构化 AI 生成，方向发现、模型构建、符号均衡、性质分析
-- 模型源配置，支持 PaperForge 托管模型或自有 OpenAI / OpenAI-compatible 模型
+- 模型源配置，支持 PaperForge 托管模型或自有 DeepSeek / OpenAI / OpenAI-compatible / MiMo 模型源
 - 数学渲染，Markdown + KaTeX
 - 项目持久化，Clerk + Neon + Drizzle ORM
 - 研究质量控制，对符号推导、资产状态和阶段流转做校验
@@ -42,7 +42,7 @@ PaperForge 是面向中文研究者的理论研究工作台，聚焦博弈论、
 - Clerk
 - Neon + Drizzle ORM
 - KaTeX / react-markdown
-- 支持 OpenAI-compatible chat completions 的模型来源
+- 支持 DeepSeek、OpenAI、OpenAI-compatible、MiMo 的模型来源
 
 ## 本地开发
 
@@ -80,9 +80,16 @@ OPENAI_COMPATIBLE_MODEL=deepseek-v4-flash
 MIMO_API_KEY=your_mimo_api_key
 MIMO_BASE_URL=https://api.xiaomimimo.com/v1
 MIMO_MODEL=mimo-v2.5-pro
+
+# 可选：OpenAI API
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-5.2
 ```
 
 如果你只想先跑通本地开发，至少准备 Clerk、数据库和一个可用模型来源。服务端默认优先读取 `DEEPSEEK_API_KEY`，没有 DeepSeek 时才会继续尝试其他兼容来源。
+
+服务端默认按 `DEEPSEEK_API_KEY` → `OPENAI_COMPATIBLE_API_KEY` → `MIMO_API_KEY` → `OPENAI_API_KEY` 的顺序选择默认模型来源。
 
 ## 质量检查
 
