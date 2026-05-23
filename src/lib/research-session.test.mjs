@@ -182,7 +182,7 @@ test("adopts seller multihoming with a direction-specific fallback scaffold", ()
   );
 });
 
-test("non-recommended equilibrium fallback does not reuse commission subsidy closed form", () => {
+test("seller-multihoming equilibrium fallback returns a narrowed closed-form core", () => {
   const project = createExplorationProject({
     id: "11111111-1111-4111-8111-111111111111",
     rawIdea: "Research secondhand platform seller multihoming",
@@ -195,10 +195,14 @@ test("non-recommended equilibrium fallback does not reuse commission subsidy clo
   const solved = generateSymbolicEquilibrium(confirmed);
 
   assert.equal(solved.researchSession?.phase, "equilibrium");
-  assert.equal(solved.equilibriumResult?.status, "symbolic_failure");
-  assert.doesNotMatch(
+  assert.equal(solved.equilibriumResult?.status, "solved");
+  assert.match(
     solved.equilibriumResult?.closedForm ?? "",
     /\\tau_A\^\*=\\tau_B\^\*=\\frac\{t_S-2\\alpha_B\}\{q\}/
+  );
+  assert.match(
+    solved.equilibriumResult?.closedForm ?? "",
+    /m_{AB}\^\*=1/
   );
   assert.match(
     [
@@ -206,7 +210,7 @@ test("non-recommended equilibrium fallback does not reuse commission subsidy clo
       solved.equilibriumResult?.derivation,
       ...(solved.equilibriumResult?.warnings ?? []),
     ].join("\n"),
-    /卖家多归属|隐函数|符号系统/
+    /卖家多归属|收窄|对称内部/
   );
   assert.equal(
     solved.researchSession?.assetSummary.pendingDecision?.kind,
@@ -277,11 +281,15 @@ test("other non-default directions use a direction-specific symbolic scaffold", 
     ) ?? []),
   ].join("\n");
 
-  assert.equal(solved.equilibriumResult?.status, "symbolic_failure");
+  assert.equal(solved.equilibriumResult?.status, "solved");
   assert.match(combinedText, /quality-disclosure-trust|direction-specific/i);
-  assert.doesNotMatch(
+  assert.match(
     combinedText,
-    /\\tau_A\^\*=\\tau_B\^\*=\\frac\{t_S-2\\alpha_B\}\{q\}|\\frac\{\\partial \\tau_i\^\*\}\{\\partial \\alpha_B\}=-\\frac\{2\}\{q\}/
+    /\\tau_A\^\*=\\tau_B\^\*=\\frac\{t_S-2\\alpha_B\}\{q\}/
+  );
+  assert.match(
+    combinedText,
+    /质量|披露|可求解核心|收窄/
   );
 });
 

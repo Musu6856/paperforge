@@ -1038,6 +1038,57 @@ test("equilibrium generation rejects simulation-only provider output", async () 
   );
 });
 
+test("equilibrium generation falls back when provider only returns a symbolic failure draft", async () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "研究商家多归属的外卖平台竞争",
+    now: 1710000000000,
+  });
+  const { project: modelProject } = await generateResearchProject(
+    {
+      action: "build_model",
+      rawIdea: project.rawIdea,
+      selectedDirectionId: "seller-multihoming-pricing",
+      project,
+    },
+    {
+      complete: async () => "{",
+    }
+  );
+
+  const result = await generateResearchProject(
+    {
+      action: "solve_equilibrium",
+      rawIdea: modelProject.rawIdea,
+      project: modelProject,
+    },
+    {
+      complete: async () =>
+        JSON.stringify({
+          assistantMessage: "当前只能得到隐式系统草稿。",
+          equilibriumResult: {
+            status: "symbolic_failure",
+            concept: "隐式系统草稿",
+            solvingSteps: ["列出一阶条件"],
+            focs: ["F(z,\\theta)=0"],
+            conditions: ["\\det J_zF\\ne0"],
+            closedForm: "当前没有完整闭式解。",
+            derivation: "只得到隐式系统。",
+            code: "import sympy as sp\nprint('implicit system')",
+            warnings: ["不是闭式均衡。"],
+          },
+        }),
+    }
+  );
+
+  assert.equal(result.usedFallback, true);
+  assert.equal(result.project.equilibriumResult?.status, "solved");
+  assert.match(
+    result.project.equilibriumResult?.closedForm ?? "",
+    /\\tau_A\^\*=\\tau_B\^\*=\\frac\{t_S-2\\alpha_B\}\{q\}/
+  );
+});
+
 test("successful equilibrium generation uses symbolic provider result", async () => {
   const project = createExplorationProject({
     id: "11111111-1111-4111-8111-111111111111",

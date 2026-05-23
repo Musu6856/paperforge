@@ -10,6 +10,7 @@ import {
 
 import { DirectionCard } from "./direction-card";
 import { MathArtifact } from "./math-artifact";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { Button } from "@/components/ui/button";
 import { getResearchFeedItems } from "@/lib/research-feed";
 import {
@@ -260,9 +261,16 @@ function EquilibriumStatusPanel({
         {equilibrium?.closedForm ? (
           <div className="mt-4">
             <p className="mb-2 text-xs font-semibold text-foreground">
-              闭式均衡摘要
+              {isSymbolicFailure ? "未得到闭式解" : "闭式均衡摘要"}
             </p>
-            <MathArtifact formula={equilibrium.closedForm} />
+            {isSymbolicFailure ? (
+              <MarkdownRenderer
+                content={equilibrium.closedForm}
+                className="paperforge-markdown text-sm leading-6 text-muted-foreground"
+              />
+            ) : (
+              <MathArtifact formula={equilibrium.closedForm} />
+            )}
           </div>
         ) : null}
 

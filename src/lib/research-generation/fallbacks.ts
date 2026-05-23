@@ -279,6 +279,7 @@ export function attachEquilibriumResult(
       createdAt: 0,
     },
   ];
+  const hasSolvedEquilibrium = equilibriumResult.status === "solved";
 
   return {
     ...project,
@@ -296,16 +297,28 @@ export function attachEquilibriumResult(
           nextActions: [],
         }),
         equilibriumStatus: equilibriumResult.status,
-        pendingDecision: {
-          kind: "analyze_properties",
-          prompt:
-            "符号均衡结果已经生成。下一步可以对佣金、补贴、网络效应和差异化成本做符号性质分析。",
-        },
-        nextActions: [
-          "检查符号均衡推导",
-          "复制并运行 SymPy 求解代码",
-          "生成性质分析",
-        ],
+        pendingDecision: hasSolvedEquilibrium
+          ? {
+              kind: "analyze_properties",
+              prompt:
+                "符号均衡结果已经生成。下一步可以对佣金、补贴、网络效应和差异化成本做符号性质分析。",
+            }
+          : {
+              kind: "solve_equilibrium",
+              prompt:
+                "当前只得到符号推导草稿，还没有闭式均衡解。请先收窄模型或重新生成符号均衡。",
+            },
+        nextActions: hasSolvedEquilibrium
+          ? [
+              "检查符号均衡推导",
+              "复制并运行 SymPy 求解代码",
+              "生成性质分析",
+            ]
+          : [
+              "检查模型是否过于复杂",
+              "收窄策略变量或机制方程",
+              "重新生成闭式均衡",
+            ],
       },
     },
   };

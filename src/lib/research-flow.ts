@@ -186,9 +186,11 @@ export function getResearchFlowState(
     !hasPropertyAnalyses;
   const canSolveEquilibrium =
     Boolean(project?.hotellingModel) &&
-    pendingKind === "solve_equilibrium" &&
+    (pendingKind === "solve_equilibrium" ||
+      equilibriumStatus === "symbolic_failure") &&
     (!hasPropertyAnalyses ||
       assetFreshness.equilibrium === "stale" ||
+      equilibriumStatus === "symbolic_failure" ||
       hasStalePropertyAnalyses);
   const canAnalyzeProperties =
     pendingKind === "analyze_properties" &&
@@ -204,23 +206,26 @@ export function getResearchFlowState(
     assetFreshness,
     isEquilibriumStale: assetFreshness.equilibrium === "stale",
     isPropertyAnalysisStale: hasStalePropertyAnalyses,
-    equilibriumStatusLabel: canSolveEquilibrium
-      ? "等待生成符号均衡推导"
-      : formatEquilibriumStatus(
-          session?.assetSummary.equilibriumStatus ?? equilibriumStatus
-        ),
+    equilibriumStatusLabel:
+      equilibriumStatus === "symbolic_failure"
+        ? "未得到闭式均衡"
+        : canSolveEquilibrium
+          ? "等待生成符号均衡推导"
+          : formatEquilibriumStatus(
+              session?.assetSummary.equilibriumStatus ?? equilibriumStatus
+            ),
     analysisStatusLabel: hasPropertyAnalyses
       ? formatAnalysisStatus(project?.propertyAnalyses?.length ?? 0)
       : canAnalyzeProperties
-        ? equilibriumStatus === "symbolic_failure"
-          ? "可生成隐函数性质草稿"
-          : "等待生成性质分析"
-        : "等待符号均衡完成",
+        ? "等待生成性质分析"
+        : equilibriumStatus === "symbolic_failure"
+          ? "等待闭式均衡完成"
+          : "等待符号均衡完成",
   };
 }
 
 function isUsableEquilibriumStatus(status?: EquilibriumResult["status"]) {
-  return Boolean(status && status !== "idle" && status !== "needs_revision");
+  return status === "solved";
 }
 
 function createFreshResearchAssetFreshness(): ResearchAssetFreshnessMap {
@@ -250,7 +255,7 @@ function formatEquilibriumStatus(
     case "solved":
       return "已生成符号均衡";
     case "symbolic_failure":
-      return "已生成符号推导草稿";
+      return "未得到闭式均衡";
     default:
       return "等待生成";
   }

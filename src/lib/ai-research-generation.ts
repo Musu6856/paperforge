@@ -456,11 +456,15 @@ function validateEquilibriumCompletion(
 
   const equilibriumResult = parseEquilibriumResult(payload.equilibriumResult);
   const assistantMessage = parseText(payload.assistantMessage);
-  if (!equilibriumResult || !assistantMessage) {
+  if (
+    !equilibriumResult ||
+    equilibriumResult.status !== "solved" ||
+    !assistantMessage
+  ) {
     return {
       ok: false,
       reason:
-        "response must include assistantMessage and a symbolic equilibriumResult, not numeric or simulation output",
+        "response must include assistantMessage and a solved symbolic equilibriumResult with closed-form or reaction-function solution, not numeric output or a symbolic-failure draft",
     };
   }
 

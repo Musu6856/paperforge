@@ -582,7 +582,7 @@ function EquilibriumTab({
           tone={isStale || isSymbolicFailure ? "warning" : equilibrium ? "success" : "neutral"}
         />
         {isSymbolicFailure ? (
-          <WarningBox text="已保留一版可检查的符号推导草稿，但还不是完整闭式均衡。建议先检查一阶条件、约束和 SymPy 代码，再决定是否进入性质分析。" />
+          <WarningBox text="当前没有得到可作为论文结论的闭式均衡解。这里仅保留一阶条件、约束和隐式系统草稿；需要收窄模型或重新求解后，才应继续性质分析。" />
         ) : null}
         {isStale ? (
           <WarningBox text="模型假设已被编辑，旧均衡不再是当前模型的权威结果。" />
@@ -608,13 +608,26 @@ function EquilibriumTab({
             <FormulaList items={equilibrium.focs} emptyText="尚未生成一阶条件。" />
           </AssetSection>
 
-          <AssetSection title="闭式解">
-            {equilibrium.closedForm ? (
-              <MathArtifact formula={equilibrium.closedForm} />
-            ) : (
-              <EmptyLine text="尚未得到可展示的闭式解。" />
-            )}
-          </AssetSection>
+          {isSymbolicFailure ? (
+            <AssetSection title="未得到闭式解">
+              {equilibrium.closedForm ? (
+                <MarkdownRenderer
+                  content={equilibrium.closedForm}
+                  className="paperforge-markdown text-sm leading-6 text-muted-foreground"
+                />
+              ) : (
+                <EmptyLine text="当前只有隐式系统草稿，尚未得到星号闭式解。" />
+              )}
+            </AssetSection>
+          ) : (
+            <AssetSection title="闭式解">
+              {equilibrium.closedForm ? (
+                <MathArtifact formula={equilibrium.closedForm} />
+              ) : (
+                <EmptyLine text="尚未得到可展示的闭式解。" />
+              )}
+            </AssetSection>
+          )}
 
           <AssetSection title="推导步骤">
             <OrderedList items={equilibrium.solvingSteps} />

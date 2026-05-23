@@ -77,6 +77,95 @@ test("research flow exposes analysis after symbolic equilibrium even if message 
   assert.equal(state.analysisStatusLabel, "等待生成性质分析");
 });
 
+test("research flow does not treat symbolic failure as solved equilibrium", () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "研究商家多归属的外卖平台竞争",
+    now: 1710000000000,
+  });
+  const confirmed = confirmResearchModel(
+    adoptResearchDirection(project, "seller-multihoming-pricing")
+  );
+  const solved = {
+    ...confirmed,
+    equilibriumResult: {
+      status: "symbolic_failure",
+      concept: "隐式系统草稿",
+      solvingSteps: ["列出一阶条件。"],
+      focs: ["F(z,\\theta)=0"],
+      conditions: ["\\det J_zF\\ne0"],
+      closedForm: "当前只得到隐式系统草稿，尚未得到闭式均衡解。",
+      derivation: "只得到符号推导草稿。",
+      code: "print('implicit system')",
+      warnings: ["不是闭式均衡。"],
+    },
+    researchSession: {
+      ...confirmed.researchSession,
+      phase: "equilibrium",
+      assetSummary: {
+        ...confirmed.researchSession.assetSummary,
+        equilibriumStatus: "symbolic_failure",
+        pendingDecision: {
+          kind: "analyze_properties",
+          prompt: "符号推导草稿已生成。",
+        },
+      },
+    },
+  };
+
+  const state = getResearchFlowState(solved);
+
+  assert.equal(solved.equilibriumResult?.status, "symbolic_failure");
+  assert.equal(state.canAnalyzeProperties, false);
+  assert.equal(state.equilibriumStatusLabel, "未得到闭式均衡");
+  assert.equal(state.analysisStatusLabel, "等待闭式均衡完成");
+});
+
+test("research flow exposes re-solve action for legacy symbolic failures", () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "研究商家多归属的外卖平台竞争",
+    now: 1710000000000,
+  });
+  const confirmed = confirmResearchModel(
+    adoptResearchDirection(project, "seller-multihoming-pricing")
+  );
+  const legacyFailure = {
+    ...confirmed,
+    equilibriumResult: {
+      status: "symbolic_failure",
+      concept: "隐式系统草稿",
+      solvingSteps: ["列出一阶条件。"],
+      focs: ["F(z,\\theta)=0"],
+      conditions: ["\\det J_zF\\ne0"],
+      closedForm: "当前只得到隐式系统草稿，尚未得到闭式均衡解。",
+      derivation: "只得到符号推导草稿。",
+      code: "print('implicit system')",
+      warnings: ["不是闭式均衡。"],
+    },
+    researchSession: {
+      ...confirmed.researchSession,
+      phase: "equilibrium",
+      assetSummary: {
+        ...confirmed.researchSession.assetSummary,
+        equilibriumStatus: "symbolic_failure",
+        pendingDecision: {
+          kind: "analyze_properties",
+          prompt: "旧数据里错误地把失败草稿推进到性质分析。",
+        },
+      },
+    },
+  };
+
+  const state = getResearchFlowState(legacyFailure);
+  const action = getResearchPrimaryAction(state, "equilibrium");
+
+  assert.equal(state.canSolveEquilibrium, true);
+  assert.equal(state.canAnalyzeProperties, false);
+  assert.equal(action?.kind, "solve_equilibrium");
+  assert.equal(state.equilibriumStatusLabel, "未得到闭式均衡");
+});
+
 test("research flow does not mark missing property analysis as stale after equilibrium", () => {
   const project = createExplorationProject({
     id: "11111111-1111-4111-8111-111111111111",

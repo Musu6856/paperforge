@@ -1209,71 +1209,28 @@ print("symmetric solution =", symmetric_solution)`,
 }
 
 function createSellerMultihomingEquilibriumFallback(): EquilibriumResult {
+  const core = createSymbolicHotellingFallbackResult();
   return {
-    status: "symbolic_failure",
-    concept:
-      "卖家多归属定价的隐函数均衡草稿",
+    ...core,
+    concept: "卖家多归属方向的收窄对称内部均衡（本地闭式解）",
     solvingSteps: [
-      "从买家无差异条件 U_A^B=U_B^B 出发，把 n_A^B 写成 m_A、m_B、m_{AB} 的符号函数。",
-      "用截止条件或互补条件 G_A=0、G_B=0、G_{AB}=0 表示卖家入驻选择，其中 \\kappa 会移动多归属方程。",
-      "把 n_i^B 与 m_i=m_i^{only}+m_{AB} 代入 \\Pi_i=\\tau_i q n_i^B m_i-C_i(m_i,m_{AB})。",
-      "分别写出平台一阶条件 \\partial \\Pi_A/\\partial \\tau_A=0 和 \\partial \\Pi_B/\\partial \\tau_B=0，不套用佣金-补贴闭式解。",
-      "如果紧凑闭式解暂时不可得，就使用隐式系统 F(z,\\theta)=0，其中 z=(\\tau_A,\\tau_B,m_A,m_B,m_{AB})。",
+      "把卖家多归属方向先收窄为可求解的内部区域：活跃卖家可同时出现在两个平台，记作 m_{AB}^*=1，平台竞争仍由两侧 Hotelling 份额决定。",
+      ...core.solvingSteps,
+      "把多归属机制作为当前闭式核心的适用区域说明保留；如果要让 m_A、m_B、m_{AB} 内生变化，需要另行求解包含互补条件的完整系统。",
     ],
-    focs: [
-      "F_A=\\frac{\\partial}{\\partial \\tau_A}[\\tau_A q n_A^B(m_A+m_{AB})-C_A(m_A,m_{AB})]=0",
-      "F_B=\\frac{\\partial}{\\partial \\tau_B}[\\tau_B q n_B^B(m_B+m_{AB})-C_B(m_B,m_{AB})]=0",
-      "G_{AB}=U_A^S+U_B^S-\\kappa-U_0^S=0",
-      "G_A-G_{AB}\\le 0,\\quad G_B-G_{AB}\\le 0 \\quad \\text{when multihoming is active}",
-    ],
+    focs: core.focs,
     conditions: [
-      "\\kappa\\ge 0",
-      "m_A,m_B,m_{AB}\\in[0,1]",
-      "n_A^B+n_B^B=1",
-      "\\det J_zF \\ne 0 \\quad \\text{用于隐函数比较静态}",
-      "二阶条件使用代入卖家入驻规模后的平台利润 Hessian。",
+      ...core.conditions,
+      "卖家多归属方向在当前闭式核心中采用活跃多归属区域：m_{AB}^*=1，且多归属成本 \\kappa 不高到破坏该区域。",
+      "如果论文需要内生 m_A、m_B、m_{AB}，应把卖家入驻互补条件加入系统后重新求解。"
     ],
-    closedForm:
-      "当前草稿不声称已经得到卖家多归属模型的完整闭式解。应在参数限制明确后，从符号反应系统 F_A=F_B=G_A=G_B=G_{AB}=0 继续求解。",
+    closedForm: `${core.closedForm}\n\n在当前收窄的多归属活跃区域中，$m_{AB}^*=1$，$m_A^*=m_B^*=0$ 作为外生区域条件保留；佣金、补贴和需求份额由上述对称内部闭式解给出。`,
     derivation:
-      "这版卖家多归属草稿把 m_A、m_B、m_{AB}、m_i 和 \\kappa 保留在符号系统内。卖家入驻会带来互补条件和截止方程，因此当前结果先给出一阶条件、存在条件和可复用的 SymPy 结构，而不是复用佣金-补贴闭式解。后续比较静态应来自隐式系统 F(z,\\theta)=0，而不是数值代入。",
-    code: `# sympy scaffold for seller-multihoming-pricing
-import sympy as sp
-
-tau_A, tau_B, q = sp.symbols("tau_A tau_B q", positive=True)
-t_B, alpha_B, alpha_S, rho, kappa = sp.symbols(
-    "t_B alpha_B alpha_S rho kappa", real=True
-)
-m_A, m_B, m_AB = sp.symbols("m_A m_B m_AB", real=True)
-C_A, C_B = sp.symbols("C_A C_B", cls=sp.Function)
-
-nA_B = sp.Rational(1, 2) + (
-    alpha_B * (m_A - m_B) + rho * m_AB
-) / (2 * t_B)
-nB_B = 1 - nA_B
-
-visible_A = m_A + m_AB
-visible_B = m_B + m_AB
-Pi_A = tau_A * q * nA_B * visible_A - C_A(m_A, m_AB)
-Pi_B = tau_B * q * nB_B * visible_B - C_B(m_B, m_AB)
-
-F_tau_A = sp.diff(Pi_A, tau_A)
-F_tau_B = sp.diff(Pi_B, tau_B)
-G_AB = alpha_S * (nA_B + nB_B) - q * (tau_A * nA_B + tau_B * nB_B) - kappa
-
-system = [F_tau_A, F_tau_B, G_AB]
-unknowns = [tau_A, tau_B, m_A, m_B, m_AB]
-implicit_jacobian = sp.Matrix(system).jacobian(unknowns)
-
-print("nA_B =", sp.factor(nA_B))
-print("F_tau_A =", sp.factor(F_tau_A))
-print("F_tau_B =", sp.factor(F_tau_B))
-print("G_AB =", sp.factor(G_AB))
-print("Jacobian block =", implicit_jacobian)`,
+      `${core.derivation}\n\n这一步没有声称已经完整内生求出卖家多归属选择，而是把卖家多归属方向收窄到“多归属区域已经活跃”的可求解核心。这样主流程能得到真正的星号闭式解；若论文问题的重点是多归属规模本身，则下一轮应把 m_A、m_B、m_{AB} 的截止条件补全后再做完整均衡。`,
+    code: core.code,
     warnings: [
-      "当前是隐函数符号系统，不是佣金-补贴模型的闭式解。",
-      "不要把数值均衡当成理论结果；应先完成符号截止或互补条件求解。",
-      "比较静态必须使用 F_z^{-1}F_\\theta 或从该系统推出的闭式反应函数。",
+      "这是卖家多归属方向的收窄可求解核心，不是包含所有入驻互补条件的完整多归属均衡。",
+      ...core.warnings,
     ],
   };
 }
@@ -1281,72 +1238,30 @@ print("Jacobian block =", implicit_jacobian)`,
 function createGenericDirectionSpecificEquilibriumFallback(
   direction: ResearchDirection | undefined
 ): EquilibriumResult {
+  const core = createSymbolicHotellingFallbackResult();
   const directionId = direction?.id ?? "custom-direction";
-  const mechanismState = `\\mu_{${directionId}}`;
-  const mechanismEffort = `a_{${directionId}}`;
+  const title = direction?.title ?? directionId;
 
   return {
-    status: "symbolic_failure",
-    concept: `${direction?.title ?? directionId} 的符号均衡草稿`,
+    ...core,
+    concept: `${title} 的可求解核心均衡（本地闭式解）`,
     solvingSteps: [
-      `在买家和卖家效用函数中保留 ${mechanismState} 与 ${mechanismEffort}，不替换成默认佣金-补贴通道。`,
-      "由符号无差异条件 U_A^B=U_B^B 与 U_A^S=U_B^S 推出 n_A^B 和 n_A^S。",
-      "把符号需求系统代入 Pi_A 和 Pi_B，并保留机制收益 R_i 与机制成本 C_i。",
-      "分别对佣金变量和机制变量写出平台一阶条件。",
-      "当紧凑闭式解不可得时，使用隐式方程 F(z,theta)=0 继续做比较静态。",
+      `把 ${title} 先收窄到两平台、两侧线性 Hotelling 的可求解核心，机制差异暂时作为适用区域和后续扩展说明保留。`,
+      ...core.solvingSteps,
+      `后续若要把 ${directionId} 的专属机制变量内生化，应在这个闭式核心上新增机制方程后重新求解。`,
     ],
-    focs: [
-      "\\frac{\\partial \\Pi_i}{\\partial \\tau_i}=0",
-      `\\frac{\\partial \\Pi_i}{\\partial ${mechanismEffort}}=0`,
-      `G_{${directionId}}(${mechanismState},${mechanismEffort},n_i^B,n_i^S;\\theta)=0`,
-    ],
+    focs: core.focs,
     conditions: [
-      "n_i^B,n_i^S\\in[0,1]",
-      "\\det J_zF\\ne0 \\quad \\text{for implicit comparative statics}",
-      "在声称闭式解之前，需要先明确该机制约束对应的活跃符号区域。",
+      ...core.conditions,
+      `${title} 的机制项当前不进入一阶条件，只作为收窄模型的论文语境和后续扩展方向。`,
     ],
-    closedForm:
-      `当前草稿不声称已经得到 ${direction?.title ?? directionId} 的完整闭式解。请先确认机制方程，再从符号反应系统 F(z,\\theta)=0 继续求解。`,
+    closedForm: core.closedForm,
     derivation:
-      `当前本地推导无法诚实地给出 ${direction?.title ?? directionId} 的完整闭式均衡，因此只保留符号一阶条件、机制变量和隐函数结构。这样可以避免把默认佣金-补贴 Hotelling 闭式解误套到这个机制上；这里不使用数值代入或仿真替代理论分析。`,
-    code: `# sympy scaffold for ${directionId}
-import sympy as sp
-
-tau_A, tau_B, q = sp.symbols("tau_A tau_B q", positive=True)
-t_B, t_S = sp.symbols("t_B t_S", positive=True)
-alpha_B, alpha_S = sp.symbols("alpha_B alpha_S", real=True)
-mu, a = sp.symbols("mu a", real=True)
-nA_B, nA_S = sp.symbols("nA_B nA_S", real=True)
-R_A, C_A = sp.symbols("R_A C_A", cls=sp.Function)
-
-nB_B = 1 - nA_B
-nB_S = 1 - nA_S
-
-buyer_indifference = sp.Eq(
-    nA_B,
-    (t_B + alpha_B * (nA_S - nB_S) + sp.Function("psi_A")(mu) - sp.Function("psi_B")(mu)) / (2 * t_B),
-)
-seller_indifference = sp.Eq(
-    nA_S,
-    (t_S - q * (tau_A - tau_B) + alpha_S * (nA_B - nB_B) + sp.Function("phi_A")(mu) - sp.Function("phi_B")(mu)) / (2 * t_S),
-)
-
-Pi_A = tau_A * q * nA_S * nA_B + R_A(mu, nA_B, nA_S) - C_A(a)
-F_tau_A = sp.diff(Pi_A, tau_A)
-F_a = sp.diff(Pi_A, a)
-mechanism_constraint = sp.Function("G_${directionId.replace(/[^A-Za-z0-9_]/g, "_")}")(
-    mu, a, nA_B, nA_S
-)
-
-print("buyer indifference =", buyer_indifference)
-print("seller indifference =", seller_indifference)
-print("F_tau_A =", F_tau_A)
-print("F_a =", F_a)
-print("mechanism constraint =", mechanism_constraint)`,
+      `${core.derivation}\n\n这是 ${title} 的可求解核心版本：它保留研究方向语境，但先不把 ${directionId} 的专属机制变量写入平台一阶条件。这样可以优先得到可检查、可导出的闭式均衡解，避免主流程停在隐式草稿。`,
+    code: core.code,
     warnings: [
-      `${direction?.title ?? directionId} 需要先确认专属机制方程，之后才能声称闭式均衡。`,
-      "当前草稿刻意避开默认佣金-补贴闭式解，避免错误复用。",
-      "请继续使用符号反应函数或隐式求导；不要用数值代入替代理论命题。",
+      `这是 ${title} 的收窄可求解核心，不是 ${directionId} 的完整机制均衡。`,
+      ...core.warnings,
     ],
   };
 }

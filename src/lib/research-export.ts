@@ -192,7 +192,16 @@ function buildEquilibriumSection(equilibrium?: EquilibriumResult) {
     });
   }
 
-  if (equilibrium.closedForm.trim()) {
+  if (equilibrium.status === "symbolic_failure") {
+    lines.push(
+      "",
+      "### 未得到闭式解",
+      "当前内容是符号推导草稿或隐式系统草稿，不应作为论文中的闭式均衡解。"
+    );
+    if (equilibrium.closedForm.trim()) {
+      lines.push("", equilibrium.closedForm.trim());
+    }
+  } else if (equilibrium.closedForm.trim()) {
     lines.push("", "### 闭式解", wrapDisplayMath(equilibrium.closedForm.trim()));
   }
 
