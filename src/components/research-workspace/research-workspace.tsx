@@ -62,8 +62,8 @@ export function ResearchWorkspace({
   const [isConfirmingModel, setIsConfirmingModel] = useState(false);
   const [isSolvingEquilibrium, setIsSolvingEquilibrium] = useState(false);
   const [isAnalyzingProperties, setIsAnalyzingProperties] = useState(false);
-  const [isComposingNewConversation, setIsComposingNewConversation] =
-    useState(!project || startComposingNewConversation);
+  const [isComposingNewConversationLocally, setIsComposingNewConversationLocally] =
+    useState(false);
   const [optimisticMessage, setOptimisticMessage] =
     useState<ResearchSessionMessage | null>(null);
   const [pendingAssistantMessage, setPendingAssistantMessage] =
@@ -71,6 +71,8 @@ export function ResearchWorkspace({
   const activeProject = project
     ? normalizeResearchProjectForWorkspace(project)
     : null;
+  const isComposingNewConversation =
+    !project || startComposingNewConversation || isComposingNewConversationLocally;
   const displayedProject = isComposingNewConversation ? null : activeProject;
   const session = displayedProject
     ? displayedProject.researchSession ??
@@ -294,7 +296,7 @@ export function ResearchWorkspace({
         }
         const saved = await createProject(generatedProject);
         dispatch({ type: "NEW_PROJECT", payload: saved });
-        setIsComposingNewConversation(false);
+        setIsComposingNewConversationLocally(false);
         router.push(`/research/${saved.id}`);
         toast.success("已开启新的探索对话");
       } catch (error) {
@@ -501,7 +503,7 @@ export function ResearchWorkspace({
           <ResearchSidebar
             project={activeProject}
             isComposingNewConversation={isComposingNewConversation}
-            onStartNewConversation={() => setIsComposingNewConversation(true)}
+            onStartNewConversation={() => setIsComposingNewConversationLocally(true)}
           />
         ) : (
           <ResearchEmptySidebar />

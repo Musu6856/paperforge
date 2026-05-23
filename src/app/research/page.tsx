@@ -4,8 +4,13 @@ import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { ResearchWorkspace } from "@/components/research-workspace/research-workspace";
-import { getResearchIndexDestination } from "@/lib/research-routing";
+import {
+  getResearchIndexDestination,
+  getResearchIndexWorkspaceProject,
+} from "@/lib/research-routing";
 import { useStore } from "@/lib/store";
+
+const DELETING_PROJECT_SESSION_KEY = "paperforge-deleting-project-id";
 
 export default function ResearchIndexPage() {
   return (
@@ -20,6 +25,14 @@ function ResearchIndexContent() {
   const searchParams = useSearchParams();
   const { state } = useStore();
   const composeNew = searchParams.get("new") === "1";
+  const deletingProjectId =
+    typeof window === "undefined"
+      ? null
+      : window.sessionStorage.getItem(DELETING_PROJECT_SESSION_KEY);
+  const workspaceProject = getResearchIndexWorkspaceProject(state.projects, {
+    composeNew,
+    deletingProjectId,
+  });
 
   useEffect(() => {
     if (state.isLoading) return;
@@ -35,8 +48,8 @@ function ResearchIndexContent() {
   if (!state.isLoading && (composeNew || state.projects.length === 0)) {
     return (
       <ResearchWorkspace
-        key={`${state.projects[0]?.id ?? "empty"}:${composeNew ? "new" : "view"}`}
-        project={state.projects[0]}
+        key={`${workspaceProject?.id ?? "empty"}:${composeNew ? "new" : "view"}`}
+        project={workspaceProject ?? undefined}
         startComposingNewConversation
       />
     );

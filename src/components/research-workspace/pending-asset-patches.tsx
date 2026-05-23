@@ -10,6 +10,10 @@ import {
   getResearchAssetKindLabel,
   getResearchAssetPatchSummaryLine,
 } from "@/lib/research-asset-patch-display";
+import {
+  getPendingAssetPatchPanelClassName,
+  getPendingAssetPatchesForDisplay,
+} from "@/lib/research-pending-patches-layout";
 
 type PendingAssetPatchesProps = {
   patches: ResearchAssetPatch[];
@@ -24,13 +28,15 @@ export function PendingAssetPatches({
   onApply,
   onReject,
 }: PendingAssetPatchesProps) {
-  const proposed = patches.filter((patch) => patch.status === "proposed");
+  const proposed = getPendingAssetPatchesForDisplay(patches);
 
   if (proposed.length === 0) return null;
 
   return (
-    <section className="border-b bg-muted/30 p-3">
-      <div className="mb-2 text-xs font-medium text-muted-foreground">待应用修改</div>
+    <section className={getPendingAssetPatchPanelClassName()}>
+      <div className="mb-2 text-xs font-medium text-muted-foreground">
+        待应用修改
+      </div>
       <div className="space-y-2">
         {proposed.map((patch) => (
           <article key={patch.id} className="rounded-md border bg-background p-3">
@@ -41,11 +47,19 @@ export function PendingAssetPatches({
                   {getResearchAssetPatchSummaryLine(patch)}
                 </div>
               </div>
-              <span className="shrink-0 rounded-sm border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                {getResearchAssetKindLabel(patch.kind)}
-              </span>
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <span className="rounded-sm border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {getResearchAssetKindLabel(patch.kind)}
+                </span>
+                <PatchActions
+                  patchId={patch.id}
+                  onReview={onReview}
+                  onApply={onApply}
+                  onReject={onReject}
+                />
+              </div>
             </div>
-            <div className="mt-2 space-y-1">
+            <div className="mt-2 max-h-72 space-y-1 overflow-y-auto pr-1">
               {patch.changes.map((change, index) => (
                 <div
                   key={`${patch.id}-${index}-${change.kind}-${change.path}`}
@@ -68,38 +82,53 @@ export function PendingAssetPatches({
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50"
-                disabled={!onReview}
-                onClick={() => onReview?.(patch.id)}
-              >
-                <Eye size={14} />
-                查看
-              </button>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
-                disabled={!onApply}
-                onClick={() => onApply?.(patch.id)}
-              >
-                <Check size={14} />
-                应用
-              </button>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50"
-                disabled={!onReject}
-                onClick={() => onReject?.(patch.id)}
-              >
-                <X size={14} />
-                拒绝
-              </button>
-            </div>
           </article>
         ))}
       </div>
     </section>
+  );
+}
+
+function PatchActions({
+  patchId,
+  onReview,
+  onApply,
+  onReject,
+}: {
+  patchId: string;
+  onReview?: (patchId: string) => void;
+  onApply?: (patchId: string) => void;
+  onReject?: (patchId: string) => void;
+}) {
+  return (
+    <div className="flex gap-1">
+      <button
+        type="button"
+        className="inline-flex h-7 items-center gap-1 rounded-md border px-2 text-xs font-medium disabled:opacity-50"
+        disabled={!onReview}
+        onClick={() => onReview?.(patchId)}
+      >
+        <Eye size={13} />
+        查看
+      </button>
+      <button
+        type="button"
+        className="inline-flex h-7 items-center gap-1 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground disabled:opacity-50"
+        disabled={!onApply}
+        onClick={() => onApply?.(patchId)}
+      >
+        <Check size={13} />
+        应用
+      </button>
+      <button
+        type="button"
+        className="inline-flex h-7 items-center gap-1 rounded-md border px-2 text-xs font-medium disabled:opacity-50"
+        disabled={!onReject}
+        onClick={() => onReject?.(patchId)}
+      >
+        <X size={13} />
+        拒绝
+      </button>
+    </div>
   );
 }

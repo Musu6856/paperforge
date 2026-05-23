@@ -445,6 +445,75 @@ test("successful model generation includes an equilibrium scaffold for confirmat
   assert.match(result.project.equilibriumResult?.derivation ?? "", /等待用户确认/);
 });
 
+test("model generation narrows unresolved mechanism functions before storing assets", async () => {
+  const project = createExplorationProject({
+    id: "11111111-1111-4111-8111-111111111111",
+    rawIdea: "Research short-video vertical content and user stickiness",
+    now: 1710000000000,
+  });
+  const unresolvedProviderModel = {
+    symbols: [],
+    sides: {
+      consumerSideName: "users",
+      merchantSideName: "creators",
+    },
+    platforms: ["A", "B"],
+    timing: [
+      {
+        id: "stage-mechanism",
+        order: 1,
+        name: "platform mechanism choice",
+        decisions: ["\\tau_A", "\\tau_B", "a_d"],
+      },
+    ],
+    utilityFunctions: [
+      {
+        id: "u-user-a",
+        side: "consumer",
+        platform: "A",
+        expression: "U_A^B = v_B + \\psi_A(\\mu_d) - t_B x",
+        notes: "Provider left mechanism utility unresolved.",
+      },
+    ],
+    demandDerivation: "Demand follows from indifference.",
+    profitFunctions: [
+      {
+        id: "profit-a",
+        platform: "A",
+        expression: "\\Pi_A = \\tau_A q n_A^S n_A^B + R_A(\\mu_d) - C_A(a_d)",
+        notes: "Provider left revenue and cost as functions.",
+      },
+    ],
+    assumptions: ["Two platforms compete on a Hotelling line."],
+    modelSetupDraft: "A direction-specific mechanism model with unresolved functions.",
+  };
+
+  const result = await generateResearchProject(
+    {
+      action: "build_model",
+      rawIdea: project.rawIdea,
+      selectedDirectionId: "quality-disclosure-trust",
+      project,
+    },
+    {
+      complete: async () =>
+        JSON.stringify({
+          assistantMessage: "I drafted the mechanism model.",
+          hotellingModel: unresolvedProviderModel,
+        }),
+    }
+  );
+  const storedModelText = [
+    result.project.hotellingModel?.modelSetupDraft,
+    ...(result.project.hotellingModel?.utilityFunctions.map((entry) => entry.expression) ?? []),
+    ...(result.project.hotellingModel?.profitFunctions.map((entry) => entry.expression) ?? []),
+  ].join("\n");
+
+  assert.equal(result.usedFallback, false);
+  assert.doesNotMatch(storedModelText, /\\(?:psi|phi)_|[RC]_[A-Z]\(/);
+  assert.match(result.assistantMessage, /最小可求解|可求解模型/);
+});
+
 test("successful model generation populates right-side asset fields from the model", async () => {
   const project = createExplorationProject({
     id: "11111111-1111-4111-8111-111111111111",

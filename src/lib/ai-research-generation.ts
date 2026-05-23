@@ -21,10 +21,12 @@ import {
 import {
   createHotellingSymbolSeed,
   formatSymbolRegistryForPrompt,
+  mergeSymbolRegistries,
   normalizeSymbolRegistry,
   validateSymbolGovernance,
 } from "./symbol-governance.ts";
 import { createConfirmedRepairProposalPatch } from "./research-confirmed-repair-patch.ts";
+import { evaluateHotellingModelSolvability } from "./research-model-solvability.ts";
 
 export type ResearchGenerationAction =
   | "discover_directions"
@@ -722,8 +724,6 @@ async function buildModel(
   }
 
   const {
-    hotellingModel,
-    assistantMessage,
     selectedDirectionId,
     refinedIdea,
     assetSummary: parsedAssetSummary,
@@ -733,6 +733,22 @@ async function buildModel(
     findDirection(baseProject, request.selectedDirectionId) ??
     baseProject.researchSession?.directions.find((direction) => direction.recommended) ??
     baseProject.researchSession?.directions[0];
+  const solvability = evaluateHotellingModelSolvability(
+    completion.value.hotellingModel
+  );
+  const narrowedModel = solvability.ok
+    ? completion.value.hotellingModel
+    : createMinimalSolvableModelForDirection(
+        selectedDirection,
+        completion.value.hotellingModel
+      );
+  const hotellingModel = narrowedModel;
+  const assistantMessage = solvability.ok
+    ? completion.value.assistantMessage
+    : createNarrowedModelAssistantMessage(
+        completion.value.assistantMessage,
+        solvability.issues
+      );
   const previousSession = baseProject.researchSession;
   const userMessage = request.userMessage?.trim();
   const messages: ResearchSessionMessage[] = [
@@ -755,8 +771,9 @@ async function buildModel(
     },
   ];
   const assetSummary =
-    parsedAssetSummary ??
-    createModelAssetSummary(selectedDirection, hotellingModel);
+    solvability.ok && parsedAssetSummary
+      ? parsedAssetSummary
+      : createModelAssetSummary(selectedDirection, hotellingModel);
 
   return {
     project: {
@@ -968,6 +985,110 @@ function appendUserMessageToProject(
       ],
     },
   };
+}
+
+function createMinimalSolvableModelForDirection(
+  direction: ResearchDirection | undefined,
+  providerModel: HotellingModel
+): HotellingModel {
+  const directionLine = direction
+    ? `当前研究方向：${direction.title}。`
+    : "当前研究方向保留为用户选择的主题。";
+
+  return {
+    symbols: mergeSymbolRegistries(
+      createResearchSymbolRegistryForDirection(direction),
+      normalizeSymbolRegistry(providerModel.symbols)
+    ),
+    sides: providerModel.sides,
+    platforms: ["A", "B"],
+    timing: [
+      {
+        id: "stage-pricing-solvable",
+        order: 1,
+        name: "平台同时选择买方补贴与卖方佣金",
+        decisions: ["\\tau_A", "\\tau_B", "s_A", "s_B"],
+      },
+      {
+        id: "stage-participation-solvable",
+        order: 2,
+        name: "买家和卖家根据 Hotelling 无差异条件选择平台",
+        decisions: ["n_A^B", "n_B^B", "n_A^S", "n_B^S"],
+      },
+    ],
+    utilityFunctions: [
+      {
+        id: "u-buyer-a-solvable",
+        side: "consumer",
+        platform: "A",
+        expression: "U_A^B = v_B + \\alpha_B n_A^S + s_A - p - t_B x",
+        notes:
+          "买家选择平台 A 时获得卖家规模带来的跨边效应和平台 A 的补贴。",
+      },
+      {
+        id: "u-buyer-b-solvable",
+        side: "consumer",
+        platform: "B",
+        expression: "U_B^B = v_B + \\alpha_B n_B^S + s_B - p - t_B(1-x)",
+        notes: "买家选择平台 B 时承担到右端平台的差异化成本。",
+      },
+      {
+        id: "u-seller-a-solvable",
+        side: "merchant",
+        platform: "A",
+        expression: "U_A^S = v_S + \\alpha_S n_A^B - \\tau_A q - t_S y",
+        notes:
+          "卖家选择平台 A 时获得买家规模效应，并按成交价值支付佣金。",
+      },
+      {
+        id: "u-seller-b-solvable",
+        side: "merchant",
+        platform: "B",
+        expression: "U_B^S = v_S + \\alpha_S n_B^B - \\tau_B q - t_S(1-y)",
+        notes: "卖家选择平台 B 的效用与 A 侧保持对称结构。",
+      },
+    ],
+    demandDerivation:
+      "由买家无差异条件 U_A^B=U_B^B 与卖家无差异条件 U_A^S=U_B^S 推出 n_A^B、n_A^S，再代入平台利润函数写一阶条件。",
+    profitFunctions: [
+      {
+        id: "profit-a-solvable",
+        platform: "A",
+        expression: "\\Pi_A = \\tau_A q n_A^S n_A^B - s_A n_A^B",
+        notes: "平台 A 的佣金收入减去买方补贴成本。",
+      },
+      {
+        id: "profit-b-solvable",
+        platform: "B",
+        expression: "\\Pi_B = \\tau_B q n_B^S n_B^B - s_B n_B^B",
+        notes: "平台 B 使用相同结构，便于形成可求解的一阶条件系统。",
+      },
+    ],
+    assumptions: [
+      "两个平台位于 Hotelling 线段两端，买家和卖家均单归属。",
+      "买家和卖家均受到对侧参与规模的正向跨边网络效应影响。",
+      "平台先同时选择卖方佣金 \\tau_i 与买方补贴 s_i。",
+      "本轮先把机制项收窄为最小可求解结构，避免未定义函数进入均衡求解。",
+      directionLine,
+    ],
+    modelSetupDraft:
+      `${directionLine}\n\n` +
+      "模型已收窄为最小可求解的双边 Hotelling 结构：平台选择 \\tau_A、\\tau_B、s_A、s_B，用户参与份额由两侧无差异条件推出，平台利润为佣金收入扣除补贴成本。\n\n" +
+      "如果后续要恢复更具体的机制变量，应先给出显式效用项、成本项和收益项，再重新生成符号均衡。",
+  };
+}
+
+function createNarrowedModelAssistantMessage(
+  assistantMessage: string,
+  issues: string[]
+) {
+  return [
+    "我已把模型设定收窄为一版最小可求解模型，右侧模型页会先使用这版进入符号均衡。",
+    "",
+    assistantMessage,
+    "",
+    `收窄原因：${issues.join("；")}。`,
+  ].join("\n");
 }
 
 function appendConversationMessages(
@@ -1546,7 +1667,7 @@ function createBuildPrompt(
     {
       role: "developer",
       content:
-        "You output strict JSON only. Top-level keys must be assistantMessage and hotellingModel. No markdown. No extra keys. hotellingModel must include symbols,sides,platforms,timing,utilityFunctions,demandDerivation,profitFunctions,assumptions,modelSetupDraft. The model must be suitable for symbolic equilibrium solving. Do not use numeric substitution, simulation, calibration, or empirical regression. Use LaTeX strings for utility functions, profit functions, and derivations. Reuse the supplied symbol registry exactly and keep every symbol defined; if you need a new symbol, add it explicitly in hotellingModel.symbols with name, meaning, role, side, and assumption. If the topic is secondhand platform commissions and subsidies, platforms may charge or subsidize both buyers and sellers; do not assume one side is always charged while the other is always subsidized.",
+        "You output strict JSON only. Top-level keys must be assistantMessage and hotellingModel. No markdown. No extra keys. hotellingModel must include symbols,sides,platforms,timing,utilityFunctions,demandDerivation,profitFunctions,assumptions,modelSetupDraft. The model must be suitable for symbolic equilibrium solving. Do not use numeric substitution, simulation, calibration, or empirical regression. Use LaTeX strings for utility functions, profit functions, and derivations. Reuse the supplied symbol registry exactly and keep every symbol defined; if you need a new symbol, add it explicitly in hotellingModel.symbols with name, meaning, role, side, and assumption. Every utility, demand, revenue, and cost term must be explicit enough for first-order conditions. Do not leave unresolved functions such as \\psi_i(...), \\phi_i(...), R_i(...), or C_i(...) in utility or profit functions unless you also define their closed-form expressions in the model itself. If the topic is secondhand platform commissions and subsidies, platforms may charge or subsidize both buyers and sellers; do not assume one side is always charged while the other is always subsidized.",
     },
     {
       role: "user",

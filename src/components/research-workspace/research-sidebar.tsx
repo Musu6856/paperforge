@@ -137,17 +137,20 @@ export function ResearchSidebar({
 
     try {
       await deleteProject(targetProject.id);
-      if (targetProject.id === project.id) {
+      const isDeletingActiveProject = targetProject.id === project.id;
+      if (isDeletingActiveProject) {
         window.sessionStorage.setItem(
           DELETING_PROJECT_SESSION_KEY,
           targetProject.id
         );
+      }
+      dispatch({ type: "DELETE_PROJECT", payload: targetProject.id });
+      if (isDeletingActiveProject) {
         router.replace("/research?new=1", { scroll: false });
         window.setTimeout(() => {
           window.sessionStorage.removeItem(DELETING_PROJECT_SESSION_KEY);
-        }, 0);
+        }, 1000);
       }
-      dispatch({ type: "DELETE_PROJECT", payload: targetProject.id });
       toast.success("Record deleted");
     } catch (error) {
       console.error("Failed to delete project", error);
