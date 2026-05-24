@@ -1,22 +1,32 @@
 import { CheckCircle2, CircleDot } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import type { getAppCopy } from "@/lib/app-language-copy";
 import type { ResearchSession } from "@/lib/types";
 
-const PHASES: { id: ResearchSession["phase"]; label: string }[] = [
-  { id: "direction", label: "方向发现" },
-  { id: "model", label: "模型确认" },
-  { id: "equilibrium", label: "均衡推导" },
-  { id: "analysis", label: "性质分析" },
+const PHASES: {
+  id: ResearchSession["phase"];
+  labelKey: "phaseDirection" | "phaseModel" | "phaseEquilibrium" | "phaseAnalysis";
+}[] = [
+  { id: "direction", labelKey: "phaseDirection" },
+  { id: "model", labelKey: "phaseModel" },
+  { id: "equilibrium", labelKey: "phaseEquilibrium" },
+  { id: "analysis", labelKey: "phaseAnalysis" },
 ];
 
-export function PhaseIndicator({ phase }: { phase: ResearchSession["phase"] }) {
+export function PhaseIndicator({
+  phase,
+  copy,
+}: {
+  phase: ResearchSession["phase"];
+  copy: ReturnType<typeof getAppCopy>["assets"];
+}) {
   const activeIndex = PHASES.findIndex((item) => item.id === phase);
 
   return (
     <div
       className="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto pb-1 text-[11px] sm:flex-wrap sm:overflow-visible sm:pb-0"
-      aria-label="研究阶段"
+      aria-label={copy.phaseAriaLabel}
     >
       {PHASES.map((item, index) => {
         const isActive = index === activeIndex;
@@ -44,7 +54,7 @@ export function PhaseIndicator({ phase }: { phase: ResearchSession["phase"] }) {
             ) : (
               <span className="size-1.5 rounded-full bg-current/40" />
             )}
-            {item.label}
+            {copy[item.labelKey]}
           </span>
         );
       })}

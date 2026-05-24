@@ -37,9 +37,11 @@ import {
   createInitialResearchSession,
   normalizeResearchProjectForWorkspace,
 } from "@/lib/research-session";
+import { getAppCopy } from "@/lib/app-language-copy";
 import { normalizeSymbolRegistry } from "@/lib/symbol-governance";
 import { getPersistableResearchProject } from "@/lib/research-generation-result";
 import { useStore } from "@/lib/store";
+import { useAppLanguage } from "@/hooks/use-app-language";
 import type {
   ResearchAssetPatch,
   ResearchProject,
@@ -56,6 +58,8 @@ export function ResearchWorkspace({
 }) {
   const router = useRouter();
   const { dispatch } = useStore();
+  const { language } = useAppLanguage();
+  const copy = getAppCopy(language);
   const [isSending, setIsSending] = useState(false);
   const [adoptingDirectionId, setAdoptingDirectionId] = useState<string | null>(
     null
@@ -493,15 +497,16 @@ export function ResearchWorkspace({
   })();
   const chatTitle =
     !displayedProject || isComposingNewConversation
-      ? "新的研究对话"
+      ? copy.chat.newTitle
       : displayedProject.refinedIdea || displayedProject.rawIdea;
   const chatSubtitle =
     !displayedProject || isComposingNewConversation
-      ? "输入研究想法，PaperForge 会先发现可建模方向"
-      : "中间只保留对话，结构化研究资产在右侧检查和编辑";
+      ? copy.chat.newSubtitle
+      : copy.chat.existingSubtitle;
 
   return (
     <ResearchWorkspaceShell
+      copy={copy.shell}
       left={
         activeProject ? (
           <ResearchSidebar
@@ -509,6 +514,8 @@ export function ResearchWorkspace({
             isComposingNewConversation={isComposingNewConversation}
             onStartNewConversation={() => setLocalComposingProjectId(activeProject.id)}
             onOpenProject={() => setLocalComposingProjectId(null)}
+            copy={copy.sidebar}
+            modelSourceCopy={copy.modelSource}
           />
         ) : (
           <ResearchEmptySidebar />
@@ -521,10 +528,21 @@ export function ResearchWorkspace({
           onSubmit={handleSubmit}
           headerTitle={chatTitle}
           headerSubtitle={chatSubtitle}
-          placeholder={getChatPlaceholder(displayedProject, session, isComposingNewConversation)}
+          placeholder={getChatPlaceholder(
+            displayedProject,
+            session,
+            isComposingNewConversation,
+            copy.chat
+          )}
           emptyState={
-            <NewConversationEmptyState hasExistingProject={Boolean(activeProject)} />
+            <NewConversationEmptyState
+              hasExistingProject={Boolean(activeProject)}
+              copy={copy.chat}
+            />
           }
+          userLabel={copy.chat.userLabel}
+          assistantLabel={copy.chat.assistantLabel}
+          sendLabel={copy.chat.sendMessage}
         />
       }
       right={({ isCollapsed, toggleRight }) =>
@@ -546,9 +564,10 @@ export function ResearchWorkspace({
             onRejectAssetPatch={handleRejectAssetPatch}
             isCollapsed={isCollapsed}
             onTogglePane={toggleRight}
+            copy={copy.assets}
           />
         ) : (
-          <ResearchEmptyAssetsPanel />
+          <ResearchEmptyAssetsPanel copy={copy.emptyAssets} />
         )
       }
     />
@@ -752,23 +771,26 @@ function appendConversationTurnToProject(
 function getChatPlaceholder(
   project: ResearchProject | null,
   session: ReturnType<typeof createInitialResearchSession> | null,
-  isComposingNewConversation: boolean
+  isComposingNewConversation: boolean,
+  copy: ReturnType<typeof getAppCopy>["chat"]
 ) {
   if (isComposingNewConversation || !project) {
-    return "输入新的研究想法，例如：二手平台佣金与补贴如何影响买卖双方参与...";
+    return copy.newPlaceholder;
   }
 
   if (session?.phase === "model") {
-    return "可以直接问模型设定，也可以说：把模型假设改成... 但先让我确认";
+    return copy.modelPlaceholder;
   }
 
-  return "可以问结果，也可以说：重新求均衡 / 重做性质分析 / 整理成命题";
+  return copy.defaultPlaceholder;
 }
 
 function NewConversationEmptyState({
   hasExistingProject,
+  copy,
 }: {
   hasExistingProject: boolean;
+  copy: ReturnType<typeof getAppCopy>["chat"];
 }) {
   return (
     <div className="mx-auto flex min-h-[55vh] w-full max-w-3xl flex-col justify-center">
@@ -778,12 +800,12 @@ function NewConversationEmptyState({
         </div>
         <div>
           <p className="text-xl font-semibold">
-            {hasExistingProject ? "开启新的探索对话" : "从一句研究想法开始"}
+            {hasExistingProject ? copy.emptyExistingTitle : copy.emptyFreshTitle}
           </p>
           <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground">
             {hasExistingProject
-              ? "输入一个新的研究想法后，PaperForge 会把它保存成新的探索记录，再从方向发现开始。"
-              : "直接在底部输入研究想法，PaperForge 会依次推进方向发现、模型确认、符号均衡和性质分析。"}
+              ? copy.emptyExistingDescription
+              : copy.emptyFreshDescription}
           </p>
         </div>
       </div>
@@ -811,19 +833,23 @@ function ResearchEmptySidebar() {
   );
 }
 
-function ResearchEmptyAssetsPanel() {
+function ResearchEmptyAssetsPanel({
+  copy,
+}: {
+  copy: ReturnType<typeof getAppCopy>["emptyAssets"];
+}) {
   return (
     <aside className="flex h-full min-h-0 min-w-0 flex-col bg-card">
       <div className="border-b px-4 py-4">
         <p className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           <PanelRightOpen className="size-3.5" />
-          研究资产
+          {copy.eyebrow}
         </p>
-        <h2 className="mt-1 text-lg font-semibold">工作台总览</h2>
+        <h2 className="mt-1 text-lg font-semibold">{copy.title}</h2>
       </div>
       <div className="min-h-0 flex-1 p-4">
         <div className="rounded-md border border-dashed bg-background/60 px-3 py-3 text-xs leading-5 text-muted-foreground">
-          开启研究对话后，方向、模型、均衡和性质分析会显示在这里。
+          {copy.description}
         </div>
       </div>
     </aside>

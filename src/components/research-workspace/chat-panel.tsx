@@ -14,6 +14,9 @@ type ChatPanelProps = {
   headerSubtitle?: string;
   placeholder?: string;
   emptyState?: React.ReactNode;
+  userLabel?: string;
+  assistantLabel?: string;
+  sendLabel?: string;
 };
 
 export function ChatPanel({
@@ -24,6 +27,9 @@ export function ChatPanel({
   headerSubtitle = "Discuss the current findings and refine the direction.",
   placeholder = "Type a thought, a correction, or a question.",
   emptyState,
+  userLabel = "You",
+  assistantLabel = "PaperForge",
+  sendLabel = "Send message",
 }: ChatPanelProps) {
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -68,7 +74,7 @@ export function ChatPanel({
                 }
               >
                 <div className="mb-1 text-xs text-muted-foreground">
-                  {message.role === "user" ? "You" : "PaperForge"}
+                  {message.role === "user" ? userLabel : assistantLabel}
                 </div>
                 <div
                   className={
@@ -110,7 +116,7 @@ export function ChatPanel({
             type="submit"
             disabled={!draft.trim() || isBusy}
             className="inline-flex w-11 self-stretch shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground disabled:opacity-50"
-            aria-label="Send message"
+            aria-label={sendLabel}
           >
             <SendHorizontal size={17} />
           </button>

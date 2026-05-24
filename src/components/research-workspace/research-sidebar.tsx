@@ -35,9 +35,12 @@ import {
   parseStoredModelSourceSettings,
 } from "@/lib/model-source";
 import { describeModelSourceForUi } from "@/lib/model-source-display";
+import { getAppLanguageLabel, type AppLanguage } from "@/lib/app-language";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import type { ModelSourceSettings, ResearchProject } from "@/lib/types";
+import { useAppLanguage } from "@/hooks/use-app-language";
+import type { getAppCopy } from "@/lib/app-language-copy";
 
 const projectDateFormatter = new Intl.DateTimeFormat("zh-CN", {
   year: "numeric",
@@ -53,14 +56,19 @@ export function ResearchSidebar({
   onStartNewConversation,
   onOpenProject,
   isComposingNewConversation,
+  copy,
+  modelSourceCopy,
 }: {
   project: ResearchProject;
   onStartNewConversation: () => void;
   onOpenProject: () => void;
   isComposingNewConversation: boolean;
+  copy: ReturnType<typeof getAppCopy>["sidebar"];
+  modelSourceCopy: ReturnType<typeof getAppCopy>["modelSource"];
 }) {
   const router = useRouter();
   const { state, dispatch } = useStore();
+  const { language, setLanguage } = useAppLanguage();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [modelSettings, setModelSettings] = useState<ModelSourceSettings>({
     source: "paperforge",
@@ -74,7 +82,8 @@ export function ResearchSidebar({
   const [isCheckingProvider, setIsCheckingProvider] = useState(false);
   const activeModelSummary = describeModelSourceForUi(
     activeModelSettings,
-    providerHealth
+    providerHealth,
+    language
   );
 
   useEffect(() => {
@@ -133,7 +142,7 @@ export function ResearchSidebar({
 
   async function handleDeleteProject(targetProject: ResearchProject) {
     const confirmed = window.confirm(
-      `删除“${targetProject.refinedIdea || targetProject.rawIdea}”？此操作不会影响其它记录。`
+      `${copy.deleteConfirmPrefix}“${targetProject.refinedIdea || targetProject.rawIdea}”${copy.deleteConfirmSuffix}`
     );
     if (!confirmed) return;
 
@@ -153,10 +162,10 @@ export function ResearchSidebar({
           window.sessionStorage.removeItem(DELETING_PROJECT_SESSION_KEY);
         }, 1000);
       }
-      toast.success("Record deleted");
+      toast.success(copy.deleteSuccess);
     } catch (error) {
       console.error("Failed to delete project", error);
-      toast.error("删除失败");
+      toast.error(copy.deleteFailed);
     }
   }
 
@@ -172,8 +181,8 @@ export function ResearchSidebar({
       if (result.ok) {
         toast.success(
           sourceForCheck.source === "own"
-            ? "自有模型连通正常"
-            : "默认模型连通正常",
+            ? copy.ownModelConnected
+            : copy.defaultModelConnected,
           {
             description: formatProviderHealthDetail(result),
           }
@@ -181,8 +190,8 @@ export function ResearchSidebar({
       } else {
         toast.error(
           sourceForCheck.source === "own"
-            ? "自有模型不可用"
-            : "默认模型不可用",
+            ? copy.ownModelUnavailable
+            : copy.defaultModelUnavailable,
           {
             description: result.message,
           }
@@ -194,14 +203,14 @@ export function ResearchSidebar({
         ok: false,
         configured: false,
         code: "network_error",
-        message: "连通检测接口请求失败。",
+        message: copy.providerNetworkErrorMessage,
         provider: {
           baseUrl: "",
           model: "",
         },
       });
-      toast.error("连通检测失败", {
-        description: "请稍后重试，或检查本地服务是否正常。",
+      toast.error(copy.providerCheckFailed, {
+        description: copy.providerCheckFailedDescription,
       });
     } finally {
       setIsCheckingProvider(false);
@@ -218,28 +227,30 @@ export function ResearchSidebar({
 
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         <NavSection
-          title="正式项目"
+          title={copy.formalProjects}
           groupedProjects={groupedFormalProjects}
           activeId={project.id}
           onOpenProject={onOpenProject}
           onDelete={handleDeleteProject}
+          copy={copy}
         />
         <NavSection
-          title="探索记录"
+          title={copy.explorations}
           groupedProjects={groupedExplorationProjects}
           activeId={project.id}
           onOpenProject={onOpenProject}
           onDelete={handleDeleteProject}
+          copy={copy}
           action={
             <Button
               variant={isComposingNewConversation ? "secondary" : "ghost"}
               size="sm"
               className="h-7 gap-1.5 px-2 text-xs"
               onClick={onStartNewConversation}
-              title="开启新对话"
+              title={copy.newConversation}
             >
               <MessageSquarePlus className="size-3.5" />
-              新对话
+              {copy.newConversation}
             </Button>
           }
         />
@@ -251,17 +262,17 @@ export function ResearchSidebar({
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Settings
+                  {copy.settingsEyebrow}
                 </p>
                 <h2 className="mt-1 font-serif text-base font-semibold">
-                  工作台设置
+                  {copy.workspaceSettings}
                 </h2>
               </div>
               <Button
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setSettingsOpen(false)}
-                title="关闭设置"
+                title={copy.closeSettings}
               >
                 <X className="size-4" />
               </Button>
@@ -270,19 +281,29 @@ export function ResearchSidebar({
             <section className="mb-4 space-y-2">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 <Languages className="size-4 text-primary" />
-                语言
+                {copy.language}
               </h3>
               <div className="inline-flex rounded-lg border bg-background p-1">
-                <button className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
-                  中文
-                </button>
-                <button
-                  className="rounded-md px-3 py-1 text-xs text-muted-foreground"
-                  type="button"
-                  onClick={() => toast.info("英文界面将在后续版本接入")}
-                >
-                  English
-                </button>
+                {(["zh", "en"] as AppLanguage[]).map((option) => (
+                  <button
+                    key={option}
+                    className={cn(
+                      "rounded-md px-3 py-1 text-xs",
+                      language === option
+                        ? "bg-primary font-medium text-primary-foreground"
+                        : "text-muted-foreground"
+                    )}
+                    type="button"
+                    onClick={() => {
+                      setLanguage(option);
+                      toast.success(copy.languageUpdated, {
+                        description: copy.languageUpdatedDescription,
+                      });
+                    }}
+                  >
+                    {getAppLanguageLabel(option)}
+                  </button>
+                ))}
               </div>
             </section>
 
@@ -290,7 +311,7 @@ export function ResearchSidebar({
               <div className="flex items-center justify-between gap-3">
                 <h3 className="flex items-center gap-2 text-sm font-semibold">
                   <SlidersHorizontal className="size-4 text-primary" />
-                  模型设置
+                  {copy.modelSettings}
                 </h3>
                 <Button
                   variant="outline"
@@ -304,22 +325,28 @@ export function ResearchSidebar({
                   ) : (
                     <CircleCheck className="size-3.5" />
                   )}
-                  检测连通
+                  {copy.checkConnection}
                 </Button>
               </div>
               <ProviderHealthInlineStatus
                 settings={modelSettings}
                 result={providerHealth}
                 isChecking={isCheckingProvider}
+                copy={copy}
               />
               <ModelSourceSummaryBox
-                title="当前表单将使用"
-                summary={describeModelSourceForUi(modelSettings, providerHealth)}
+                title={copy.currentFormWillUse}
+                summary={describeModelSourceForUi(
+                  modelSettings,
+                  providerHealth,
+                  language
+                )}
               />
               <ModelSourceConfigurator
                 settings={modelSettings}
                 onSettingsChange={handleModelSettingsChange}
                 compact
+                copy={modelSourceCopy}
               />
               <div className="mt-4 flex justify-end gap-2">
                 <Button
@@ -329,7 +356,7 @@ export function ResearchSidebar({
                     setSettingsOpen(false);
                   }}
                 >
-                  取消
+                  {copy.cancel}
                 </Button>
                 <Button
                   className="gap-1.5"
@@ -352,23 +379,22 @@ export function ResearchSidebar({
                           modelSource: getModelSourceMetadata(normalized),
                         },
                       });
-                      toast.success("模型设置已更新", {
-                        description:
-                          "这不会创建新研究，也不会清空当前对话。",
+                      toast.success(copy.modelSaved, {
+                        description: copy.modelSavedDescription,
                       });
                       setSettingsOpen(false);
                     } catch (error) {
-                      toast.error("请补全模型来源配置", {
+                      toast.error(copy.modelConfigError, {
                         description:
                           error instanceof Error
                             ? error.message
-                            : "当前配置无法用于生成研究。",
+                            : copy.modelConfigFallbackError,
                       });
                     }
                   }}
                 >
                   <Check className="size-4" />
-                  保存
+                  {copy.save}
                 </Button>
               </div>
             </section>
@@ -391,7 +417,7 @@ export function ResearchSidebar({
             variant={settingsOpen ? "secondary" : "ghost"}
             size="icon-sm"
             onClick={toggleSettings}
-            title="设置"
+            title={copy.settingsButton}
           >
             <Settings className="size-4" />
           </Button>
@@ -405,24 +431,27 @@ function ProviderHealthInlineStatus({
   settings,
   result,
   isChecking,
+  copy,
 }: {
   settings: ModelSourceSettings;
   result: ProviderHealthResult | null;
   isChecking: boolean;
+  copy: ReturnType<typeof getAppCopy>["sidebar"];
 }) {
-  const sourceLabel = settings.source === "own" ? "自有模型" : "默认模型";
+  const sourceLabel =
+    settings.source === "own" ? copy.ownModelLabel : copy.defaultModelLabel;
   const status = isChecking
     ? {
         icon: <Loader2 className="mt-0.5 size-3.5 animate-spin" />,
-        label: `正在检测${sourceLabel}连通性`,
-        detail: "会发送一条很小的 ping 请求，不会产生研究内容。",
+        label: `${copy.checkingProviderPrefix}${sourceLabel}${copy.checkingProviderSuffix}`,
+        detail: copy.checkingProviderDetail,
         className:
           "border-[oklch(0.84_0.03_225)] bg-[oklch(0.965_0.018_225)] text-[oklch(0.35_0.055_225)]",
       }
     : result?.ok
       ? {
           icon: <CircleCheck className="mt-0.5 size-3.5" />,
-          label: `${sourceLabel}可用`,
+          label: `${sourceLabel}${copy.providerAvailableSuffix}`,
           detail: formatProviderHealthDetail(result),
           className:
             "border-[oklch(0.82_0.04_155)] bg-[oklch(0.965_0.026_155)] text-[oklch(0.34_0.065_155)]",
@@ -430,20 +459,19 @@ function ProviderHealthInlineStatus({
       : result
         ? {
             icon: <CircleAlert className="mt-0.5 size-3.5" />,
-            label: `${sourceLabel}不可用`,
+            label: `${sourceLabel}${copy.providerUnavailableSuffix}`,
             detail: `${result.message}${formatProviderCheckDetail(result)}`,
             className:
               "border-[oklch(0.83_0.055_55)] bg-[oklch(0.965_0.03_75)] text-[oklch(0.38_0.07_55)]",
-          }
+        }
         : {
             icon: <CircleMinus className="mt-0.5 size-3.5" />,
-            label: `尚未检测${sourceLabel}`,
+            label: `${copy.providerUncheckedPrefix}${sourceLabel}`,
             detail:
               settings.source === "own"
-                ? "这里会检测当前表单里的模型配置，API key 只用于本次检测。"
-                : "这里检测的是服务端默认模型配置。",
-            className:
-              "border-border bg-background text-muted-foreground",
+                ? copy.ownProviderUncheckedDetail
+                : copy.defaultProviderUncheckedDetail,
+            className: "border-border bg-background text-muted-foreground",
           };
 
   return (
@@ -537,6 +565,7 @@ function NavSection({
   action,
   onOpenProject,
   onDelete,
+  copy,
 }: {
   title: string;
   groupedProjects: ReturnType<typeof groupProjectsByDate>;
@@ -544,6 +573,7 @@ function NavSection({
   action?: React.ReactNode;
   onOpenProject: (project: ResearchProject) => void;
   onDelete: (project: ResearchProject) => void;
+  copy: ReturnType<typeof getAppCopy>["sidebar"];
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const totalCount = groupedProjects.reduce(
@@ -600,8 +630,8 @@ function NavSection({
                       <Link
                         href={`/research/${project.id}`}
                         className="block min-w-0"
-                        title={`查看记录：${title}`}
-                        aria-label={`查看记录：${title}`}
+                        title={`${copy.viewRecord}：${title}`}
+                        aria-label={`${copy.viewRecord}：${title}`}
                         onClick={() => onOpenProject(project)}
                       >
                         <span className="line-clamp-2">{title}</span>
@@ -618,25 +648,25 @@ function NavSection({
                               onClick={() => onOpenProject(project)}
                             />
                           }
-                          title={`查看记录：${title}`}
-                          aria-label={`查看记录：${title}`}
+                          title={`${copy.viewRecord}：${title}`}
+                          aria-label={`${copy.viewRecord}：${title}`}
                         >
                           <Eye className="size-3" />
-                          查看
+                          {copy.view}
                         </Button>
                         <Button
                           variant="ghost"
                           size="xs"
                           className="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                          title={`删除记录：${title}`}
-                          aria-label={`删除记录：${title}`}
+                          title={`${copy.deleteRecord}：${title}`}
+                          aria-label={`${copy.deleteRecord}：${title}`}
                           onClick={(event) => {
                             event.preventDefault();
                             onDelete(project);
                           }}
                         >
                           <Trash2 className="size-3" />
-                          删除
+                          {copy.delete}
                         </Button>
                       </div>
                     </div>
@@ -647,7 +677,7 @@ function NavSection({
           ))
         ) : (
           <p className="px-2.5 py-2 text-xs leading-5 text-muted-foreground">
-            暂无记录
+            {copy.noRecords}
           </p>
         )}
       </div>

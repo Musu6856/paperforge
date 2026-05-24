@@ -26,6 +26,7 @@ import {
   buildResearchProjectMarkdown,
   getResearchProjectMarkdownFilename,
 } from "@/lib/research-export";
+import type { getAppCopy } from "@/lib/app-language-copy";
 import {
   createResearchActionClickHandler,
   getResearchAssetsTabForPhase,
@@ -57,6 +58,7 @@ type ResearchAssetsPanelProps = {
   onRejectAssetPatch?: (patchId: string) => void;
   isCollapsed?: boolean;
   onTogglePane?: () => void;
+  copy: ReturnType<typeof getAppCopy>["assets"];
 };
 
 export function ResearchAssetsPanel(props: ResearchAssetsPanelProps) {
@@ -97,6 +99,7 @@ function ResearchAssetsPanelContent({
   onRejectAssetPatch,
   isCollapsed,
   onTogglePane,
+  copy,
 }: ResearchAssetsPanelProps & { initialActiveTab: ResearchAssetsTab }) {
   const [activeTab, setActiveTab] = useState<ResearchAssetsTab>(initialActiveTab);
   const flow = getResearchFlowState(project, session);
@@ -194,7 +197,7 @@ function ResearchAssetsPanelContent({
             <button
               type="button"
               className="research-pane-icon-button research-pane-icon-button-inline absolute right-2 top-2"
-              aria-label="展开右侧研究资产"
+              aria-label={copy.expandPane}
               onClick={() => {
                 onTogglePane?.();
               }}
@@ -206,8 +209,8 @@ function ResearchAssetsPanelContent({
         <div className="flex min-h-0 flex-1 flex-col items-center gap-3 px-2 py-3">
           <div
             className="flex size-6 items-center justify-center rounded-full border border-border bg-muted/40 text-[10px] font-semibold text-muted-foreground"
-            title={getPhaseLabel(session.phase)}
-            aria-label={getPhaseLabel(session.phase)}
+            title={getPhaseLabel(session.phase, copy)}
+            aria-label={getPhaseLabel(session.phase, copy)}
           >
             {getPhaseShortLabel(session.phase)}
           </div>
@@ -222,10 +225,10 @@ function ResearchAssetsPanelContent({
         <div className="flex min-h-14 items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 className="truncate text-base font-semibold">
-              {asset.currentDirection?.title ?? "工作台总览"}
+              {asset.currentDirection?.title ?? copy.headerFallbackTitle}
             </h2>
             <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-              右侧内容是当前研究的结构化版本，可以检查、采用和编辑。
+              {copy.headerDescription}
             </p>
           </div>
           <div className="flex items-start gap-2">
@@ -238,7 +241,7 @@ function ResearchAssetsPanelContent({
                 onClick={handleExportMarkdown}
               >
                 <Download className="size-3.5" />
-                导出 Markdown
+                {copy.exportMarkdown}
               </Button>
             ) : null}
             <Button
@@ -246,14 +249,14 @@ function ResearchAssetsPanelContent({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              aria-label="收起右侧研究资产"
+              aria-label={copy.collapsePane}
               onClick={() => {
                 onTogglePane?.();
               }}
             >
               <PanelRightClose className="size-3.5" />
             </Button>
-            <PhaseIndicator phase={session.phase} />
+            <PhaseIndicator phase={session.phase} copy={copy} />
           </div>
         </div>
       </div>
@@ -265,7 +268,11 @@ function ResearchAssetsPanelContent({
         onReject={onRejectAssetPatch}
       />
 
-      <ResearchAssetsTabs activeTab={activeTab} onActiveTabChange={setActiveTab} />
+      <ResearchAssetsTabs
+        activeTab={activeTab}
+        onActiveTabChange={setActiveTab}
+        copy={copy}
+      />
 
       {activeTab === "model" && activePrimaryAction && activePrimaryActionHandler ? (
         <PhaseActionBar
@@ -281,6 +288,7 @@ function ResearchAssetsPanelContent({
             session={session}
             adoptingDirectionId={adoptingDirectionId}
             onAdopt={onAdopt}
+            copy={copy}
           />
         ) : null}
 
@@ -316,7 +324,7 @@ function ResearchAssetsPanelContent({
           />
         ) : null}
 
-        {activeTab === "paper" ? <PaperTab project={project} /> : null}
+        {activeTab === "paper" ? <PaperTab project={project} copy={copy} /> : null}
 
         {activeTab === "quality" ? (
           <QualityTab
@@ -338,16 +346,18 @@ function DirectionsTab({
   session,
   adoptingDirectionId,
   onAdopt,
+  copy,
 }: {
   session: ResearchSession;
   adoptingDirectionId?: string | null;
   onAdopt?: (directionId: string) => void;
+  copy: ReturnType<typeof getAppCopy>["assets"];
 }) {
   return (
     <div className="space-y-3">
       <AssetSection
-        title="候选方向"
-        description="所有方向都可以直接采用，推荐标记只表示默认建议。"
+        title={copy.candidateDirections}
+        description={copy.candidateDirectionsDescription}
       >
         <div className="space-y-3">
           {session.directions.map((direction) => (
@@ -735,7 +745,13 @@ function PropertiesTab({
   );
 }
 
-function PaperTab({ project }: { project?: ResearchProject }) {
+function PaperTab({
+  project,
+  copy,
+}: {
+  project?: ResearchProject;
+  copy: ReturnType<typeof getAppCopy>["assets"];
+}) {
   const markdown = project ? buildResearchProjectMarkdown(project) : "";
   const sections = project?.sections ?? [];
   const hasDraftSections = sections.length > 0;
@@ -743,8 +759,8 @@ function PaperTab({ project }: { project?: ResearchProject }) {
   return (
     <div className="space-y-4">
       <AssetSection
-        title="导出说明"
-        description="Markdown 导出会把当前研究方向、模型、均衡和性质分析整理成一份完整正文。"
+        title={copy.exportGuideTitle}
+        description={copy.exportGuideDescription}
       >
         <div className="grid gap-2 sm:grid-cols-2">
           <InfoTile
@@ -758,7 +774,7 @@ function PaperTab({ project }: { project?: ResearchProject }) {
         </div>
       </AssetSection>
 
-      <AssetSection title="论文预览">
+      <AssetSection title={copy.paperPreview}>
         {markdown ? (
           <div className="rounded-md border bg-background px-3 py-3">
             <MarkdownRenderer
@@ -767,7 +783,7 @@ function PaperTab({ project }: { project?: ResearchProject }) {
             />
           </div>
         ) : (
-          <EmptyLine text="论文输出暂未生成。先把方向、模型、均衡和性质分析稳定下来，再整理成命题与正文。" />
+          <EmptyLine text={copy.emptyPaper} />
         )}
       </AssetSection>
 
@@ -969,15 +985,31 @@ function getPhaseShortLabel(phase: ResearchSession["phase"]) {
   }
 }
 
-function getPhaseLabel(phase: ResearchSession["phase"]) {
+function getPhaseLabel(
+  phase: ResearchSession["phase"],
+  copy?: ReturnType<typeof getAppCopy>["assets"]
+) {
+  if (copy) {
+    switch (phase) {
+      case "direction":
+        return copy.phaseDirection;
+      case "model":
+        return copy.phaseModel;
+      case "equilibrium":
+        return copy.phaseEquilibrium;
+      case "analysis":
+        return copy.phaseAnalysis;
+    }
+  }
+
   switch (phase) {
     case "direction":
-      return "Direction discovery";
+      return "方向发现";
     case "model":
-      return "Model confirmation";
+      return "模型确认";
     case "equilibrium":
-      return "Equilibrium derivation";
+      return "均衡推导";
     case "analysis":
-      return "Property analysis";
+      return "性质分析";
   }
 }

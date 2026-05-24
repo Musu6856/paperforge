@@ -12,6 +12,7 @@ import {
   toggleResearchPane,
   type ResearchPanelLayout,
 } from "@/lib/panel-layout";
+import type { getAppCopy } from "@/lib/app-language-copy";
 import { PaneSplitter } from "./pane-splitter";
 
 type ResearchWorkspaceShellProps = {
@@ -21,12 +22,14 @@ type ResearchWorkspaceShellProps = {
     isCollapsed: boolean;
     toggleRight: () => void;
   }) => React.ReactNode;
+  copy: ReturnType<typeof getAppCopy>["shell"];
 };
 
 export function ResearchWorkspaceShell({
   left,
   center,
   right,
+  copy,
 }: ResearchWorkspaceShellProps) {
   const [viewportWidth, setViewportWidth] = useState(1440);
   const [layout, setLayout] = useState<ResearchPanelLayout>(
@@ -96,7 +99,11 @@ export function ResearchWorkspaceShell({
         <button
           type="button"
           className="research-pane-icon-button"
-          aria-label={clampedLayout.leftCollapsed ? "展开左侧栏" : "收起左侧栏"}
+          aria-label={
+            clampedLayout.leftCollapsed
+              ? copy.expandLeftPane
+              : copy.collapseLeftPane
+          }
           onClick={() =>
             updateLayoutFromCurrent((current) => toggleResearchPane(current, "left"))
           }
@@ -111,7 +118,7 @@ export function ResearchWorkspaceShell({
       </aside>
 
       <PaneSplitter
-        label="调整左侧栏宽度"
+        label={copy.resizeLeftPane}
         onDrag={(deltaX) =>
           updateLayoutFromCurrent((current) => ({
             ...current,
@@ -131,7 +138,7 @@ export function ResearchWorkspaceShell({
       </main>
 
       <PaneSplitter
-        label="调整右侧研究资产栏宽度"
+        label={copy.resizeRightPane}
         onDrag={(deltaX) =>
           updateLayoutFromCurrent((current) => ({
             ...current,

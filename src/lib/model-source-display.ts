@@ -1,4 +1,5 @@
 import type { ProviderHealthResult } from "./api";
+import type { AppLanguage } from "./app-language";
 import type { ModelSourceProvider } from "./types";
 import type { ModelSourceSettings } from "./types";
 
@@ -9,11 +10,15 @@ export type ModelSourceUiSummary = {
 
 export function describeModelSourceForUi(
   settings: ModelSourceSettings,
-  health?: ProviderHealthResult | null
+  health?: ProviderHealthResult | null,
+  language: AppLanguage = "zh"
 ): ModelSourceUiSummary {
   if (settings.source === "own") {
     return {
-      label: `自有模型：${settings.model}`,
+      label:
+        language === "en"
+          ? `Own model: ${settings.model}`
+          : `自有模型：${settings.model}`,
       detail: [
         formatProviderKind(settings.provider),
         formatEndpointHost(
@@ -22,29 +27,44 @@ export function describeModelSourceForUi(
               ? "https://api.openai.com/v1"
               : "")
         ),
-        "API key 已保存在浏览器",
+        language === "en" ? "API key saved in browser" : "API key 已保存在浏览器",
       ]
         .filter(Boolean)
-        .join(" · "),
+        .join(language === "en" ? " · " : " · "),
     };
   }
 
   if (health?.provider.model) {
     return {
-      label: `默认模型：${health.provider.model}`,
+      label:
+        language === "en"
+          ? `Default model: ${health.provider.model}`
+          : `默认模型：${health.provider.model}`,
       detail: [
         formatEndpointHost(health.provider.baseUrl),
-        health.ok ? "已检测可用" : "检测未通过",
+        health.ok
+          ? language === "en"
+            ? "connection checked"
+            : "已检测可用"
+          : language === "en"
+            ? "connection check failed"
+            : "检测未通过",
       ]
         .filter(Boolean)
-        .join(" · "),
+        .join(language === "en" ? " · " : " · "),
     };
   }
 
-  return {
-    label: "默认模型：待检测",
-    detail: "打开设置并点击检测连通，可查看服务端实际模型和 Base URL。",
-  };
+  return language === "en"
+    ? {
+        label: "Default model: not checked",
+        detail:
+          "Open settings and run a connection check to see the active model and Base URL.",
+      }
+    : {
+        label: "默认模型：待检测",
+        detail: "打开设置并点击检测连通，可查看服务端实际模型和 Base URL。",
+      };
 }
 
 function formatProviderKind(provider: ModelSourceProvider) {

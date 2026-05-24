@@ -1,5 +1,6 @@
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { landingSections } from "@/lib/landing-content";
 import { ProductPreview } from "./product-preview";
 import { SiteHeader } from "./site-header";
 import { StartResearchLink } from "./start-research-link";
@@ -21,20 +22,50 @@ export function LandingPage() {
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <StartResearchLink className="h-12 gap-2 px-7 text-base" />
-              <button
-                type="button"
-                disabled
+              <a
+                href="#cases"
                 className={cn(
                   buttonVariants({ variant: "ghost", size: "lg" }),
                   "h-12 px-5 text-base"
                 )}
-                title="案例功能会和顶部文档入口一起补充"
               >
                 查看案例
-              </button>
+              </a>
             </div>
           </div>
           <ProductPreview />
+        </section>
+
+        <section className="border-t border-border/70 bg-muted/25">
+          <div className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-14 lg:grid-cols-4">
+            {landingSections.map((section) => (
+              <article
+                key={section.id}
+                id={section.id}
+                className="scroll-mt-24 rounded-md border bg-background p-5"
+              >
+                <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-primary">
+                  {section.eyebrow}
+                </p>
+                <h2 className="mt-3 font-serif text-2xl font-semibold leading-tight">
+                  {section.title}
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {section.description}
+                </p>
+                <div className="mt-5 space-y-4">
+                  {section.items.map((item) => (
+                    <div key={item.title} className="border-t pt-4">
+                      <h3 className="text-sm font-semibold">{item.title}</h3>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {item.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
       </main>
     </div>

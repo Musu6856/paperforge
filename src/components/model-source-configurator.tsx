@@ -4,18 +4,19 @@ import { KeyRound, LockKeyhole } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { getAppCopy } from "@/lib/app-language-copy";
 import type { ModelSourceProvider, ModelSourceSettings } from "@/lib/types";
 
-const PROVIDERS: { value: ModelSourceProvider; label: string; hint: string }[] = [
+const PROVIDERS: { value: ModelSourceProvider; label: string; hintKey: "openaiHint" | "compatibleHint" }[] = [
   {
     value: "openai",
     label: "OpenAI",
-    hint: "使用 OpenAI 官方接口格式",
+    hintKey: "openaiHint",
   },
   {
     value: "openai-compatible",
     label: "OpenAI-compatible",
-    hint: "DeepSeek、Qwen 等常见兼容接口",
+    hintKey: "compatibleHint",
   },
 ];
 
@@ -25,11 +26,26 @@ export function ModelSourceConfigurator({
   settings,
   onSettingsChange,
   compact = false,
+  copy,
 }: {
   settings: ModelSourceSettings;
   onSettingsChange: (settings: ModelSourceSettings) => void;
   compact?: boolean;
+  copy?: ReturnType<typeof getAppCopy>["modelSource"];
 }) {
+  const labels = copy ?? {
+    paperforgeTitle: "使用 PaperForge 提供的模型",
+    paperforgeHint: "适合先试用完整流程。第一版不接入真实收费。",
+    ownTitle: "使用自己的模型",
+    ownHint: "API key 只保存在当前浏览器，服务端只保存脱敏配置。",
+    providerFormat: "服务商格式",
+    openaiHint: "使用 OpenAI 官方接口格式",
+    compatibleHint: "DeepSeek、Qwen 等常见兼容接口",
+    modelName: "模型名称",
+    modelPlaceholder: "例如 gpt-5.2、claude-sonnet-4-5、deepseek-chat",
+    baseUrlPlaceholder: "例如 https://api.deepseek.com/v1",
+    apiKeyPlaceholder: "只保存在当前浏览器",
+  };
   const ownSettings: OwnSettings =
     settings.source === "own"
       ? settings
@@ -59,10 +75,10 @@ export function ModelSourceConfigurator({
           </span>
           <span>
             <span className="block text-sm font-semibold">
-              使用 PaperForge 提供的模型
+              {labels.paperforgeTitle}
             </span>
             <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-              适合先试用完整流程。第一版不接入真实收费。
+              {labels.paperforgeHint}
             </span>
           </span>
         </button>
@@ -77,9 +93,9 @@ export function ModelSourceConfigurator({
             <LockKeyhole className="size-4" />
           </span>
           <span>
-            <span className="block text-sm font-semibold">使用自己的模型</span>
+            <span className="block text-sm font-semibold">{labels.ownTitle}</span>
             <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-              API key 只保存在当前浏览器，服务端只保存脱敏配置。
+              {labels.ownHint}
             </span>
           </span>
         </button>
@@ -88,7 +104,7 @@ export function ModelSourceConfigurator({
       {settings.source === "own" && (
         <div className="space-y-4 rounded-lg border bg-background p-4">
           <div>
-            <Label>服务商格式</Label>
+            <Label>{labels.providerFormat}</Label>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {PROVIDERS.map((provider) => (
                 <button
@@ -100,18 +116,18 @@ export function ModelSourceConfigurator({
                 >
                   <span className="block font-medium">{provider.label}</span>
                   <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                    {provider.hint}
+                    {labels[provider.hintKey]}
                   </span>
                 </button>
               ))}
             </div>
           </div>
 
-          <Field label="模型名称">
+          <Field label={labels.modelName}>
             <Input
               value={ownSettings.model}
               onChange={(event) => updateOwn({ model: event.target.value })}
-              placeholder="例如 gpt-5.2、claude-sonnet-4-5、deepseek-chat"
+              placeholder={labels.modelPlaceholder}
               className="h-10"
             />
           </Field>
@@ -121,7 +137,7 @@ export function ModelSourceConfigurator({
               <Input
                 value={ownSettings.baseUrl ?? ""}
                 onChange={(event) => updateOwn({ baseUrl: event.target.value })}
-                placeholder="例如 https://api.deepseek.com/v1"
+                placeholder={labels.baseUrlPlaceholder}
                 className="h-10"
               />
             </Field>
@@ -132,7 +148,7 @@ export function ModelSourceConfigurator({
               type="password"
               value={ownSettings.apiKey}
               onChange={(event) => updateOwn({ apiKey: event.target.value })}
-              placeholder="只保存在当前浏览器"
+              placeholder={labels.apiKeyPlaceholder}
               className="h-10"
             />
           </Field>

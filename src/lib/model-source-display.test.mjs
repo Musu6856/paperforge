@@ -41,3 +41,32 @@ test("describes default model source before health check without guessing provid
   assert.equal(summary.label, "默认模型：待检测");
   assert.match(summary.detail, /检测连通/);
 });
+
+test("describes model source in English when requested", () => {
+  const ownSummary = describeModelSourceForUi(
+    {
+      source: "own",
+      provider: "openai-compatible",
+      apiKey: "sk-test",
+      model: "deepseek-chat",
+      baseUrl: "https://api.deepseek.com/v1",
+    },
+    null,
+    "en"
+  );
+  const defaultSummary = describeModelSourceForUi(
+    {
+      source: "paperforge",
+    },
+    null,
+    "en"
+  );
+
+  assert.equal(ownSummary.label, "Own model: deepseek-chat");
+  assert.equal(
+    ownSummary.detail,
+    "OpenAI-compatible · api.deepseek.com · API key saved in browser"
+  );
+  assert.equal(defaultSummary.label, "Default model: not checked");
+  assert.match(defaultSummary.detail, /connection check/);
+});
