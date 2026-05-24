@@ -1,21 +1,33 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { landingSections } from "./landing-content.ts";
+import {
+  caseStudyPage,
+  docsHomeCards,
+  docsPages,
+  landingNavLinks,
+} from "./landing-content.ts";
 
-test("landing navigation targets have matching content sections", () => {
-  const ids = new Set(landingSections.map((section) => section.id));
+test("landing navigation links point to standalone pages", () => {
+  assert.deepEqual(
+    landingNavLinks.map((link) => link.href),
+    ["/docs/features", "/docs/model-safety", "/docs"]
+  );
 
-  assert.equal(ids.has("features"), true);
-  assert.equal(ids.has("model-safety"), true);
-  assert.equal(ids.has("docs"), true);
-  assert.equal(ids.has("cases"), true);
+  for (const link of landingNavLinks) {
+    assert.equal(link.href.startsWith("#"), false);
+  }
 });
 
-test("landing sections contain useful product-facing content", () => {
-  for (const section of landingSections) {
-    assert.ok(section.title.length >= 2);
-    assert.ok(section.description.length >= 12);
-    assert.ok(section.items.length >= 2);
+test("docs and cases have standalone page content", () => {
+  assert.equal(docsHomeCards.length >= 3, true);
+  assert.equal(caseStudyPage.steps.length >= 4, true);
+
+  for (const slug of ["features", "model-safety"]) {
+    const page = docsPages[slug];
+
+    assert.ok(page.title.length >= 2);
+    assert.ok(page.description.length >= 12);
+    assert.equal(page.sections.length >= 2, true);
   }
 });

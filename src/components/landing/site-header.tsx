@@ -5,6 +5,7 @@ import { UserButton, useUser } from "@clerk/nextjs";
 
 import { buttonVariants } from "@/components/ui/button";
 import { isDevelopmentGuestMode } from "@/lib/auth";
+import { landingNavLinks } from "@/lib/landing-content";
 import { cn } from "@/lib/utils";
 import { StartResearchLink } from "./start-research-link";
 
@@ -26,15 +27,15 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
-          <a href="#features" className="transition-colors hover:text-foreground">
-            功能
-          </a>
-          <a href="#model-safety" className="transition-colors hover:text-foreground">
-            模型与安全
-          </a>
-          <a href="#docs" className="transition-colors hover:text-foreground">
-            文档
-          </a>
+          {landingNavLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="transition-colors hover:text-foreground"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="flex items-center gap-2">
